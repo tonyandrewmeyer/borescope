@@ -56,6 +56,9 @@ class Services(Command):
 
 class _ServiceAction(Command):
     verb = ""
+    # English past tense — declared per subclass so we don't have to encode
+    # consonant-doubling rules ("stop" -> "Stopped", not "Stoped").
+    past = ""
 
     def run(
         self, ctx: ShellContext, args: list[str], stdin: str | None = None
@@ -65,12 +68,13 @@ class _ServiceAction(Command):
             return Result.fail(f"{self.name}: usage: {self.name} <service...>")
         method = getattr(ctx.transport, f"{self.verb}_services")
         method(names)
-        return Result.ok(f"{self.verb.capitalize()}ed: {', '.join(names)}")
+        return Result.ok(f"{self.past}: {', '.join(names)}")
 
 
 class Start(_ServiceAction):
     name = "start"
     verb = "start"
+    past = "Started"
     summary = "Start services"
     usage = "start <service...>"
 
@@ -78,6 +82,7 @@ class Start(_ServiceAction):
 class Stop(_ServiceAction):
     name = "stop"
     verb = "stop"
+    past = "Stopped"
     summary = "Stop services"
     usage = "stop <service...>"
 
@@ -85,6 +90,7 @@ class Stop(_ServiceAction):
 class Restart(_ServiceAction):
     name = "restart"
     verb = "restart"
+    past = "Restarted"
     summary = "Restart services"
     usage = "restart <service...>"
 

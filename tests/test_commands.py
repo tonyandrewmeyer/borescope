@@ -140,3 +140,13 @@ def test_echo(registry, ctx):
 
 def test_exec_echo(registry, ctx):
     assert run(registry, ctx, "exec", "echo", "hi").output == "hi\n"
+
+
+def test_service_action_past_tense_strings():
+    # Naive "verb + 'ed'" produced "Stoped" (one p); each subclass now declares
+    # its past-tense form explicitly. Lock that in.
+    from cascade.shell.commands.pebble import Restart, Start, Stop
+
+    assert Start.past == "Started"
+    assert Stop.past == "Stopped"
+    assert Restart.past == "Restarted"
