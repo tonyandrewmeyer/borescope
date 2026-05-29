@@ -36,7 +36,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "ops", specifier = ">=2.0.0,<4" },
-    { name = "pebble-shimmer", editable = "../shimmer" },
+    { name = "pebble-shimmer", specifier = ">=1.0.0b2" },
     { name = "pre-commit", marker = "extra == 'dev'", specifier = ">=3.0.0" },
     { name = "prompt-toolkit", specifier = ">=3.0" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=7.0.0" },
@@ -254,25 +254,15 @@ wheels = [
 [[package]]
 name = "pebble-shimmer"
 version = "1.0.0b2"
-source = { editable = "../shimmer" }
+source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "ops" },
     { name = "pyyaml" },
 ]
-
-[package.metadata]
-requires-dist = [
-    { name = "ops", specifier = ">=2.0.0,<4" },
-    { name = "pre-commit", marker = "extra == 'dev'", specifier = ">=3.0.0" },
-    { name = "pytest", marker = "extra == 'dev'", specifier = ">=7.0.0" },
-    { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=4.0.0" },
-    { name = "pytest-mock", marker = "extra == 'dev'", specifier = ">=3.10.0" },
-    { name = "pyyaml", specifier = ">=6.0" },
-    { name = "ruff", marker = "extra == 'dev'", specifier = "==0.15.14" },
-    { name = "tox", marker = "extra == 'dev'", specifier = ">=4.0.0" },
-    { name = "ty", marker = "extra == 'dev'", specifier = "==0.0.38" },
+sdist = { url = "https://files.pythonhosted.org/packages/6a/ce/3d2b734a60606e55944e6925ae58dd628d468c4f39d32541dc0c61354075/pebble_shimmer-1.0.0b2.tar.gz", hash = "sha256:b493edf4c8197cf1b14797f02f0fe844e6e717745846ecd78f2d197eeb78ad45", size = 38156, upload-time = "2026-05-28T11:31:56.074Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/fd/35/baace9888233a7c8d4b84ecf83e14aedf214e12f5f8bd5e2f07ccc4cda8a/pebble_shimmer-1.0.0b2-py3-none-any.whl", hash = "sha256:f7f560ad275fc034665b9add2fa04c71117493db060c0712a22cb4253eca8e78", size = 21478, upload-time = "2026-05-28T11:31:55.035Z" },
 ]
-provides-extras = ["dev"]
 
 [[package]]
 name = "platformdirs"

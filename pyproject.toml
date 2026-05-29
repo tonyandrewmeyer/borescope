@@ -49,14 +49,6 @@ Homepage = "https://github.com/canonical/cascade"
 Repository = "https://github.com/canonical/cascade"
 "Bug Tracker" = "https://github.com/canonical/cascade/issues"
 
-[tool.uv.sources]
-# Dev-local override: resolve `pebble-shimmer` from the sibling shimmer checkout
-# instead of PyPI, so shimmer gaps can be co-developed in place. This is uv-only
-# metadata (not part of the built wheel). REMOVE before publishing / once shimmer
-# is canonical-owned — the [project] `pebble-shimmer>=1.0.0b2` above is the real,
-# published dependency. Requires a sibling checkout at ../shimmer.
-pebble-shimmer = { path = "../shimmer", editable = true }
-
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"

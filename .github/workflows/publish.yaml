@@ -1,0 +1,108 @@
+name: Publish
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions: {}
+
+jobs:
+  # Gate the whole release on lint + unit + integration passing for the tagged
+  # commit, so a red CI can never publish.
+  ci:
+    name: CI
+    uses: ./.github/workflows/ci.yaml
+
+  pypi:
+    name: Build and publish to PyPI
+    needs: ci
+    runs-on: ubuntu-latest
+    environment: publish-pypi
+    permissions:
+      id-token: write       # Trusted Publishing (OIDC) — no long-lived token.
+      attestations: write   # Sigstore build-provenance + SBOM attestations.
+      contents: read
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+      - uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b  # v8.1.0
+        with:
+          enable-cache: false  # No build cache in the release job (cache-poisoning hardening).
+      - name: Build
+        run: uvx --with=build python -m build
+      - name: Generate CycloneDX SBOM
+        run: |
+          uv sync --frozen --no-dev
+          uvx --from cyclonedx-bom cyclonedx-py environment .venv \
+            --output-format JSON \
+            --output-file sbom.cdx.json
+      - name: Attest build provenance
+        uses: actions/attest-build-provenance@v4
+        with:
+          subject-path: "dist/*"
+      - name: Attest SBOM
+        uses: actions/attest@v1
+        with:
+          subject-path: "dist/*"
+          sbom-path: "sbom.cdx.json"
+      - name: Upload dist + SBOM
+        uses: actions/upload-artifact@v7
+        with:
+          name: dist-and-sbom
+          path: |
+            dist/*
+            sbom.cdx.json
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+
+  snap:
+    name: Build and publish snap
+    needs: ci
+    runs-on: ubuntu-latest
+    environment: publish-snap
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - name: Build snap
+        id: build
+        uses: snapcore/action-build@3bdaa03e1ba6bf59a65f84a751d943d549a54e79  # v1.3.0
+      - name: Upload snap artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: snap
+          path: ${{ steps.build.outputs.snap }}
+      - name: Publish to latest/edge
+        uses: snapcore/action-publish@214b86e5ca036ead1668c79afb81e550e6c54d40  # v1.2.0
+        env:
+          SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.SNAPCRAFT_STORE_CREDENTIALS }}
+        with:
+          snap: ${{ steps.build.outputs.snap }}
+          release: latest/edge
+
+  github-release:
+    name: GitHub release
+    needs: [pypi, snap]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write  # Create the release.
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v7
+        with:
+          path: artifacts
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${GITHUB_REF_NAME}" \
+            --repo "${GITHUB_REPOSITORY}" \
+            --generate-notes \
+            $(find artifacts -type f)

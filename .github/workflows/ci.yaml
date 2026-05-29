@@ -2,22 +2,28 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: ["main"]
   pull_request:
-  workflow_dispatch:
+    branches: ["**"]
+  # Allow the publish workflow to gate on these checks.
+  workflow_call:
 
-permissions:
-  contents: read
+permissions: {}
 
 jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - name: Install uv
-        uses: astral-sh/setup-uv@v5
-      - name: Lint
-        run: uv run --extra dev -- tox -e lint
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b  # v8.1.0
+      - name: ruff check
+        run: uv run --extra dev ruff check src tests
+      - name: ruff format
+        run: uv run --extra dev ruff format --check src tests
+      - name: ty
+        run: uv run --extra dev ty check src
 
   unit:
     runs-on: ubuntu-latest
@@ -26,21 +32,26 @@ jobs:
       matrix:
         python-version: ["3.11", "3.12", "3.13"]
     steps:
-      - uses: actions/checkout@v4
-      - name: Install uv
-        uses: astral-sh/setup-uv@v5
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b  # v8.1.0
         with:
           python-version: ${{ matrix.python-version }}
       - name: Unit tests
-        run: uv run --extra dev -- pytest -m "not integration and not requires_juju" --cov=cascade --cov-report=term-missing
+        run: >
+          uv run --extra dev pytest
+          -m "not integration and not requires_juju"
+          --cov=cascade --cov-report=term-missing
 
   integration:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - name: Install uv
-        uses: astral-sh/setup-uv@v5
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
       - name: Install pebble
         run: sudo snap install pebble --classic
-      - name: Integration tests
-        run: uv run --extra dev -- pytest -m integration -v
+      - uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b  # v8.1.0
+      - name: Integration tests (against a real pebble)
+        run: uv run --extra dev pytest -m integration -v

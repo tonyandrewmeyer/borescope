@@ -1,0 +1,9 @@
+rules:
+  unpinned-uses:
+    config:
+      # SHA-pin everything by default; allow ref/tag pins only for first-party
+      # GitHub- and PyPA-owned actions (matches the charm-tech estate policy).
+      policies:
+        "actions/*": ref-pin
+        "github/*": ref-pin
+        "pypa/*": ref-pin

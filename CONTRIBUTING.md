@@ -9,9 +9,19 @@ request** rather than reimplement every shell utility.
 cascade uses [`uv`](https://docs.astral.sh/uv/):
 
 ```console
-uv venv
-uv pip install -e '.[dev]'
+uv sync --extra dev
 pre-commit install
+```
+
+### Co-developing shimmer
+
+cascade depends on the published [`pebble-shimmer`](https://pypi.org/project/pebble-shimmer/).
+If you need to change shimmer and cascade together, install your local checkout
+editable *into cascade's venv* (don't commit a path override — it breaks CI and
+fresh clones):
+
+```console
+uv pip install -e ../shimmer    # re-run after any `uv sync`, which resets it
 ```
 
 ## Running checks

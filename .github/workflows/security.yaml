@@ -1,0 +1,28 @@
+name: Dependency vulnerability scan
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["**"]
+  schedule:
+    # Re-scan weekly so newly-disclosed CVEs in unchanged dependencies surface
+    # even without a commit.
+    - cron: "17 7 * * 1"
+
+permissions: {}
+
+jobs:
+  osv-scan:
+    # Scans lockfiles (incl. uv.lock) against OSV and uploads SARIF to the
+    # Security tab. google/* is not in the zizmor ref-pin allowlist, so the
+    # reusable workflow is SHA-pinned.
+    uses: google/osv-scanner-action/.github/workflows/osv-scanner-reusable.yml@9a498708959aeaef5ef730655706c5a1df1edbc2  # v2.3.8
+    permissions:
+      security-events: write  # Upload SARIF to the Security tab.
+      contents: read
+      actions: read
+    with:
+      # Surface findings via the Security tab rather than failing the run (this
+      # is not a merge-gating check).
+      fail-on-vuln: false
