@@ -1,0 +1,27 @@
+__pycache__
+/sandbox
+.idea
+*~
+.venv
+venv
+.vscode
+.coverage
+coverage.xml
+htmlcov
+/.tox
+.*.swp
+.ruff_cache
+.pytest_cache
+
+# Tokens and settings for `act` to run GHA locally
+.env
+.envrc
+.secrets
+
+# Build artifacts
+/cascade.egg-info
+/dist
+/build
+
+# Agents
+.claude/*local*

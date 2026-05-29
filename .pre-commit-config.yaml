@@ -1,0 +1,51 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+        exclude: ^tests/fixtures/
+      - id: end-of-file-fixer
+        exclude: ^tests/fixtures/
+      - id: check-yaml
+      - id: check-toml
+      - id: check-json
+      - id: check-added-large-files
+      - id: check-case-conflict
+      - id: check-merge-conflict
+      - id: debug-statements
+      - id: detect-private-key
+
+  # Local hooks run the tools through `uv run`, so the versions come from
+  # pyproject.toml's `dev` extra rather than from pinned `rev:`s here. This
+  # keeps pre-commit, tox and CI on exactly the same tool versions.
+  - repo: local
+    hooks:
+      - id: ruff-check
+        name: ruff check
+        entry: uv run --extra dev -- ruff check --fix --exit-non-zero-on-fix
+        language: system
+        types: [python]
+        require_serial: true
+
+      - id: ruff-format
+        name: ruff format
+        entry: uv run --extra dev -- ruff format
+        language: system
+        types: [python]
+        require_serial: true
+
+      - id: ty
+        name: ty
+        entry: uv run --extra dev -- ty check src tests
+        language: system
+        types: [python]
+        pass_filenames: false
+        require_serial: true
+
+      - id: pytest-unit
+        name: pytest unit tests
+        entry: uv run --extra dev -- pytest -m "not integration and not requires_juju" --maxfail=1 -q
+        language: system
+        types: [python]
+        pass_filenames: false
+        stages: [pre-push]

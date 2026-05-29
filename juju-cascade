@@ -1,0 +1,6 @@
+#!/bin/sh
+# Juju plugin wrapper: `juju cascade <unit> ...` runs `juju-cascade <unit> ...`,
+# which is just cascade. cascade already picks up the current controller/model
+# like the juju CLI, so this is a thin passthrough. Put it on PATH (the snap
+# does this automatically) to enable `juju cascade`.
+exec "$(dirname "$(readlink -f "$0")")/cascade" "$@"

@@ -1,0 +1,51 @@
+"""Run raw ``pebble`` subcommands over the same relay the transport uses.
+
+A few Pebble CLI features (notably ``logs``) aren't part of the
+``ops.pebble.Client`` API surface, so they're driven by invoking the ``pebble``
+binary directly — remotely via ``juju ssh`` (the CLI relay), or locally against a
+reachable socket. Both the ``logs`` command and ``--snapshot`` share this.
+"""
+
+from __future__ import annotations
+
+import subprocess
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from ..discovery import Target
+
+
+def pebble_relay(target: Target) -> tuple[list[str], dict[str, str] | None, Any]:
+    """Return ``(binary_prefix, env, runner)`` for running ``pebble <args>``.
+
+    ``runner`` is a shimmer ``Runner`` (``run``/``popen``); ``binary_prefix`` is the
+    argv that names the ``pebble`` binary (local ``["pebble"]`` or the remote path).
+    """
+    if target.socket_path:
+        import os
+
+        from shimmer import LocalSubprocessRunner
+
+        env = {**os.environ, "PEBBLE_SOCKET": target.socket_path}
+        return ["pebble"], env, LocalSubprocessRunner()
+
+    from .cli_transport import REMOTE_PEBBLE_BINARY
+    from .runner import JujuSshRunner
+
+    # The runner injects the workload socket env itself (via the charm container),
+    # so no env is needed here.
+    runner = JujuSshRunner(
+        target.unit,
+        target.container,
+        model=target.model,
+        juju_binary=target.juju_binary,
+    )
+    return [REMOTE_PEBBLE_BINARY], None, runner
+
+
+def run_pebble(
+    target: Target, pebble_args: list[str], *, timeout: float = 30.0
+) -> subprocess.CompletedProcess[Any]:
+    """Run ``pebble <pebble_args>`` once and return the completed process."""
+    prefix, env, runner = pebble_relay(target)
+    return runner.run([*prefix, *pebble_args], env=env, timeout=timeout, check=False)
