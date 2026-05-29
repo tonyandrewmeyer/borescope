@@ -8,11 +8,36 @@ reachable socket. Both the ``logs`` command and ``--snapshot`` share this.
 
 from __future__ import annotations
 
+import shutil
 import subprocess
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from ..discovery import Target
+
+
+# Juju injects pebble here in every k8s charm container, but does NOT put it on
+# $PATH. So in --here mode `shutil.which("pebble")` finds nothing — fall through
+# to this absolute location before giving up.
+_JUJU_PEBBLE = "/charm/bin/pebble"
+
+
+def _local_pebble_binary() -> str:
+    """Find the ``pebble`` binary for the local (socket) case.
+
+    Tries ``$PATH`` first (so a dev with a local Pebble install or snap works),
+    then the Juju-injected path inside a charm container.
+    """
+    found = shutil.which("pebble")
+    if found:
+        return found
+    import os
+
+    if os.path.exists(_JUJU_PEBBLE):
+        return _JUJU_PEBBLE
+    # Fall back to the bare name — subprocess will raise FileNotFoundError, which
+    # callers wrap into a clear "logs_error" / similar.
+    return "pebble"
 
 
 def pebble_relay(target: Target) -> tuple[list[str], dict[str, str] | None, Any]:
@@ -27,7 +52,7 @@ def pebble_relay(target: Target) -> tuple[list[str], dict[str, str] | None, Any]
         from shimmer import LocalSubprocessRunner
 
         env = {**os.environ, "PEBBLE_SOCKET": target.socket_path}
-        return ["pebble"], env, LocalSubprocessRunner()
+        return [_local_pebble_binary()], env, LocalSubprocessRunner()
 
     from .cli_transport import REMOTE_PEBBLE_BINARY
     from .runner import JujuSshRunner
