@@ -9,6 +9,7 @@ cluster-admin — so cascade inherits Juju's authority for free.
 
 from __future__ import annotations
 
+import os
 import re
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
@@ -26,6 +27,11 @@ _UNIT_RE = re.compile(r"^(?P<app>[a-z0-9][a-z0-9-]*)/(?P<num>\d+)$")
 # Charm agent metadata lives at a deterministic path inside the *charm* container
 # (which, unlike the workload rock, has a normal filesystem and `cat`).
 _META_FILES = ("metadata.yaml", "charmcraft.yaml")
+
+# Inside a Juju k8s charm container, each declared workload's Pebble socket is
+# mounted here, one subdirectory per container. This is what makes Mode A
+# (``--here``) possible without any Juju round-trip.
+_LOCAL_SOCKET_DIR = "/charm/containers"
 
 
 @dataclass(frozen=True)
@@ -151,6 +157,67 @@ def resolve_target(
         model=effective_model,
         controller=controller,
         juju_binary=juju_binary,
+    )
+
+
+def discover_local_sockets(base: str = _LOCAL_SOCKET_DIR) -> dict[str, str]:
+    """Map workload container name → mounted Pebble socket path.
+
+    As seen from *inside the charm container*, where Juju mounts every workload's
+    socket at ``/charm/containers/<name>/pebble.socket``. Returns an empty mapping
+    if *base* isn't present (i.e. we're not in a charm container).
+    """
+    sockets: dict[str, str] = {}
+    try:
+        names = os.listdir(base)
+    except OSError:
+        return sockets
+    for name in sorted(names):
+        path = f"{base}/{name}/pebble.socket"
+        if os.path.exists(path):
+            sockets[name] = path
+    return sockets
+
+
+def resolve_local_target(
+    *, container: str | None = None, base: str = _LOCAL_SOCKET_DIR
+) -> Target:
+    """Resolve a :class:`Target` for cascade running *inside the charm container*.
+
+    Talks directly to a workload's mounted Pebble socket (Mode A) — no Juju, no
+    unit reference. Picks the socket named by *container*, or the sole one if the
+    charm declares just a single workload.
+    """
+    sockets = discover_local_sockets(base)
+    if not sockets:
+        raise DiscoveryError(
+            f"no Pebble sockets found under {base}. '--here' only works from inside "
+            "a Juju Kubernetes charm container, which mounts each workload's socket "
+            "there. From your workstation, run 'cascade <unit>' instead."
+        )
+    if container is not None:
+        socket = sockets.get(container)
+        if socket is None:
+            available = ", ".join(sockets)
+            raise DiscoveryError(
+                f"no Pebble socket for container '{container}' under {base}. "
+                f"Available: {available}."
+            )
+        chosen = container
+    elif len(sockets) == 1:
+        chosen, socket = next(iter(sockets.items()))
+    else:
+        available = ", ".join(sockets)
+        raise DiscoveryError(
+            f"this charm has multiple workload containers ({available}); "
+            "choose one with --container."
+        )
+    return Target(
+        unit="local",
+        app=chosen,
+        container=chosen,
+        model=None,
+        socket_path=socket,
     )
 
 

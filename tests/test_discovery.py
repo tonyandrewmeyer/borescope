@@ -125,3 +125,59 @@ def test_history_key():
         unit="app/0", app="app", container="c", model="m", controller="ctrl"
     )
     assert target.history_key == "ctrl_m_app_0"
+
+
+def _make_socket(base, name):
+    """Create a fake ``<base>/<name>/pebble.socket`` (a plain file satisfies the
+    existence check) and return its path."""
+    sock_dir = base / name
+    sock_dir.mkdir()
+    sock = sock_dir / "pebble.socket"
+    sock.touch()
+    return str(sock)
+
+
+def test_discover_local_sockets_finds_mounted(tmp_path):
+    _make_socket(tmp_path, "workload")
+    _make_socket(tmp_path, "redis")
+    assert discovery.discover_local_sockets(str(tmp_path)) == {
+        "redis": str(tmp_path / "redis" / "pebble.socket"),
+        "workload": str(tmp_path / "workload" / "pebble.socket"),
+    }
+
+
+def test_discover_local_sockets_missing_dir(tmp_path):
+    assert discovery.discover_local_sockets(str(tmp_path / "nope")) == {}
+
+
+def test_resolve_local_target_single(tmp_path):
+    _make_socket(tmp_path, "workload")
+    target = discovery.resolve_local_target(base=str(tmp_path))
+    assert target.container == "workload"
+    assert target.socket_path == str(tmp_path / "workload" / "pebble.socket")
+    assert target.model is None
+
+
+def test_resolve_local_target_named(tmp_path):
+    _make_socket(tmp_path, "workload")
+    _make_socket(tmp_path, "redis")
+    target = discovery.resolve_local_target(container="redis", base=str(tmp_path))
+    assert target.container == "redis"
+
+
+def test_resolve_local_target_ambiguous(tmp_path):
+    _make_socket(tmp_path, "workload")
+    _make_socket(tmp_path, "redis")
+    with pytest.raises(DiscoveryError, match="multiple workload containers"):
+        discovery.resolve_local_target(base=str(tmp_path))
+
+
+def test_resolve_local_target_unknown_container(tmp_path):
+    _make_socket(tmp_path, "workload")
+    with pytest.raises(DiscoveryError, match="no Pebble socket for container"):
+        discovery.resolve_local_target(container="nope", base=str(tmp_path))
+
+
+def test_resolve_local_target_none_present(tmp_path):
+    with pytest.raises(DiscoveryError, match="no Pebble sockets found"):
+        discovery.resolve_local_target(base=str(tmp_path))

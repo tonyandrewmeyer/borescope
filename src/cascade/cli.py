@@ -35,6 +35,14 @@ def build_parser() -> argparse.ArgumentParser:
         help="talk directly to a Pebble unix socket (skip juju)",
     )
     parser.add_argument(
+        "--here",
+        action="store_true",
+        help=(
+            "run inside the charm container: auto-detect a workload's mounted "
+            "Pebble socket (use --container to pick when there are several)"
+        ),
+    )
+    parser.add_argument(
         "--juju", default="juju", help="juju binary to invoke (default: juju)"
     )
     parser.add_argument("--version", action="version", version=f"cascade {__version__}")
@@ -42,8 +50,10 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def _build_target(args: argparse.Namespace):
-    from .discovery import Target, resolve_target
+    from .discovery import Target, resolve_local_target, resolve_target
 
+    if args.here:
+        return resolve_local_target(container=args.container)
     if args.socket:
         unit = args.unit or "local"
         app = unit.split("/")[0]
@@ -62,9 +72,10 @@ def _build_target(args: argparse.Namespace):
 
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
-    if not args.unit and not args.socket:
+    if not args.unit and not args.socket and not args.here:
         print(
-            "cascade: a unit reference is required (e.g. 'cascade myapp/0').",
+            "cascade: a unit reference is required (e.g. 'cascade myapp/0'), "
+            "or use --here when running inside a charm container.",
             file=sys.stderr,
         )
         return 2
