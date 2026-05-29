@@ -38,6 +38,10 @@ def run_juju(
         result = subprocess.run(
             cmd,
             input=input,
+            # Detach stdin unless we're sending input: `juju ssh` forwards our stdin
+            # to the remote and would otherwise drain cascade's own piped-batch
+            # command stream during discovery, leaving the REPL loop nothing to read.
+            stdin=subprocess.DEVNULL if input is None else None,
             capture_output=True,
             text=True,
             timeout=timeout,

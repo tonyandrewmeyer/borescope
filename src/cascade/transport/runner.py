@@ -88,6 +88,9 @@ class JujuSshRunner:
         return subprocess.run(
             self.wrap(argv),
             input=input,
+            # Detach stdin unless we're sending input: otherwise `juju ssh` drains
+            # cascade's piped-batch command stream (see juju.run_juju).
+            stdin=subprocess.DEVNULL if input is None else None,
             capture_output=True,
             text=True,
             timeout=timeout,
