@@ -70,6 +70,12 @@ def test_head_preserves_crlf_and_no_trailing_newline(registry, ctx, transport):
     assert run(registry, ctx, 'tail', '-n', '1', '/crlf.txt').output == 'c'
 
 
+def test_head_invalid_count_errors(registry, ctx):
+    result = run(registry, ctx, 'head', '-n', 'abc', '/etc/hostname')
+    assert result.code == 1
+    assert 'invalid line count' in result.error
+
+
 def test_tail_follow_delta_appends():
     from borescope.shell.commands.filesystem import Tail
 

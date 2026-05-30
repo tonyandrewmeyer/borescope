@@ -47,10 +47,8 @@ def _is_dir(info: Any) -> bool:
 
 
 def _int(value: str | None, default: int) -> int:
-    try:
-        return int(value) if value is not None else default
-    except ValueError:
-        return default
+    """Parse a line count, returning *default* when unset; raise on a bad value."""
+    return default if value is None else int(value)  # ValueError propagates to caller
 
 
 def _mode_str(perm: int | None) -> str:
@@ -157,7 +155,10 @@ class Head(Command):
 
     def run(self, ctx: ShellContext, args: list[str], stdin: str | None = None) -> Result:
         _, values, paths = parse_args(args, valued=('n',))
-        count = _int(values.get('n'), 10)
+        try:
+            count = _int(values.get('n'), 10)
+        except ValueError:
+            return Result.fail(f'head: invalid line count: {values["n"]!r}')
         try:
             text = _input_text(ctx, paths, stdin)
         except Exception as exc:
@@ -173,7 +174,10 @@ class Tail(Command):
 
     def run(self, ctx: ShellContext, args: list[str], stdin: str | None = None) -> Result:
         flags, values, paths = parse_args(args, valued=('n',))
-        count = _int(values.get('n'), 10)
+        try:
+            count = _int(values.get('n'), 10)
+        except ValueError:
+            return Result.fail(f'tail: invalid line count: {values["n"]!r}')
         follow = 'f' in flags
 
         if not paths:

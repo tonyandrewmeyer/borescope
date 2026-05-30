@@ -134,7 +134,7 @@ def resolve_target(
     controller, current_model = juju.current_controller_model(juju_binary)
     effective_model = model or current_model
 
-    status = juju.status_json(model=model, juju_binary=juju_binary)
+    status = juju.status_json(model=effective_model, juju_binary=juju_binary)
 
     model_type = (status.get('model') or {}).get('type')
     if model_type == 'iaas':
@@ -162,7 +162,7 @@ def resolve_target(
                 f"no workload containers declared by '{app}'. Is this a "
                 'Kubernetes (sidecar) charm?'
             )
-        # Default to the first declared workload container (open question #5).
+        # Default to the first declared workload container.
         chosen = containers[0]
 
     return Target(
