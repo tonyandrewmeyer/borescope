@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>How to capture a state snapshot &mdash; borescope</title>
+<meta name="description" content="Dump a Juju Kubernetes workload container's Pebble state &mdash; services, plan, checks, notices, and recent logs &mdash; as a single stable JSON document.">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.bunny.net">
+<link rel="stylesheet" href="https://fonts.bunny.net/css?family=inter:400,500,600,700,800|jetbrains-mono:400&display=swap">
+<link rel="stylesheet" href="docs.css">
+</head>
+<body>
+
+<a href="#main" class="skip-link">Skip to content</a>
+
+<nav class="doc-nav" aria-label="Main">
+  <div class="doc-nav-inner">
+    <a href="../index.html" class="doc-nav-logo">
+      <img src="../logo.svg" alt="borescope" width="28" height="28">
+      <span>borescope</span>
+    </a>
+    <button class="doc-nav-toggle" aria-label="Open menu" aria-expanded="false" aria-controls="nav-menu">
+      <span></span><span></span><span></span>
+    </button>
+    <div class="doc-nav-links" id="nav-menu">
+      <a href="index.html" class="current">Docs</a>
+      <a href="../index.html#features">Features</a>
+      <a href="https://github.com/tonyandrewmeyer/borescope" target="_blank" rel="noopener">GitHub</a>
+    </div>
+  </div>
+</nav>
+<div class="doc-layout">
+  <aside class="doc-sidebar">
+    <h4>How-to guides</h4>
+    <ul>
+      <li><a href="howto-connect.html">Connect to a unit</a></li>
+      <li><a href="howto-here.html">Run inside the charm container</a></li>
+      <li><a href="howto-oneshot.html">Run one command (no REPL)</a></li>
+      <li><a href="howto-files.html">Copy files in and out</a></li>
+      <li><a href="howto-snapshot.html" class="current">Capture a state snapshot</a></li>
+    </ul>
+    <h4>On this page</h4>
+    <ul>
+      <li><a href="#run">Take a snapshot</a></li>
+      <li><a href="#shape">What's in it</a></li>
+      <li><a href="#errors">Partial snapshots</a></li>
+      <li><a href="#uses">What it's for</a></li>
+    </ul>
+    <h4>See also</h4>
+    <ul>
+      <li><a href="howto-oneshot.html">Run one command (no REPL)</a></li>
+      <li><a href="reference-cli.html">CLI reference</a></li>
+    </ul>
+  </aside>
+
+  <main id="main" class="doc-content">
+    <div class="breadcrumb">
+      <a href="index.html">Docs</a><span class="sep">/</span>How-to guides<span class="sep">/</span>Capture a state snapshot
+    </div>
+
+    <h1>Capture a state snapshot</h1>
+    <p class="subtitle">
+      Produce one machine-readable JSON document describing a container's state, for bug reports and tooling.
+    </p>
+
+<h2 id="run">Take a snapshot</h2>
+<p>Pass <code>--snapshot</code> to dump the container's state as JSON and exit &mdash; no REPL:</p>
+<pre><code><span class="prompt">$</span> borescope myapp/0 --snapshot</code></pre>
+<p>Redirect it to a file to attach to a bug report:</p>
+<pre><code><span class="prompt">$</span> borescope myapp/0 --snapshot &gt; myapp-0.json</code></pre>
+<p><code>--snapshot</code> works with the same targeting flags as a normal session
+(<code>--container</code>, <code>--model</code>, <code>--here</code>, <code>--socket</code>), so you can snapshot a specific
+workload or run it from inside the charm container.</p>
+<h2 id="shape">What's in it</h2>
+<p>The output is a single JSON object. Its shape is intended to be <strong>stable and
+consumable</strong> by other tools:</p>
+<pre><code class="language-json">{
+  &quot;borescope_version&quot;: &quot;0.1.0.dev1&quot;,
+  &quot;captured_at&quot;: &quot;2026-05-31T09:14:02.118402+00:00&quot;,
+  &quot;unit&quot;: &quot;myapp/0&quot;,
+  &quot;container&quot;: &quot;myapp&quot;,
+  &quot;model&quot;: &quot;prod&quot;,
+  &quot;controller&quot;: &quot;k8s&quot;,
+  &quot;system&quot;: { &quot;version&quot;: &quot;1.19.0&quot; },
+  &quot;services&quot;: [
+    { &quot;name&quot;: &quot;myapp&quot;, &quot;startup&quot;: &quot;enabled&quot;, &quot;current&quot;: &quot;active&quot; }
+  ],
+  &quot;plan&quot;: { &quot;services&quot;: { &quot;myapp&quot;: { &quot;command&quot;: &quot;/usr/bin/myapp&quot;, &quot;override&quot;: &quot;replace&quot; } } },
+  &quot;checks&quot;: [
+    { &quot;name&quot;: &quot;up&quot;, &quot;level&quot;: &quot;alive&quot;, &quot;status&quot;: &quot;up&quot;, &quot;failures&quot;: 0, &quot;threshold&quot;: 3 }
+  ],
+  &quot;notices&quot;: [
+    { &quot;id&quot;: &quot;1&quot;, &quot;type&quot;: &quot;custom&quot;, &quot;key&quot;: &quot;example.com/x&quot;, &quot;occurrences&quot;: 1, &quot;last_repeated&quot;: &quot;&hellip;&quot; }
+  ],
+  &quot;recent_logs&quot;: [
+    &quot;2026-05-31T09:13:58Z myapp INFO listening on :8080&quot;
+  ]
+}
+</code></pre>
+<p>The top-level keys:</p>
+<table>
+<thead>
+<tr>
+<th>Key</th>
+<th>Contents</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>borescope_version</code></td>
+<td>The borescope that produced the snapshot.</td>
+</tr>
+<tr>
+<td><code>captured_at</code></td>
+<td>UTC ISO-8601 timestamp.</td>
+</tr>
+<tr>
+<td><code>unit</code>, <code>container</code>, <code>model</code>, <code>controller</code></td>
+<td>The resolved target.</td>
+</tr>
+<tr>
+<td><code>system</code></td>
+<td>Pebble's reported version.</td>
+</tr>
+<tr>
+<td><code>services</code></td>
+<td>Each service's name, configured startup, and current status.</td>
+</tr>
+<tr>
+<td><code>plan</code></td>
+<td>The merged Pebble plan, as a structured object.</td>
+</tr>
+<tr>
+<td><code>checks</code></td>
+<td>Each health check's level, status, and failure count vs threshold.</td>
+</tr>
+<tr>
+<td><code>notices</code></td>
+<td>Recent Pebble notices.</td>
+</tr>
+<tr>
+<td><code>recent_logs</code></td>
+<td>The last 20 log lines, one string per line.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="errors">Partial snapshots</h2>
+<p>A snapshot never aborts halfway because one section failed. If borescope can't
+collect a section, it omits that key and adds a matching <code>*_error</code> key with the
+reason &mdash; for example <code>services_error</code>, <code>plan_error</code>, or <code>logs_error</code>. So a
+snapshot of a half-broken container still captures everything that <em>did</em> answer,
+which is usually exactly what you want in a bug report.</p>
+<h2 id="uses">What it's for</h2>
+<ul>
+<li><strong>Bug reports.</strong> One file captures the whole picture &mdash; far more useful than a
+screenshot of <code>services</code>.</li>
+<li><strong>Diffing.</strong> Snapshot before and after a change and <code>diff</code> the JSON.</li>
+<li><strong>Tooling.</strong> The stable shape is meant to be fed into other tools (for
+example, model-explainers) rather than parsed by eye.</li>
+</ul>
+<p>For ad-hoc, human-readable checks, run the individual commands
+(<a href="reference-commands.html#pebble-native"><code>services</code></a>, <code>plan</code>, <code>checks</code>, &hellip;) or
+use <a href="howto-oneshot.html"><code>--command</code></a> instead.</p>
+  </main>
+</div>
+
+<footer class="doc-footer">
+  <div class="doc-footer-inner">
+    <span>borescope &mdash; free &amp; open source &middot; Apache 2.0</span>
+    <div>
+      <a href="https://github.com/tonyandrewmeyer/borescope" target="_blank" rel="noopener">GitHub</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+(function() {
+  var toggle = document.querySelector('.doc-nav-toggle');
+  var links = document.querySelector('.doc-nav-links');
+  if (!toggle || !links) return;
+  toggle.addEventListener('click', function() {
+    var open = links.classList.toggle('open');
+    toggle.classList.toggle('open', open);
+    toggle.setAttribute('aria-expanded', String(open));
+    toggle.setAttribute('aria-label', open ? 'Close menu' : 'Open menu');
+  });
+  links.querySelectorAll('a').forEach(function(a) {
+    a.addEventListener('click', function() {
+      links.classList.remove('open');
+      toggle.classList.remove('open');
+      toggle.setAttribute('aria-expanded', 'false');
+      toggle.setAttribute('aria-label', 'Open menu');
+    });
+  });
+})();
+
+(function() {
+  document.querySelectorAll('.doc-content pre').forEach(function(pre) {
+    var code = pre.querySelector('code');
+    if (!code) return;
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'copy-btn';
+    btn.textContent = 'Copy';
+    btn.setAttribute('aria-label', 'Copy code to clipboard');
+    btn.addEventListener('click', function() {
+      var text = code.innerText;
+      var done = function() {
+        btn.textContent = 'Copied';
+        btn.classList.add('copied');
+        setTimeout(function() {
+          btn.textContent = 'Copy';
+          btn.classList.remove('copied');
+        }, 1500);
+      };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(done, function() {});
+      } else {
+        var ta = document.createElement('textarea');
+        ta.value = text;
+        ta.setAttribute('readonly', '');
+        ta.style.position = 'absolute';
+        ta.style.left = '-9999px';
+        document.body.appendChild(ta);
+        ta.select();
+        try { document.execCommand('copy'); done(); } catch (e) {}
+        document.body.removeChild(ta);
+      }
+    });
+    pre.appendChild(btn);
+  });
+})();
+</script>
+
+</body>
+</html>

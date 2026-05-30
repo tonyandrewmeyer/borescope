@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Scope and philosophy &mdash; borescope</title>
+<meta name="description" content="Why borescope is Kubernetes-only, ships a minimal command set, and leans on exec rather than reimplementing coreutils.">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.bunny.net">
+<link rel="stylesheet" href="https://fonts.bunny.net/css?family=inter:400,500,600,700,800|jetbrains-mono:400&display=swap">
+<link rel="stylesheet" href="docs.css">
+</head>
+<body>
+
+<a href="#main" class="skip-link">Skip to content</a>
+
+<nav class="doc-nav" aria-label="Main">
+  <div class="doc-nav-inner">
+    <a href="../index.html" class="doc-nav-logo">
+      <img src="../logo.svg" alt="borescope" width="28" height="28">
+      <span>borescope</span>
+    </a>
+    <button class="doc-nav-toggle" aria-label="Open menu" aria-expanded="false" aria-controls="nav-menu">
+      <span></span><span></span><span></span>
+    </button>
+    <div class="doc-nav-links" id="nav-menu">
+      <a href="index.html" class="current">Docs</a>
+      <a href="../index.html#features">Features</a>
+      <a href="https://github.com/tonyandrewmeyer/borescope" target="_blank" rel="noopener">GitHub</a>
+    </div>
+  </div>
+</nav>
+<div class="doc-layout">
+  <aside class="doc-sidebar">
+    <h4>Explanation</h4>
+    <ul>
+      <li><a href="explanation-architecture.html">How borescope works</a></li>
+      <li><a href="explanation-transport.html">How it reaches Pebble</a></li>
+      <li><a href="explanation-scope.html" class="current">Scope and philosophy</a></li>
+    </ul>
+    <h4>On this page</h4>
+    <ul>
+      <li><a href="#k8s-only">Kubernetes only</a></li>
+      <li><a href="#minimal">A minimal command set</a></li>
+      <li><a href="#exec-first">exec over reimplementation</a></li>
+      <li><a href="#grow">Growing on request</a></li>
+      <li><a href="#not">What borescope is not</a></li>
+    </ul>
+    <h4>See also</h4>
+    <ul>
+      <li><a href="explanation-architecture.html">How borescope works</a></li>
+      <li><a href="reference-commands.html">Command reference</a></li>
+    </ul>
+  </aside>
+
+  <main id="main" class="doc-content">
+    <div class="breadcrumb">
+      <a href="index.html">Docs</a><span class="sep">/</span>Explanation<span class="sep">/</span>Scope and philosophy
+    </div>
+
+    <h1>Scope and philosophy</h1>
+    <p class="subtitle">
+      What borescope deliberately does &mdash; and doesn't &mdash; do, and why.
+    </p>
+
+<p>borescope has a small, opinionated surface. The constraints below are choices,
+and they're what keep it sharp.</p>
+<h2 id="k8s-only">Kubernetes only</h2>
+<p>borescope is for <strong>Kubernetes</strong> charms, which run their workloads under Pebble.
+Machine (IAAS) charms are explicitly out of scope: they already run on a machine
+with a real shell, so <code>juju ssh</code> drops you somewhere useful and borescope would
+add nothing. Discovery detects a machine model and refuses early, with a message
+pointing you back to <code>juju ssh</code>.</p>
+<p>The whole reason borescope exists is the gap Kubernetes workloads create &mdash; a
+supervised container with no shell of its own. Where that gap doesn't exist,
+neither does borescope's job.</p>
+<h2 id="minimal">A minimal command set</h2>
+<p>borescope ships a <em>minimal</em> set of commands on purpose. The built-ins exist for
+two reasons only:</p>
+<ul>
+<li>they need <strong>session state</strong> &mdash; paths relative to your current directory; or</li>
+<li>they need the <strong>Pebble files API</strong> to work against a rock with no shell or
+coreutils (<code>ls</code>, <code>cat</code>, <code>grep</code>, &hellip;); or</li>
+<li>they expose <strong>Pebble's own operations</strong> that a shell wouldn't have at all
+(<code>services</code>, <code>logs</code>, <code>plan</code>, <code>checks</code>, &hellip;).</li>
+</ul>
+<p>Likewise the <a href="reference-commands.html#grammar">line grammar</a> is tiny &mdash; one
+command, at most one pipe, no sequencing or redirection. That covers the
+overwhelming majority of debug-shell use at a fraction of the complexity of a
+real shell, and keeps each command small and well-tested.</p>
+<h2 id="exec-first">exec over reimplementation</h2>
+<p>For anything outside that core, the answer is
+<a href="reference-commands.html#exec"><code>exec</code></a>, not a new built-in. <code>exec</code> runs a binary
+that's <em>already in the container</em> &mdash; so if the rock ships <code>ps</code>, <code>curl</code>, or the
+workload's own CLI, you reach it directly. borescope deliberately does <strong>not</strong>
+bundle tools into the container or reimplement a coreutils zoo: that would bloat
+the surface, drift from the real tools' behaviour, and still never be complete.</p>
+<p>Before any command is added, the question is always: <em>does <code>exec &lt;tool&gt;</code> already
+cover this?</em> Usually it does.</p>
+<h2 id="grow">Growing on request</h2>
+<p>The guiding principle is <strong>ship a minimal core and grow on request</strong> rather than
+speculate. Commands are auto-discovered and self-contained, so adding one when a
+real need shows up is a small change &mdash; but the default is to wait for that need.
+A command earns its place by being something <code>exec</code> genuinely can't do well, not
+by being conceivably useful.</p>
+<h2 id="not">What borescope is not</h2>
+<ul>
+<li><strong>Not a replacement for <code>juju ssh</code></strong> on machine charms &mdash; those already have a
+shell.</li>
+<li><strong>Not a <code>kubectl</code> wrapper.</strong> It never uses <code>kubectl</code> or cluster-admin; it
+works strictly within your Juju authority. See <a href="explanation-transport.html#authority">How it reaches
+Pebble</a>.</li>
+<li><strong>Not a full shell.</strong> No job control, scripting constructs, or redirection &mdash;
+use <a href="howto-oneshot.html"><code>--command</code></a> and your real shell around borescope for
+that.</li>
+<li><strong>Not a config manager.</strong> It's a debugging instrument: look first, change
+deliberately. The Pebble-native write commands (<code>start</code>, <code>stop</code>, <code>push</code>, &hellip;)
+are there for fixing things in the moment, not for managing a deployment.</li>
+</ul>
+  </main>
+</div>
+
+<footer class="doc-footer">
+  <div class="doc-footer-inner">
+    <span>borescope &mdash; free &amp; open source &middot; Apache 2.0</span>
+    <div>
+      <a href="https://github.com/tonyandrewmeyer/borescope" target="_blank" rel="noopener">GitHub</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+(function() {
+  var toggle = document.querySelector('.doc-nav-toggle');
+  var links = document.querySelector('.doc-nav-links');
+  if (!toggle || !links) return;
+  toggle.addEventListener('click', function() {
+    var open = links.classList.toggle('open');
+    toggle.classList.toggle('open', open);
+    toggle.setAttribute('aria-expanded', String(open));
+    toggle.setAttribute('aria-label', open ? 'Close menu' : 'Open menu');
+  });
+  links.querySelectorAll('a').forEach(function(a) {
+    a.addEventListener('click', function() {
+      links.classList.remove('open');
+      toggle.classList.remove('open');
+      toggle.setAttribute('aria-expanded', 'false');
+      toggle.setAttribute('aria-label', 'Open menu');
+    });
+  });
+})();
+
+(function() {
+  document.querySelectorAll('.doc-content pre').forEach(function(pre) {
+    var code = pre.querySelector('code');
+    if (!code) return;
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'copy-btn';
+    btn.textContent = 'Copy';
+    btn.setAttribute('aria-label', 'Copy code to clipboard');
+    btn.addEventListener('click', function() {
+      var text = code.innerText;
+      var done = function() {
+        btn.textContent = 'Copied';
+        btn.classList.add('copied');
+        setTimeout(function() {
+          btn.textContent = 'Copy';
+          btn.classList.remove('copied');
+        }, 1500);
+      };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(done, function() {});
+      } else {
+        var ta = document.createElement('textarea');
+        ta.value = text;
+        ta.setAttribute('readonly', '');
+        ta.style.position = 'absolute';
+        ta.style.left = '-9999px';
+        document.body.appendChild(ta);
+        ta.select();
+        try { document.execCommand('copy'); done(); } catch (e) {}
+        document.body.removeChild(ta);
+      }
+    });
+    pre.appendChild(btn);
+  });
+})();
+</script>
+
+</body>
+</html>

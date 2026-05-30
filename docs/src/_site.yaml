@@ -1,0 +1,40 @@
+# Global site configuration consumed by _build.py.
+#
+# `sections` declares the order and titles of each Diátaxis section and its
+# pages. The build script uses this to render the primary section-nav list
+# in the sidebar (with `class="current"` on the active page).
+
+sections:
+  tutorial:
+    heading: "Tutorial"
+    pages:
+      - { slug: tutorial, label: "Debug your first container" }
+
+  howto:
+    heading: "How-to guides"
+    pages:
+      - { slug: howto-connect, label: "Connect to a unit" }
+      - { slug: howto-here, label: "Run inside the charm container" }
+      - { slug: howto-oneshot, label: "Run one command (no REPL)" }
+      - { slug: howto-files, label: "Copy files in and out" }
+      - { slug: howto-snapshot, label: "Capture a state snapshot" }
+
+  reference:
+    heading: "Reference"
+    pages:
+      - { slug: reference-cli, label: "CLI reference" }
+      - { slug: reference-commands, label: "Command reference" }
+
+  explanation:
+    heading: "Explanation"
+    pages:
+      - { slug: explanation-architecture, label: "How borescope works" }
+      - { slug: explanation-transport, label: "How it reaches Pebble" }
+      - { slug: explanation-scope, label: "Scope and philosophy" }
+
+# Breadcrumb label used when a page's frontmatter says `section: <key>`.
+section_breadcrumb_label:
+  tutorial: "Tutorial"
+  howto: "How-to guides"
+  reference: "Reference"
+  explanation: "Explanation"

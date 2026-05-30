@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Command reference &mdash; borescope</title>
+<meta name="description" content="Every built-in borescope command: shell built-ins, file commands, Pebble-native commands, and the exec escape hatch.">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.bunny.net">
+<link rel="stylesheet" href="https://fonts.bunny.net/css?family=inter:400,500,600,700,800|jetbrains-mono:400&display=swap">
+<link rel="stylesheet" href="docs.css">
+</head>
+<body>
+
+<a href="#main" class="skip-link">Skip to content</a>
+
+<nav class="doc-nav" aria-label="Main">
+  <div class="doc-nav-inner">
+    <a href="../index.html" class="doc-nav-logo">
+      <img src="../logo.svg" alt="borescope" width="28" height="28">
+      <span>borescope</span>
+    </a>
+    <button class="doc-nav-toggle" aria-label="Open menu" aria-expanded="false" aria-controls="nav-menu">
+      <span></span><span></span><span></span>
+    </button>
+    <div class="doc-nav-links" id="nav-menu">
+      <a href="index.html" class="current">Docs</a>
+      <a href="../index.html#features">Features</a>
+      <a href="https://github.com/tonyandrewmeyer/borescope" target="_blank" rel="noopener">GitHub</a>
+    </div>
+  </div>
+</nav>
+<div class="doc-layout">
+  <aside class="doc-sidebar">
+    <h4>Reference</h4>
+    <ul>
+      <li><a href="reference-cli.html">CLI reference</a></li>
+      <li><a href="reference-commands.html" class="current">Command reference</a></li>
+    </ul>
+    <h4>On this page</h4>
+    <ul>
+      <li><a href="#grammar">Line grammar</a></li>
+      <li><a href="#builtins">Shell built-ins</a></li>
+      <li><a href="#files">File commands</a></li>
+      <li><a href="#pebble-native">Pebble-native commands</a></li>
+      <li><a href="#exec">exec</a></li>
+      <li><a href="#help">Getting help in-session</a></li>
+    </ul>
+    <h4>See also</h4>
+    <ul>
+      <li><a href="reference-cli.html">CLI reference</a></li>
+      <li><a href="explanation-scope.html">Scope and philosophy</a></li>
+    </ul>
+  </aside>
+
+  <main id="main" class="doc-content">
+    <div class="breadcrumb">
+      <a href="index.html">Docs</a><span class="sep">/</span>Reference<span class="sep">/</span>Command reference
+    </div>
+
+    <h1>Command reference</h1>
+    <p class="subtitle">
+      The complete built-in command set, plus the grammar the REPL understands.
+    </p>
+
+<p>borescope ships a deliberately small command set. Pebble's own vocabulary is
+first-class, the familiar file commands are implemented over Pebble's files API,
+and <a href="#exec"><code>exec</code></a> runs anything else that's already in the container. Run
+<a href="#help"><code>help</code></a> at the prompt for a live list.</p>
+<h2 id="grammar">Line grammar</h2>
+<p>The REPL parser is intentionally tiny: <strong>one command at a time, with at most a
+single <code>|</code> pipe between two stages.</strong> Variables (<code>$VAR</code>, <code>${VAR}</code>) expand from
+the session's tracked environment.</p>
+<p>These shell features are <strong>not</strong> supported, and borescope reports a clear error
+rather than doing something surprising:</p>
+<ul>
+<li>sequencing (<code>;</code>)</li>
+<li>background jobs (<code>&amp;</code>)</li>
+<li><code>&amp;&amp;</code> and <code>||</code></li>
+<li>redirection (<code>&gt;</code>, <code>&gt;&gt;</code>, <code>&lt;</code>)</li>
+<li>subshells (<code>( &hellip; )</code>)</li>
+</ul>
+<p>That covers the overwhelming majority of debug-shell use; for anything that
+needs a real shell, <a href="#exec"><code>exec</code></a> a binary in the container.</p>
+<h2 id="builtins">Shell built-ins</h2>
+<p>State and session commands.</p>
+<table>
+<thead>
+<tr>
+<th>Command</th>
+<th>Usage</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>cd</code></td>
+<td><code>cd [dir]</code></td>
+<td>Change the current directory (defaults to <code>~</code>).</td>
+</tr>
+<tr>
+<td><code>pwd</code></td>
+<td><code>pwd</code></td>
+<td>Print the current directory.</td>
+</tr>
+<tr>
+<td><code>echo</code></td>
+<td><code>echo [args&hellip;]</code></td>
+<td>Write arguments to output.</td>
+</tr>
+<tr>
+<td><code>env</code></td>
+<td><code>env</code></td>
+<td>Show the shell's tracked environment.</td>
+</tr>
+<tr>
+<td><code>clear</code></td>
+<td><code>clear</code></td>
+<td>Clear the screen.</td>
+</tr>
+<tr>
+<td><code>help</code>, <code>?</code></td>
+<td><code>help</code></td>
+<td>List available commands.</td>
+</tr>
+<tr>
+<td><code>exit</code>, <code>quit</code></td>
+<td><code>exit [code]</code></td>
+<td>Leave borescope (optionally with an exit code). <kbd>Ctrl-D</kbd> also exits.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="files">File commands</h2>
+<p>These are built in &mdash; rather than left to <code>exec</code> &mdash; because they need either
+session state (paths relative to the current directory) or Pebble's files API,
+so they work against a rock with no shell and no coreutils.</p>
+<table>
+<thead>
+<tr>
+<th>Command</th>
+<th>Usage</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ls</code></td>
+<td><code>ls [-l] [-a] [path&hellip;]</code></td>
+<td>List directory contents.</td>
+</tr>
+<tr>
+<td><code>cat</code></td>
+<td><code>cat [file&hellip;]</code></td>
+<td>Concatenate and print files.</td>
+</tr>
+<tr>
+<td><code>head</code></td>
+<td><code>head [-n N] [file]</code></td>
+<td>Print the first lines of input.</td>
+</tr>
+<tr>
+<td><code>tail</code></td>
+<td><code>tail [-n N] [-f] [file]</code></td>
+<td>Print the last lines of input; <code>-f</code> follows.</td>
+</tr>
+<tr>
+<td><code>find</code></td>
+<td><code>find [path] [-name PATTERN] [-type f|d]</code></td>
+<td>Walk the tree, filtering by name/type.</td>
+</tr>
+<tr>
+<td><code>stat</code></td>
+<td><code>stat &lt;path&hellip;&gt;</code></td>
+<td>Show file metadata.</td>
+</tr>
+<tr>
+<td><code>grep</code></td>
+<td><code>grep [-i] [-v] [-n] [-c] PATTERN [file&hellip;]</code></td>
+<td>Search input for a pattern.</td>
+</tr>
+<tr>
+<td><code>cp</code></td>
+<td><code>cp &lt;src&gt; &lt;dst&gt;</code></td>
+<td>Copy a file within the container.</td>
+</tr>
+<tr>
+<td><code>mv</code></td>
+<td><code>mv &lt;src&gt; &lt;dst&gt;</code></td>
+<td>Move or rename a file.</td>
+</tr>
+<tr>
+<td><code>rm</code></td>
+<td><code>rm [-r] [-f] &lt;path&hellip;&gt;</code></td>
+<td>Remove files or directories.</td>
+</tr>
+<tr>
+<td><code>mkdir</code></td>
+<td><code>mkdir [-p] &lt;path&hellip;&gt;</code></td>
+<td>Create directories.</td>
+</tr>
+<tr>
+<td><code>touch</code></td>
+<td><code>touch &lt;path&hellip;&gt;</code></td>
+<td>Create an empty file if it doesn't exist.</td>
+</tr>
+<tr>
+<td><code>pull</code></td>
+<td><code>pull &lt;remote&gt; &lt;local&gt;</code></td>
+<td>Copy a file from the container to the local host.</td>
+</tr>
+<tr>
+<td><code>push</code></td>
+<td><code>push &lt;local&gt; &lt;remote&gt;</code></td>
+<td>Copy a local file into the container.</td>
+</tr>
+</tbody>
+</table>
+<p><code>pull</code> and <code>push</code> cross the host/container boundary; the rest operate inside the
+container. See <a href="howto-files.html">Copy files in and out</a>.</p>
+<h2 id="pebble-native">Pebble-native commands</h2>
+<p>Pebble's operational vocabulary, exposed directly &mdash; no <code>pebble</code> prefix.</p>
+<table>
+<thead>
+<tr>
+<th>Command</th>
+<th>Usage</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>services</code></td>
+<td><code>services [name&hellip;]</code></td>
+<td>List services and their status.</td>
+</tr>
+<tr>
+<td><code>start</code></td>
+<td><code>start &lt;service&hellip;&gt;</code></td>
+<td>Start services.</td>
+</tr>
+<tr>
+<td><code>stop</code></td>
+<td><code>stop &lt;service&hellip;&gt;</code></td>
+<td>Stop services.</td>
+</tr>
+<tr>
+<td><code>restart</code></td>
+<td><code>restart &lt;service&hellip;&gt;</code></td>
+<td>Restart services.</td>
+</tr>
+<tr>
+<td><code>replan</code></td>
+<td><code>replan</code></td>
+<td>Apply the plan: stop/start services as the plan requires.</td>
+</tr>
+<tr>
+<td><code>plan</code></td>
+<td><code>plan</code></td>
+<td>Show the merged Pebble plan (YAML).</td>
+</tr>
+<tr>
+<td><code>logs</code></td>
+<td><code>logs [-f|--follow] [-n N] [service&hellip;]</code></td>
+<td>Show service logs; <code>-f</code> streams.</td>
+</tr>
+<tr>
+<td><code>checks</code></td>
+<td><code>checks [name&hellip;]</code></td>
+<td>List health checks and their status.</td>
+</tr>
+<tr>
+<td><code>health</code></td>
+<td><code>health</code></td>
+<td>Report overall health (are all checks up?).</td>
+</tr>
+<tr>
+<td><code>notices</code></td>
+<td><code>notices</code></td>
+<td>List recent notices.</td>
+</tr>
+<tr>
+<td><code>notice</code></td>
+<td><code>notice &lt;id&gt;</code></td>
+<td>Show a single notice by ID.</td>
+</tr>
+<tr>
+<td><code>notify</code></td>
+<td><code>notify &lt;key&gt; [data-key=value&hellip;]</code></td>
+<td>Record a custom notice.</td>
+</tr>
+<tr>
+<td><code>changes</code></td>
+<td><code>changes</code></td>
+<td>List recent changes.</td>
+</tr>
+<tr>
+<td><code>tasks</code></td>
+<td><code>tasks [change-id]</code></td>
+<td>Show tasks for a change (defaults to the most recent).</td>
+</tr>
+</tbody>
+</table>
+<p><code>start</code>, <code>stop</code>, <code>restart</code>, and <code>replan</code> change the running container. <code>logs --follow</code> and <code>tail -f</code> stream until you press <kbd>Ctrl-C</kbd> and can't be
+used inside a pipe.</p>
+<h2 id="exec">exec</h2>
+<pre><code>exec &lt;command&gt; [args&hellip;]
+</code></pre>
+<p>The escape hatch. <code>exec</code> runs a program that is <strong>already present in the
+container</strong>, in your current session directory, and reports its stdout, stderr,
+and exit code:</p>
+<pre><code><span class="prompt">pebble:/#</span> exec ps aux
+<span class="prompt">pebble:/#</span> exec cat /proc/1/cmdline
+<span class="prompt">pebble:/#</span> exec /usr/bin/myapp --version</code></pre>
+<p>If the binary isn't in the rock, <code>exec</code> reports that it couldn't run it &mdash; which
+is expected on a minimal image. borescope doesn't bundle tools into the
+container; <code>exec</code> only reaches what's there. See
+<a href="explanation-scope.html">Scope and philosophy</a>.</p>
+<h2 id="help">Getting help in-session</h2>
+<p><code>help</code> (or <code>?</code>) lists every built-in command with its one-line summary, and
+reminds you that anything else can be run with <code>exec</code>:</p>
+<pre><code><span class="prompt">pebble:/#</span> help
+Built-in commands (anything else: 'exec &lt;cmd&gt; ...' runs it in the container):
+  cat       Concatenate and print files
+  cd        Change the current directory
+  &hellip;</code></pre>
+  </main>
+</div>
+
+<footer class="doc-footer">
+  <div class="doc-footer-inner">
+    <span>borescope &mdash; free &amp; open source &middot; Apache 2.0</span>
+    <div>
+      <a href="https://github.com/tonyandrewmeyer/borescope" target="_blank" rel="noopener">GitHub</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+(function() {
+  var toggle = document.querySelector('.doc-nav-toggle');
+  var links = document.querySelector('.doc-nav-links');
+  if (!toggle || !links) return;
+  toggle.addEventListener('click', function() {
+    var open = links.classList.toggle('open');
+    toggle.classList.toggle('open', open);
+    toggle.setAttribute('aria-expanded', String(open));
+    toggle.setAttribute('aria-label', open ? 'Close menu' : 'Open menu');
+  });
+  links.querySelectorAll('a').forEach(function(a) {
+    a.addEventListener('click', function() {
+      links.classList.remove('open');
+      toggle.classList.remove('open');
+      toggle.setAttribute('aria-expanded', 'false');
+      toggle.setAttribute('aria-label', 'Open menu');
+    });
+  });
+})();
+
+(function() {
+  document.querySelectorAll('.doc-content pre').forEach(function(pre) {
+    var code = pre.querySelector('code');
+    if (!code) return;
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'copy-btn';
+    btn.textContent = 'Copy';
+    btn.setAttribute('aria-label', 'Copy code to clipboard');
+    btn.addEventListener('click', function() {
+      var text = code.innerText;
+      var done = function() {
+        btn.textContent = 'Copied';
+        btn.classList.add('copied');
+        setTimeout(function() {
+          btn.textContent = 'Copy';
+          btn.classList.remove('copied');
+        }, 1500);
+      };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(done, function() {});
+      } else {
+        var ta = document.createElement('textarea');
+        ta.value = text;
+        ta.setAttribute('readonly', '');
+        ta.style.position = 'absolute';
+        ta.style.left = '-9999px';
+        document.body.appendChild(ta);
+        ta.select();
+        try { document.execCommand('copy'); done(); } catch (e) {}
+        document.body.removeChild(ta);
+      }
+    });
+    pre.appendChild(btn);
+  });
+})();
+</script>
+
+</body>
+</html>

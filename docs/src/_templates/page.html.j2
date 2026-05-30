@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ title }}</title>
+<meta name="description" content="{{ description }}">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.bunny.net">
+<link rel="stylesheet" href="https://fonts.bunny.net/css?family=inter:400,500,600,700,800|jetbrains-mono:400&display=swap">
+<link rel="stylesheet" href="docs.css">
+</head>
+<body>
+
+<a href="#main" class="skip-link">Skip to content</a>
+
+<nav class="doc-nav" aria-label="Main">
+  <div class="doc-nav-inner">
+    <a href="../index.html" class="doc-nav-logo">
+      <img src="../logo.svg" alt="borescope" width="28" height="28">
+      <span>borescope</span>
+    </a>
+    <button class="doc-nav-toggle" aria-label="Open menu" aria-expanded="false" aria-controls="nav-menu">
+      <span></span><span></span><span></span>
+    </button>
+    <div class="doc-nav-links" id="nav-menu">
+      <a href="index.html" class="current">Docs</a>
+      <a href="../index.html#features">Features</a>
+      <a href="https://github.com/tonyandrewmeyer/borescope" target="_blank" rel="noopener">GitHub</a>
+    </div>
+  </div>
+</nav>
+
+{%- if layout == "index" %}
+<div class="doc-layout" style="max-width: var(--max-w); padding-top: 6rem;">
+  <main id="main" class="doc-content">
+    <h1>{{ h1 }}</h1>
+    <p class="subtitle">
+      {{ subtitle }}
+    </p>
+
+{{ body }}
+  </main>
+</div>
+{%- else %}
+<div class="doc-layout">
+  <aside class="doc-sidebar">
+    <h4>{{ sidebar_heading }}</h4>
+    <ul>
+{%- if primary_list == "on_this_page" %}
+{%- for entry in on_this_page %}
+{%- if loop.first %}
+      <li><a href="#{{ entry.anchor }}" class="current">{{ entry.label }}</a></li>
+{%- else %}
+      <li><a href="#{{ entry.anchor }}">{{ entry.label }}</a></li>
+{%- endif %}
+{%- endfor %}
+{%- else %}
+{%- for page in section_pages %}
+{%- if page.slug == slug %}
+      <li><a href="{{ page.slug }}.html" class="current">{{ page.label }}</a></li>
+{%- else %}
+      <li><a href="{{ page.slug }}.html">{{ page.label }}</a></li>
+{%- endif %}
+{%- endfor %}
+{%- endif %}
+    </ul>
+{%- if primary_list != "on_this_page" and on_this_page %}
+    <h4>On this page</h4>
+    <ul>
+{%- for entry in on_this_page %}
+      <li><a href="#{{ entry.anchor }}">{{ entry.label }}</a></li>
+{%- endfor %}
+    </ul>
+{%- endif %}
+{%- if see_also %}
+    <h4>See also</h4>
+    <ul>
+{%- for entry in see_also %}
+{%- if entry.external %}
+      <li>
+        <a href="{{ entry.href }}" target="_blank" rel="noopener">{{ entry.label }}</a>
+      </li>
+{%- else %}
+      <li><a href="{{ entry.href }}">{{ entry.label }}</a></li>
+{%- endif %}
+{%- endfor %}
+    </ul>
+{%- endif %}
+  </aside>
+
+  <main id="main" class="doc-content">
+    <div class="breadcrumb">
+{%- if breadcrumb_label %}
+      <a href="index.html">Docs</a><span class="sep">/</span>{{ section_label }}<span class="sep">/</span>{{ breadcrumb_label }}
+{%- else %}
+      <a href="index.html">Docs</a><span class="sep">/</span>{{ section_label }}
+{%- endif %}
+    </div>
+
+    <h1>{{ h1 }}</h1>
+    <p class="subtitle">
+      {{ subtitle }}
+    </p>
+
+{{ body }}
+  </main>
+</div>
+{%- endif %}
+
+<footer class="doc-footer">
+  <div class="doc-footer-inner">
+    <span>borescope &mdash; free &amp; open source &middot; Apache 2.0</span>
+    <div>
+      <a href="https://github.com/tonyandrewmeyer/borescope" target="_blank" rel="noopener">GitHub</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+(function() {
+  var toggle = document.querySelector('.doc-nav-toggle');
+  var links = document.querySelector('.doc-nav-links');
+  if (!toggle || !links) return;
+  toggle.addEventListener('click', function() {
+    var open = links.classList.toggle('open');
+    toggle.classList.toggle('open', open);
+    toggle.setAttribute('aria-expanded', String(open));
+    toggle.setAttribute('aria-label', open ? 'Close menu' : 'Open menu');
+  });
+  links.querySelectorAll('a').forEach(function(a) {
+    a.addEventListener('click', function() {
+      links.classList.remove('open');
+      toggle.classList.remove('open');
+      toggle.setAttribute('aria-expanded', 'false');
+      toggle.setAttribute('aria-label', 'Open menu');
+    });
+  });
+})();
+
+(function() {
+  document.querySelectorAll('.doc-content pre').forEach(function(pre) {
+    var code = pre.querySelector('code');
+    if (!code) return;
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'copy-btn';
+    btn.textContent = 'Copy';
+    btn.setAttribute('aria-label', 'Copy code to clipboard');
+    btn.addEventListener('click', function() {
+      var text = code.innerText;
+      var done = function() {
+        btn.textContent = 'Copied';
+        btn.classList.add('copied');
+        setTimeout(function() {
+          btn.textContent = 'Copy';
+          btn.classList.remove('copied');
+        }, 1500);
+      };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(done, function() {});
+      } else {
+        var ta = document.createElement('textarea');
+        ta.value = text;
+        ta.setAttribute('readonly', '');
+        ta.style.position = 'absolute';
+        ta.style.left = '-9999px';
+        document.body.appendChild(ta);
+        ta.select();
+        try { document.execCommand('copy'); done(); } catch (e) {}
+        document.body.removeChild(ta);
+      }
+    });
+    pre.appendChild(btn);
+  });
+})();
+</script>
+
+</body>
+</html>

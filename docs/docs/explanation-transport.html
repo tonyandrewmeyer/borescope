@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>How it reaches Pebble &mdash; borescope</title>
+<meta name="description" content="Why borescope can debug a shell-less rock: how it reaches the workload's Pebble through the charm container, and the two transport backends.">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.bunny.net">
+<link rel="stylesheet" href="https://fonts.bunny.net/css?family=inter:400,500,600,700,800|jetbrains-mono:400&display=swap">
+<link rel="stylesheet" href="docs.css">
+</head>
+<body>
+
+<a href="#main" class="skip-link">Skip to content</a>
+
+<nav class="doc-nav" aria-label="Main">
+  <div class="doc-nav-inner">
+    <a href="../index.html" class="doc-nav-logo">
+      <img src="../logo.svg" alt="borescope" width="28" height="28">
+      <span>borescope</span>
+    </a>
+    <button class="doc-nav-toggle" aria-label="Open menu" aria-expanded="false" aria-controls="nav-menu">
+      <span></span><span></span><span></span>
+    </button>
+    <div class="doc-nav-links" id="nav-menu">
+      <a href="index.html" class="current">Docs</a>
+      <a href="../index.html#features">Features</a>
+      <a href="https://github.com/tonyandrewmeyer/borescope" target="_blank" rel="noopener">GitHub</a>
+    </div>
+  </div>
+</nav>
+<div class="doc-layout">
+  <aside class="doc-sidebar">
+    <h4>Explanation</h4>
+    <ul>
+      <li><a href="explanation-architecture.html">How borescope works</a></li>
+      <li><a href="explanation-transport.html" class="current">How it reaches Pebble</a></li>
+      <li><a href="explanation-scope.html">Scope and philosophy</a></li>
+    </ul>
+    <h4>On this page</h4>
+    <ul>
+      <li><a href="#problem">The problem</a></li>
+      <li><a href="#insight">The key insight</a></li>
+      <li><a href="#mode-b">Through the charm container</a></li>
+      <li><a href="#mode-a">Direct to the socket</a></li>
+      <li><a href="#relay">ssh vs exec relay</a></li>
+      <li><a href="#authority">Authority, not privilege</a></li>
+    </ul>
+    <h4>See also</h4>
+    <ul>
+      <li><a href="explanation-architecture.html">How borescope works</a></li>
+      <li><a href="howto-here.html">Run inside the charm container</a></li>
+    </ul>
+  </aside>
+
+  <main id="main" class="doc-content">
+    <div class="breadcrumb">
+      <a href="index.html">Docs</a><span class="sep">/</span>Explanation<span class="sep">/</span>How it reaches Pebble
+    </div>
+
+    <h1>How it reaches Pebble</h1>
+    <p class="subtitle">
+      The trick that makes borescope work against a rock with no shell &mdash; and the two ways it connects.
+    </p>
+
+<h2 id="problem">The problem</h2>
+<p>A Kubernetes charm runs its workload in a separate container &mdash; a
+<a href="https://documentation.ubuntu.com/rockcraft/" target="_blank" rel="noopener">rock</a> &mdash; that typically contains
+<em>only</em> the workload: no shell, no <code>ls</code>, no <code>cat</code>, sometimes a single static
+binary and nothing else. So when something breaks,
+<code>juju ssh --container=workload myapp/0</code> either fails outright or drops you into
+a container where you can't run a single command. The very thing you'd reach
+for to debug isn't there.</p>
+<h2 id="insight">The key insight</h2>
+<p>Every Kubernetes charm workload is supervised by
+<a href="https://documentation.ubuntu.com/pebble/" target="_blank" rel="noopener">Pebble</a>, and Pebble exposes a
+complete API: list and control services, read the plan, follow logs, run health
+checks, and &mdash; importantly &mdash; <strong>read and write files</strong> and <strong>execute processes</strong>
+in the container. Anything you'd want a shell for, Pebble can already do.</p>
+<p>So borescope doesn't need a shell in the rock. It maps familiar commands onto
+Pebble's API: <code>ls</code> becomes a files-list call, <code>cat</code> a files-pull, <code>exec</code> a
+Pebble exec. The rock can be completely empty and <code>ls /var/log</code> still works.</p>
+<p>The remaining question is how to <em>reach</em> that Pebble. borescope has two
+transports for it.</p>
+<h2 id="mode-b">Through the charm container (the default)</h2>
+<p>The Pebble you care about is the workload's &mdash; but the workload container has no
+shell to run a client from. The <strong>charm container</strong>, however, always has a
+normal filesystem and shell, and Juju mounts the workload's Pebble socket into
+it at <code>/charm/containers/&lt;name&gt;/pebble.socket</code>.</p>
+<p>So borescope's default <code>CliTransport</code> does this: <code>juju ssh</code> into the <em>charm</em>
+container (which works, because that container has a shell), and there run the
+<code>pebble</code> CLI pointed at the workload's mounted socket. It drives that CLI with
+<a href="https://github.com/tonyandrewmeyer/shimmer" target="_blank" rel="noopener">shimmer</a>, a drop-in
+<code>ops.pebble.Client</code> that speaks to the Pebble binary instead of an HTTP socket
+&mdash; so the rest of borescope sees an ordinary <code>Client</code>.</p>
+<p>This is what lets borescope debug a shell-less rock from your workstation: the
+shell it borrows lives in the charm container, not the workload, and the only
+access it needs is the <code>juju ssh</code> you already have.</p>
+<h2 id="mode-a">Direct to the socket</h2>
+<p>When the Pebble socket is <em>directly</em> reachable, there's no need to go through
+Juju at all. <code>SocketTransport</code> uses the real <code>ops.pebble.Client</code> HTTP API over
+the Unix socket. This is the faster path, and borescope uses it when you run:</p>
+<ul>
+<li><code>--here</code> &mdash; inside the charm container, against a workload socket mounted at
+<code>/charm/containers/&lt;name&gt;/pebble.socket</code>; or</li>
+<li><code>--socket PATH</code> &mdash; against any Pebble socket you name (a workload socket, or a
+local Pebble you're running yourself).</li>
+</ul>
+<p>See <a href="howto-here.html">Run inside the charm container</a> for how to pick this path.</p>
+<h2 id="relay">ssh vs exec relay</h2>
+<p>When going through Juju (the default mode), borescope can use one of two relays,
+chosen with <a href="reference-cli.html#transport"><code>--via</code></a>:</p>
+<ul>
+<li><strong><code>ssh</code></strong> (default) streams over <code>juju ssh</code>. It's the natural fit for
+interactive use and for following logs, because the connection stays open and
+output streams back live.</li>
+<li><strong><code>exec</code></strong> uses request/response <code>juju exec</code> instead. It's there for sites
+where <code>juju ssh</code> is disabled by policy: each operation is a discrete
+command-and-response rather than a persistent stream.</li>
+</ul>
+<p>Both reach the same workload Pebble through the charm container; they differ
+only in the Juju mechanism used to get there.</p>
+<h2 id="authority">Authority, not privilege</h2>
+<p>Notice what borescope never does: it doesn't touch <code>kubectl</code>, doesn't read a
+kubeconfig, and doesn't need cluster-admin. Every path to the container goes
+through Juju &mdash; <code>juju status</code>, <code>juju ssh</code>, <code>juju exec</code> &mdash; so borescope operates
+strictly within the authority Juju already grants you for that model. It can't
+reach anything you couldn't reach by hand, and it fails at exactly the same
+boundaries. That's a deliberate design choice, not a limitation to work around;
+see <a href="explanation-scope.html">Scope and philosophy</a>.</p>
+  </main>
+</div>
+
+<footer class="doc-footer">
+  <div class="doc-footer-inner">
+    <span>borescope &mdash; free &amp; open source &middot; Apache 2.0</span>
+    <div>
+      <a href="https://github.com/tonyandrewmeyer/borescope" target="_blank" rel="noopener">GitHub</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+(function() {
+  var toggle = document.querySelector('.doc-nav-toggle');
+  var links = document.querySelector('.doc-nav-links');
+  if (!toggle || !links) return;
+  toggle.addEventListener('click', function() {
+    var open = links.classList.toggle('open');
+    toggle.classList.toggle('open', open);
+    toggle.setAttribute('aria-expanded', String(open));
+    toggle.setAttribute('aria-label', open ? 'Close menu' : 'Open menu');
+  });
+  links.querySelectorAll('a').forEach(function(a) {
+    a.addEventListener('click', function() {
+      links.classList.remove('open');
+      toggle.classList.remove('open');
+      toggle.setAttribute('aria-expanded', 'false');
+      toggle.setAttribute('aria-label', 'Open menu');
+    });
+  });
+})();
+
+(function() {
+  document.querySelectorAll('.doc-content pre').forEach(function(pre) {
+    var code = pre.querySelector('code');
+    if (!code) return;
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'copy-btn';
+    btn.textContent = 'Copy';
+    btn.setAttribute('aria-label', 'Copy code to clipboard');
+    btn.addEventListener('click', function() {
+      var text = code.innerText;
+      var done = function() {
+        btn.textContent = 'Copied';
+        btn.classList.add('copied');
+        setTimeout(function() {
+          btn.textContent = 'Copy';
+          btn.classList.remove('copied');
+        }, 1500);
+      };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(done, function() {});
+      } else {
+        var ta = document.createElement('textarea');
+        ta.value = text;
+        ta.setAttribute('readonly', '');
+        ta.style.position = 'absolute';
+        ta.style.left = '-9999px';
+        document.body.appendChild(ta);
+        ta.select();
+        try { document.execCommand('copy'); done(); } catch (e) {}
+        document.body.removeChild(ta);
+      }
+    });
+    pre.appendChild(btn);
+  });
+})();
+</script>
+
+</body>
+</html>

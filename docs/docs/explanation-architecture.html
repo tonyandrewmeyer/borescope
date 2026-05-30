@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>How borescope works &mdash; borescope</title>
+<meta name="description" content="The three layers behind borescope &mdash; transport, discovery, and shell &mdash; and why they're separated.">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.bunny.net">
+<link rel="stylesheet" href="https://fonts.bunny.net/css?family=inter:400,500,600,700,800|jetbrains-mono:400&display=swap">
+<link rel="stylesheet" href="docs.css">
+</head>
+<body>
+
+<a href="#main" class="skip-link">Skip to content</a>
+
+<nav class="doc-nav" aria-label="Main">
+  <div class="doc-nav-inner">
+    <a href="../index.html" class="doc-nav-logo">
+      <img src="../logo.svg" alt="borescope" width="28" height="28">
+      <span>borescope</span>
+    </a>
+    <button class="doc-nav-toggle" aria-label="Open menu" aria-expanded="false" aria-controls="nav-menu">
+      <span></span><span></span><span></span>
+    </button>
+    <div class="doc-nav-links" id="nav-menu">
+      <a href="index.html" class="current">Docs</a>
+      <a href="../index.html#features">Features</a>
+      <a href="https://github.com/tonyandrewmeyer/borescope" target="_blank" rel="noopener">GitHub</a>
+    </div>
+  </div>
+</nav>
+<div class="doc-layout">
+  <aside class="doc-sidebar">
+    <h4>Explanation</h4>
+    <ul>
+      <li><a href="explanation-architecture.html" class="current">How borescope works</a></li>
+      <li><a href="explanation-transport.html">How it reaches Pebble</a></li>
+      <li><a href="explanation-scope.html">Scope and philosophy</a></li>
+    </ul>
+    <h4>On this page</h4>
+    <ul>
+      <li><a href="#layers">Three layers</a></li>
+      <li><a href="#transport">Transport</a></li>
+      <li><a href="#discovery">Discovery</a></li>
+      <li><a href="#shell">Shell</a></li>
+      <li><a href="#why">Why the separation</a></li>
+    </ul>
+    <h4>See also</h4>
+    <ul>
+      <li><a href="explanation-transport.html">How it reaches Pebble</a></li>
+      <li><a href="explanation-scope.html">Scope and philosophy</a></li>
+    </ul>
+  </aside>
+
+  <main id="main" class="doc-content">
+    <div class="breadcrumb">
+      <a href="index.html">Docs</a><span class="sep">/</span>Explanation<span class="sep">/</span>How borescope works
+    </div>
+
+    <h1>How borescope works</h1>
+    <p class="subtitle">
+      borescope is three thin, independently-testable layers. Understanding the seams helps you read its behaviour when something goes wrong.
+    </p>
+
+<h2 id="layers">Three layers</h2>
+<p>borescope is built as three layers, each with a narrow job and a clean seam to
+the next:</p>
+<ol>
+<li><strong>Transport</strong> &mdash; talk to a Pebble.</li>
+<li><strong>Discovery</strong> &mdash; find the right Pebble.</li>
+<li><strong>Shell</strong> &mdash; give you a prompt over it.</li>
+</ol>
+<p>A session flows top-down: discovery turns your unit reference into a target,
+the transport opens a connection to that target's Pebble, and the shell runs a
+REPL whose commands call the transport.</p>
+<h2 id="transport">Transport</h2>
+<p>The transport is the <strong>only</strong> code that touches Pebble. Everything above it
+talks to a narrow <code>Transport</code> interface &mdash; a structural subset of
+<code>ops.pebble.Client</code> (services, plan, changes, checks, notices, and the files
+and exec APIs). There are two backends, both satisfying that interface:</p>
+<ul>
+<li><strong><code>CliTransport</code></strong> (the v1 default) drives the workload's <code>pebble</code> binary
+through the charm container over <code>juju ssh</code>, using
+<a href="https://github.com/tonyandrewmeyer/shimmer" target="_blank" rel="noopener">shimmer</a> &mdash; a drop-in
+<code>ops.pebble.Client</code> implemented over the Pebble CLI.</li>
+<li><strong><code>SocketTransport</code></strong> uses the real <code>ops.pebble.Client</code> HTTP API directly,
+when the Pebble socket is reachable (inside a charm, or a local Pebble).</li>
+</ul>
+<p>Because the shell only ever sees the <code>Transport</code> interface, the backend choice
+is invisible to it &mdash; and a future reimplementation of just this layer (in Go,
+say) would sit entirely behind the same seam. <a href="explanation-transport.html">How it reaches
+Pebble</a> covers the backends in detail.</p>
+<h2 id="discovery">Discovery</h2>
+<p>Discovery turns a unit reference (<code>myapp/0</code>) &mdash; plus optional <code>--container</code> and
+<code>--model</code> &mdash; into a fully-resolved target describing exactly which workload
+container's Pebble to talk to. It:</p>
+<ul>
+<li>parses and validates the unit reference;</li>
+<li>reads <code>juju status</code> to confirm the model is Kubernetes and the unit exists;</li>
+<li>reads the charm's <code>metadata.yaml</code> from the charm container to learn the
+workload container names;</li>
+<li>sanity-checks that the chosen container's Pebble answers and is new enough.</li>
+</ul>
+<p>Crucially, <strong>everything here uses only your Juju model access</strong> &mdash; <code>juju status</code>
+and <code>juju ssh</code> to read metadata &mdash; never <code>kubectl</code> or cluster-admin. borescope
+inherits Juju's authority for free: if you can reach the unit with Juju,
+discovery succeeds; if you can't, it fails with the same boundary Juju would
+enforce.</p>
+<p>When borescope runs inside a charm container (<code>--here</code>) or against an explicit
+socket (<code>--socket</code>), discovery short-circuits: there's no unit to resolve, just
+a socket to point at.</p>
+<h2 id="shell">Shell</h2>
+<p>The shell is a small REPL: a line parser, a current-directory and environment
+context, path-aware Tab-completion, per-unit history, and a registry of
+commands. Commands are auto-discovered &mdash; each subclasses a common <code>Command</code>
+base, declaring its <code>name</code>, <code>summary</code>, and <code>usage</code>, so adding one is a small,
+self-contained change with no registration boilerplate.</p>
+<p>The command set splits into three groups: shell built-ins (<code>cd</code>, <code>pwd</code>, &hellip;),
+file commands implemented over the files API (<code>ls</code>, <code>cat</code>, <code>grep</code>, &hellip;), and
+Pebble-native commands (<code>services</code>, <code>logs</code>, <code>plan</code>, &hellip;). The
+<a href="reference-commands.html#exec"><code>exec</code></a> command is the escape hatch for
+everything else. See the <a href="reference-commands.html">command reference</a>.</p>
+<h2 id="why">Why the separation</h2>
+<p>The layering isn't ceremony &mdash; it earns its keep:</p>
+<ul>
+<li><strong>Testability.</strong> Discovery's argv construction and status parsing are tested
+with mocks, needing no live Juju or cluster. The shell is tested against a
+fake transport. Each layer is exercised in isolation.</li>
+<li><strong>Authority containment.</strong> Only discovery and the CLI transport invoke
+<code>juju</code>; only the transport speaks Pebble. The blast radius of each concern is
+small and obvious.</li>
+<li><strong>A swappable backend.</strong> Keeping the <code>Transport</code> interface narrow means the
+primary backend can change &mdash; or be rewritten in another language &mdash; without
+the shell noticing.</li>
+</ul>
+  </main>
+</div>
+
+<footer class="doc-footer">
+  <div class="doc-footer-inner">
+    <span>borescope &mdash; free &amp; open source &middot; Apache 2.0</span>
+    <div>
+      <a href="https://github.com/tonyandrewmeyer/borescope" target="_blank" rel="noopener">GitHub</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+(function() {
+  var toggle = document.querySelector('.doc-nav-toggle');
+  var links = document.querySelector('.doc-nav-links');
+  if (!toggle || !links) return;
+  toggle.addEventListener('click', function() {
+    var open = links.classList.toggle('open');
+    toggle.classList.toggle('open', open);
+    toggle.setAttribute('aria-expanded', String(open));
+    toggle.setAttribute('aria-label', open ? 'Close menu' : 'Open menu');
+  });
+  links.querySelectorAll('a').forEach(function(a) {
+    a.addEventListener('click', function() {
+      links.classList.remove('open');
+      toggle.classList.remove('open');
+      toggle.setAttribute('aria-expanded', 'false');
+      toggle.setAttribute('aria-label', 'Open menu');
+    });
+  });
+})();
+
+(function() {
+  document.querySelectorAll('.doc-content pre').forEach(function(pre) {
+    var code = pre.querySelector('code');
+    if (!code) return;
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'copy-btn';
+    btn.textContent = 'Copy';
+    btn.setAttribute('aria-label', 'Copy code to clipboard');
+    btn.addEventListener('click', function() {
+      var text = code.innerText;
+      var done = function() {
+        btn.textContent = 'Copied';
+        btn.classList.add('copied');
+        setTimeout(function() {
+          btn.textContent = 'Copy';
+          btn.classList.remove('copied');
+        }, 1500);
+      };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(done, function() {});
+      } else {
+        var ta = document.createElement('textarea');
+        ta.value = text;
+        ta.setAttribute('readonly', '');
+        ta.style.position = 'absolute';
+        ta.style.left = '-9999px';
+        document.body.appendChild(ta);
+        ta.select();
+        try { document.execCommand('copy'); done(); } catch (e) {}
+        document.body.removeChild(ta);
+      }
+    });
+    pre.appendChild(btn);
+  });
+})();
+</script>
+
+</body>
+</html>
