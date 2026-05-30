@@ -6,7 +6,7 @@ systems:
 
 # Many POSIX shells write a diagnostic and exit with a non-zero status (commonly
 # 2) when `exit` is given a non-numeric operand. borescope's exit catches the
-# ValueError silently and uses 1. This task encodes the *current* behavior so
+# ValueError silently and uses 1. This task encodes the *current* behaviour so
 # future reconciliation flips it green by reversal.
 execute: |
   # https://pubs.opengroup.org/onlinepubs/9699919799/utilities/V3_chap02.html#tag_18_25

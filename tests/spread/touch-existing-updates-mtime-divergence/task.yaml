@@ -7,7 +7,7 @@ systems:
 
 # Pebble's files API has no "update mtime only" operation, so basic.Touch
 # short-circuits on existing files (see the inline comment in
-# src/borescope/shell/commands/filesystem.py). This task pins the v1 behavior
+# src/borescope/shell/commands/filesystem.py). This task pins the v1 behaviour
 # so a future fix (push-back-with-preserved-content?) flips it green by
 # reversal.
 execute: |
@@ -26,7 +26,7 @@ execute: |
   borescope_run -c "touch ${workdir}/f"
   after="$(stat -c '%Y' "${workdir}/f")"
 
-  # Current behavior: mtime unchanged. POSIX would require after > before.
+  # Current behaviour: mtime unchanged. POSIX would require after > before.
   test "$before" = "$after"
 
   rm -rf "${workdir}"

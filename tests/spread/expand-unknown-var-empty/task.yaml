@@ -1,6 +1,6 @@
 summary: |
   POSIX XCU §2.5.2 — referencing an unset variable expands to an empty
-  string (under the default `set +u` behavior).
+  string (under the default `set +u` behaviour).
 systems:
   - ubuntu-24.04
 

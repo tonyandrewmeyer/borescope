@@ -10,7 +10,7 @@ systems:
 #   1  no lines selected
 #   >1 an error occurred
 # borescope's grep returns code=1 in both the "no match" and "invalid pattern"
-# cases, collapsing the two outcomes. This task pins current behavior so a
+# cases, collapsing the two outcomes. This task pins current behaviour so a
 # future fix flips it green by reversal.
 execute: |
   # https://pubs.opengroup.org/onlinepubs/9699919799/utilities/grep.html

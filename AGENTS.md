@@ -30,7 +30,7 @@ Replace `Claude` with your actual model name (e.g. `Claude Opus 4.8`, `Claude So
 
 ## Spec-Based Tests
 Any new or changed command, built-in, or shell-language feature MUST add one or more
-spread tasks under `tests/spread/<name>/task.yaml` that pin the behavior against
+spread tasks under `tests/spread/<name>/task.yaml` that pin the behaviour against
 the POSIX specification. Each task should cite the specific clause it covers:
 
 > POSIX.1-2017, Shell and Utilities (XCU) — https://pubs.opengroup.org/onlinepubs/9699919799/utilities/contents.html

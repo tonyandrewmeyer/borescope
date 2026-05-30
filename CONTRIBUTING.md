@@ -44,7 +44,7 @@ spec clause; on GitHub Actions the same matrix runs on the `github-ci` backend.
 
 Any change to a command, built-in, or shell-language feature MUST be accompanied
 by one or more spread tasks under `tests/spread/<name>/task.yaml` that pin the
-behavior against the POSIX specification. Each task should cite the specific
+behaviour against the POSIX specification. Each task should cite the specific
 clause it covers, by linking the relevant page under:
 
 > POSIX.1-2017, Shell and Utilities (XCU) — https://pubs.opengroup.org/onlinepubs/9699919799/utilities/contents.html
@@ -53,7 +53,7 @@ The existing tasks (echo, ls, cat, head, tail, grep, …) are the templates;
 re-use `tests/spread/lib.sh` for the per-task Pebble bring-up.
 
 When borescope intentionally diverges from POSIX — v1 grammar choices, Pebble
-API limits — name the task `…-divergence` and pin the *current* behavior with a
+API limits — name the task `…-divergence` and pin the *current* behaviour with a
 comment explaining why. A future reconciliation then flips the task green by
 reversal (red/green workflow), so divergences stay visible rather than rotting
 into forgotten gaps.

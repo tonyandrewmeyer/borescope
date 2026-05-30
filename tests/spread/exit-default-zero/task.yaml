@@ -11,7 +11,7 @@ execute: |
   #  before the shell terminates, except when the exit utility is invoked
   #  in that trap itself"
   # POSIX doesn't mandate 0 for bare `exit` from a fresh shell, but the
-  # de-facto behavior is: status of the previous command, which is 0 here.
+  # de-facto behaviour is: status of the previous command, which is 0 here.
   source "${SPREAD_PATH}/tests/spread/lib.sh"
   pebble_up
 

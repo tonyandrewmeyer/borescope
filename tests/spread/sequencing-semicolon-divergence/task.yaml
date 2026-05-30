@@ -6,7 +6,7 @@ systems:
 
 # This task encodes the v1 design choice: parser.py treats ';' (and '&&', '||',
 # '&', '>', '<') as unsupported syntax. POSIX requires ';' to run the left and
-# right commands sequentially. We assert borescope's *current* behavior so the
+# right commands sequentially. We assert borescope's *current* behaviour so the
 # divergence is visible and any future fix flips this task green by reversal.
 execute: |
   # https://pubs.opengroup.org/onlinepubs/9699919799/utilities/V3_chap02.html#tag_18_09_03

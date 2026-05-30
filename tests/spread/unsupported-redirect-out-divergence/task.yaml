@@ -6,7 +6,7 @@ systems:
 
 # parser.py treats `>`/`>>`/`<` as unsupported v1 syntax (operators that need
 # file-system side effects beyond a simple pipeline). POSIX defines them as
-# output/input redirections. Pinning current behavior.
+# output/input redirections. Pinning current behaviour.
 execute: |
   # https://pubs.opengroup.org/onlinepubs/9699919799/utilities/V3_chap02.html#tag_18_07_02
   source "${SPREAD_PATH}/tests/spread/lib.sh"

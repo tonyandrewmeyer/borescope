@@ -17,7 +17,7 @@ execute: |
   source "${SPREAD_PATH}/tests/spread/lib.sh"
   pebble_up
 
-  # Current behavior: expanded. POSIX: would output the literal "$HOME".
+  # Current behaviour: expanded. POSIX: would output the literal "$HOME".
   out="$(borescope_run -c "echo '\$HOME'")"
   echo "$out" | MATCH '^/root$'
 
