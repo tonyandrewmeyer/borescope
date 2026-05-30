@@ -27,6 +27,11 @@ if TYPE_CHECKING:
 
 _UNIT_RE = re.compile(r'^(?P<app>[a-z0-9][a-z0-9-]*)/(?P<num>\d+)$')
 
+# Juju container names are lowercase alphanumerics with internal hyphens. Validating
+# matters because the name is interpolated into a remote path and an ``env
+# PEBBLE_SOCKET=…`` argv that ``juju ssh`` ultimately hands to a shell.
+_CONTAINER_RE = re.compile(r'^[a-z0-9][a-z0-9-]*$')
+
 # Charm agent metadata lives at a deterministic path inside the *charm* container
 # (which, unlike the workload rock, has a normal filesystem and `cat`).
 _META_FILES = ('metadata.yaml', 'charmcraft.yaml')
@@ -57,6 +62,16 @@ class Target:
         """Stable per-controller/model/unit key for history files."""
         parts = [self.controller or '_', self.model or '_', self.unit]
         return '/'.join(parts).replace('/', '_')
+
+
+def validate_container_name(name: str) -> str:
+    """Return *name* if it's a valid container name; raise :class:`DiscoveryError`."""
+    if not _CONTAINER_RE.match(name):
+        raise DiscoveryError(
+            f"'{name}' is not a valid container name "
+            '(lowercase letters, digits, and hyphens only).'
+        )
+    return name
 
 
 def parse_unit_ref(ref: str) -> tuple[str, str]:

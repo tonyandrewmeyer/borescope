@@ -48,6 +48,17 @@ def test_parse_unit_ref_invalid(bad):
         discovery.parse_unit_ref(bad)
 
 
+@pytest.mark.parametrize('good', ['workload', 'web-app', 'c0'])
+def test_validate_container_name_valid(good):
+    assert discovery.validate_container_name(good) == good
+
+
+@pytest.mark.parametrize('bad', ['Workload', 'a b', '../etc', 'a;rm -rf', 'a/b', '$x', ''])
+def test_validate_container_name_invalid(bad):
+    with pytest.raises(DiscoveryError):
+        discovery.validate_container_name(bad)
+
+
 def test_discover_containers_parses_metadata(monkeypatch):
     _patch_juju(monkeypatch)
     containers = discovery.discover_containers('app/0', 'app', '0', model=None, juju_binary='juju')
