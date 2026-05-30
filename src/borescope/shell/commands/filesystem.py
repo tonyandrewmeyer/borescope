@@ -180,33 +180,51 @@ class Tail(Command):
             return Result.ok('\n'.join((stdin or '').splitlines()[-count:]))
 
         path = _resolve(ctx, paths[0])
+        if follow:
+            return self._follow(ctx, path, paths[0], count)
         try:
             text = _read_text(ctx.transport, path)
         except Exception as exc:
             return Result.fail(f'tail: {paths[0]}: {exc}')
-
-        if not follow:
-            return Result.ok('\n'.join(text.splitlines()[-count:]))
-        return self._follow(ctx, path, text, count)
+        return Result.ok('\n'.join(text.splitlines()[-count:]))
 
     @staticmethod
-    def _follow(ctx: ShellContext, path: str, text: str, count: int) -> Result:
-        initial = '\n'.join(text.splitlines()[-count:])
+    def _delta(seen: int, data: bytes) -> tuple[str, int]:
+        """Return (new text to emit, updated byte offset) for a follow poll.
+
+        Pebble can only ever hand back the *whole* file, so following means
+        re-reading and diffing by byte offset. A file shorter than what we've
+        already emitted was truncated or rotated, so reset and re-emit from the
+        start rather than waiting for it to grow past the old length.
+        """
+        if len(data) < seen:  # truncated or rotated under us
+            seen = 0
+        if len(data) > seen:
+            return data[seen:].decode('utf-8', errors='replace'), len(data)
+        return '', seen
+
+    @classmethod
+    def _follow(cls, ctx: ShellContext, path: str, display: str, count: int) -> Result:
+        try:
+            data = _read_bytes(ctx.transport, path)
+        except Exception as exc:
+            return Result.fail(f'tail: {display}: {exc}')
+        initial = '\n'.join(data.decode('utf-8', errors='replace').splitlines()[-count:])
         if initial:
             sys.stdout.write(initial + '\n')
             sys.stdout.flush()
-        seen = len(text)
+        seen = len(data)
         try:
             while True:
                 time.sleep(1.0)
                 try:
-                    current = _read_text(ctx.transport, path)
+                    data = _read_bytes(ctx.transport, path)
                 except Exception:  # noqa: S112 - transient read failures are expected while following
                     continue
-                if len(current) > seen:
-                    sys.stdout.write(current[seen:])
+                chunk, seen = cls._delta(seen, data)
+                if chunk:
+                    sys.stdout.write(chunk)
                     sys.stdout.flush()
-                    seen = len(current)
         except KeyboardInterrupt:
             sys.stdout.write('\n')
         return Result()

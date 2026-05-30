@@ -56,6 +56,26 @@ def test_tail(registry, ctx):
     assert out == 'ERROR boom\nline4'
 
 
+def test_tail_follow_delta_appends():
+    from borescope.shell.commands.filesystem import Tail
+
+    assert Tail._delta(3, b'abcdef') == ('def', 6)
+
+
+def test_tail_follow_delta_no_change():
+    from borescope.shell.commands.filesystem import Tail
+
+    assert Tail._delta(6, b'abcdef') == ('', 6)
+
+
+def test_tail_follow_delta_resets_on_truncation():
+    from borescope.shell.commands.filesystem import Tail
+
+    # File shrank (rotated/truncated): re-emit from the start, don't wait for it
+    # to grow past the old offset.
+    assert Tail._delta(10, b'new') == ('new', 3)
+
+
 def test_grep_file(registry, ctx):
     result = run(registry, ctx, 'grep', 'ERROR', '/var/log/app/error.log')
     assert result.output == 'ERROR boom'
