@@ -19,6 +19,7 @@ import time
 from typing import TYPE_CHECKING, Any
 
 from .. import pathutils
+from ..sanitise import safe_name
 from ._args import parse_args
 from .base import Command, Result
 
@@ -46,10 +47,8 @@ def _is_dir(info: Any) -> bool:
 
 
 def _int(value: str | None, default: int) -> int:
-    try:
-        return int(value) if value is not None else default
-    except ValueError:
-        return default
+    """Parse a line count, returning *default* when unset; raise on a bad value."""
+    return default if value is None else int(value)  # ValueError propagates to caller
 
 
 def _mode_str(perm: int | None) -> str:
@@ -74,7 +73,7 @@ def _long_format(info: Any) -> str:
     mtime = getattr(info, 'last_modified', None)
     when = mtime.strftime('%Y-%m-%d %H:%M') if mtime else ''
     perms = _mode_str(getattr(info, 'permissions', None))
-    return f'{_type_char(info)}{perms} {str(size).rjust(8)} {when:>16} {info.name}'
+    return f'{_type_char(info)}{perms} {str(size).rjust(8)} {when:>16} {safe_name(info.name)}'
 
 
 def _resolve(ctx: ShellContext, path: str) -> str:
@@ -121,7 +120,7 @@ class Ls(Command):
             entries = sorted(infos, key=lambda i: i.name)
             if not show_all:
                 entries = [i for i in entries if not i.name.startswith('.')]
-            rendered = '\n'.join(_long_format(i) if long else i.name for i in entries)
+            rendered = '\n'.join(_long_format(i) if long else safe_name(i.name) for i in entries)
             blocks.append(f'{path}:\n{rendered}' if len(paths) > 1 else rendered)
         return Result(
             output='\n\n'.join(b for b in blocks if b),
@@ -156,12 +155,16 @@ class Head(Command):
 
     def run(self, ctx: ShellContext, args: list[str], stdin: str | None = None) -> Result:
         _, values, paths = parse_args(args, valued=('n',))
-        count = _int(values.get('n'), 10)
+        try:
+            count = _int(values.get('n'), 10)
+        except ValueError:
+            return Result.fail(f'head: invalid line count: {values["n"]!r}')
         try:
             text = _input_text(ctx, paths, stdin)
         except Exception as exc:
             return Result.fail(f'head: {paths[0]}: {exc}')
-        return Result.ok('\n'.join(text.splitlines()[:count]))
+        # keepends so original line terminators (and a trailing newline) survive.
+        return Result.ok(''.join(text.splitlines(keepends=True)[:count]))
 
 
 class Tail(Command):
@@ -171,42 +174,64 @@ class Tail(Command):
 
     def run(self, ctx: ShellContext, args: list[str], stdin: str | None = None) -> Result:
         flags, values, paths = parse_args(args, valued=('n',))
-        count = _int(values.get('n'), 10)
+        try:
+            count = _int(values.get('n'), 10)
+        except ValueError:
+            return Result.fail(f'tail: invalid line count: {values["n"]!r}')
         follow = 'f' in flags
 
         if not paths:
             if follow:
                 return Result.fail('tail: -f requires a file')
-            return Result.ok('\n'.join((stdin or '').splitlines()[-count:]))
+            return Result.ok(''.join((stdin or '').splitlines(keepends=True)[-count:]))
 
         path = _resolve(ctx, paths[0])
+        if follow:
+            return self._follow(ctx, path, paths[0], count)
         try:
             text = _read_text(ctx.transport, path)
         except Exception as exc:
             return Result.fail(f'tail: {paths[0]}: {exc}')
-
-        if not follow:
-            return Result.ok('\n'.join(text.splitlines()[-count:]))
-        return self._follow(ctx, path, text, count)
+        # keepends so original line terminators (and a trailing newline) survive.
+        return Result.ok(''.join(text.splitlines(keepends=True)[-count:]))
 
     @staticmethod
-    def _follow(ctx: ShellContext, path: str, text: str, count: int) -> Result:
-        initial = '\n'.join(text.splitlines()[-count:])
+    def _delta(seen: int, data: bytes) -> tuple[str, int]:
+        """Return (new text to emit, updated byte offset) for a follow poll.
+
+        Pebble can only ever hand back the *whole* file, so following means
+        re-reading and diffing by byte offset. A file shorter than what we've
+        already emitted was truncated or rotated, so reset and re-emit from the
+        start rather than waiting for it to grow past the old length.
+        """
+        if len(data) < seen:  # truncated or rotated under us
+            seen = 0
+        if len(data) > seen:
+            return data[seen:].decode('utf-8', errors='replace'), len(data)
+        return '', seen
+
+    @classmethod
+    def _follow(cls, ctx: ShellContext, path: str, display: str, count: int) -> Result:
+        try:
+            data = _read_bytes(ctx.transport, path)
+        except Exception as exc:
+            return Result.fail(f'tail: {display}: {exc}')
+        initial = '\n'.join(data.decode('utf-8', errors='replace').splitlines()[-count:])
         if initial:
             sys.stdout.write(initial + '\n')
             sys.stdout.flush()
-        seen = len(text)
+        seen = len(data)
         try:
             while True:
                 time.sleep(1.0)
                 try:
-                    current = _read_text(ctx.transport, path)
+                    data = _read_bytes(ctx.transport, path)
                 except Exception:  # noqa: S112 - transient read failures are expected while following
                     continue
-                if len(current) > seen:
-                    sys.stdout.write(current[seen:])
+                chunk, seen = cls._delta(seen, data)
+                if chunk:
+                    sys.stdout.write(chunk)
                     sys.stdout.flush()
-                    seen = len(current)
         except KeyboardInterrupt:
             sys.stdout.write('\n')
         return Result()
@@ -215,7 +240,7 @@ class Tail(Command):
 class Find(Command):
     name = 'find'
     summary = 'Walk the tree, filtering by name/type'
-    usage = 'find [path] [-name PATTERN] [-type f|d]'
+    usage = 'find [path] [-name PATTERN] [-type f|d] [-maxdepth N]'
 
     def run(self, ctx: ShellContext, args: list[str], stdin: str | None = None) -> Result:
         # find uses single-dash long options (-name, -type), so it parses its own
@@ -223,6 +248,7 @@ class Find(Command):
         start_arg: str | None = None
         name_pat: str | None = None
         type_filter: str | None = None
+        max_depth: int | None = None
         i = 0
         while i < len(args):
             arg = args[i]
@@ -232,6 +258,12 @@ class Find(Command):
             elif arg == '-type':
                 i += 1
                 type_filter = args[i] if i < len(args) else None
+            elif arg == '-maxdepth':
+                i += 1
+                try:
+                    max_depth = int(args[i]) if i < len(args) else None
+                except ValueError:
+                    return Result.fail(f'find: invalid -maxdepth: {args[i]!r}')
             elif not arg.startswith('-') and start_arg is None:
                 start_arg = arg
             i += 1
@@ -239,21 +271,30 @@ class Find(Command):
         results: list[str] = []
         errors: list[str] = []
 
-        def walk(path: str) -> None:
+        # Iterative walk (each level is a juju round-trip, and a deep tree would
+        # otherwise blow the Python recursion limit). Entries directly under the
+        # start are depth 1; -maxdepth bounds both listing and descent.
+        stack: list[tuple[str, int]] = [(start, 1)]
+        while stack:
+            path, depth = stack.pop()
             try:
                 infos = ctx.transport.list_files(path)
             except Exception as exc:
                 errors.append(f'find: {path}: {exc}')
-                return
+                continue
+            subdirs: list[tuple[str, int]] = []
             for info in sorted(infos, key=lambda i: i.name):
                 full = posixpath.join(path, info.name)
                 is_dir = _is_dir(info)
-                if self._matches(info.name, is_dir, name_pat, type_filter):
-                    results.append(full)
-                if is_dir:
-                    walk(full)
+                within = max_depth is None or depth <= max_depth
+                if within and self._matches(info.name, is_dir, name_pat, type_filter):
+                    # Display the path defanged; walk the raw path.
+                    results.append(safe_name(full))
+                if is_dir and (max_depth is None or depth < max_depth):
+                    subdirs.append((full, depth + 1))
+            # Push reversed so siblings pop back in sorted (depth-first) order.
+            stack.extend(reversed(subdirs))
 
-        walk(start)
         return Result(
             output='\n'.join(results),
             error='\n'.join(errors),
