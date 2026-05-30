@@ -1,0 +1,25 @@
+summary: |
+  POSIX XCU §touch — if the file does not exist and -c was not specified,
+  a new empty file is created.
+systems:
+  - ubuntu-24.04
+
+execute: |
+  # https://pubs.opengroup.org/onlinepubs/9699919799/utilities/touch.html
+  # "If the file specified by file does not exist: If the -c option was
+  #  not specified, an empty file with the specified name shall be created
+  #  as if by the creat() function."
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_up
+
+  workdir="$(mktemp -d)"
+
+  borescope_run -c "touch ${workdir}/new"
+  test -f "${workdir}/new"
+  test ! -s "${workdir}/new"  # empty
+
+  rm -rf "${workdir}"
+
+restore: |
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_down

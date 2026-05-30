@@ -1,0 +1,24 @@
+summary: |
+  POSIX XCU §grep — `-v` selects lines that do *not* match the pattern.
+systems:
+  - ubuntu-24.04
+
+execute: |
+  # https://pubs.opengroup.org/onlinepubs/9699919799/utilities/grep.html
+  # "-v  Select lines not matching any of the specified patterns."
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_up
+
+  workdir="$(mktemp -d)"
+  printf 'keep\nremove\nkeep too\n' > "${workdir}/f"
+
+  out="$(borescope_run -c "grep -v remove ${workdir}/f")"
+  echo "$out" | MATCH '^keep$'
+  echo "$out" | MATCH '^keep too$'
+  echo "$out" | NOMATCH '^remove$'
+
+  rm -rf "${workdir}"
+
+restore: |
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_down

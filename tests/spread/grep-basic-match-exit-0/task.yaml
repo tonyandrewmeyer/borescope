@@ -1,0 +1,25 @@
+summary: |
+  POSIX XCU §grep — when a pattern matches a line, write that line and
+  exit 0.
+systems:
+  - ubuntu-24.04
+
+execute: |
+  # https://pubs.opengroup.org/onlinepubs/9699919799/utilities/grep.html
+  # "EXIT STATUS:  0  One or more lines were selected."
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_up
+
+  workdir="$(mktemp -d)"
+  printf 'alpha\nbeta\ngamma\n' > "${workdir}/f"
+
+  out="$(borescope_run -c "grep beta ${workdir}/f")"
+  rc=$?
+  echo "$out" | MATCH '^beta$'
+  test "$rc" -eq 0
+
+  rm -rf "${workdir}"
+
+restore: |
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_down

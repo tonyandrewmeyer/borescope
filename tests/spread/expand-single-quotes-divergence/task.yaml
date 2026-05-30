@@ -1,0 +1,26 @@
+summary: |
+  KNOWN DIVERGENCE from POSIX XCU §2.2.2 — borescope expands `$VAR` inside
+  single quotes; POSIX requires single quotes to preserve every character
+  literally, including `$`.
+systems:
+  - ubuntu-24.04
+
+# borescope's parser strips quotes during tokenization (shlex with posix=True)
+# and then runs expand() on every token uniformly, with no record of how the
+# token was quoted. So '$HOME' and "$HOME" both expand to /root. A future fix
+# (track quote provenance through tokenization, suppress expansion on single-
+# quoted tokens) flips this test green by reversal.
+execute: |
+  # https://pubs.opengroup.org/onlinepubs/9699919799/utilities/V3_chap02.html#tag_18_02_02
+  # "Enclosing characters in single-quotes ('') shall preserve the literal
+  #  value of each character within the single-quotes."
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_up
+
+  # Current behavior: expanded. POSIX: would output the literal "$HOME".
+  out="$(borescope_run -c "echo '\$HOME'")"
+  echo "$out" | MATCH '^/root$'
+
+restore: |
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_down

@@ -1,0 +1,16 @@
+summary: |
+  POSIX XCU §cd — an absolute path operand changes to exactly that path.
+systems:
+  - ubuntu-24.04
+
+execute: |
+  # https://pubs.opengroup.org/onlinepubs/9699919799/utilities/cd.html
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_up
+
+  out="$(printf 'cd /etc\npwd\n' | borescope_script)"
+  echo "$out" | MATCH '^/etc$'
+
+restore: |
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_down

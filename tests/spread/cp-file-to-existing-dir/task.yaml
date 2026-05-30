@@ -1,0 +1,25 @@
+summary: |
+  POSIX XCU §cp — when the target is an existing directory, the source
+  file is created inside it under its basename.
+systems:
+  - ubuntu-24.04
+
+execute: |
+  # https://pubs.opengroup.org/onlinepubs/9699919799/utilities/cp.html
+  # "In the second synopsis form, the cp utility shall copy each source_file
+  #  to a destination file ... in the existing directory named by target."
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_up
+
+  workdir="$(mktemp -d)"
+  printf 'inside\n' > "${workdir}/file"
+  mkdir "${workdir}/dir"
+
+  borescope_run -c "cp ${workdir}/file ${workdir}/dir"
+  cat "${workdir}/dir/file" | MATCH '^inside$'
+
+  rm -rf "${workdir}"
+
+restore: |
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_down

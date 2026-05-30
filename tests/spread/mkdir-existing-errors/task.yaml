@@ -1,0 +1,30 @@
+summary: |
+  POSIX XCU §mkdir — without -p, an existing directory is a diagnostic
+  and a non-zero exit status.
+systems:
+  - ubuntu-24.04
+
+execute: |
+  # https://pubs.opengroup.org/onlinepubs/9699919799/utilities/mkdir.html
+  # "If the path named by [a] dir operand exists, mkdir shall write a
+  #  diagnostic message to standard error and shall not change the existing
+  #  directory."
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_up
+
+  workdir="$(mktemp -d)"
+  mkdir "${workdir}/already"
+
+  set +e
+  out="$(borescope_run -c "mkdir ${workdir}/already" 2>&1)"
+  rc=$?
+  set -e
+
+  test "$rc" -ne 0
+  echo "$out" | MATCH 'mkdir:'
+
+  rm -rf "${workdir}"
+
+restore: |
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_down

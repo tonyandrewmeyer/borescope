@@ -1,0 +1,22 @@
+summary: |
+  POSIX XCU §grep — `-i` ignores case distinctions in patterns and input.
+systems:
+  - ubuntu-24.04
+
+execute: |
+  # https://pubs.opengroup.org/onlinepubs/9699919799/utilities/grep.html
+  # "-i  Perform pattern matching in searches without regard to case."
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_up
+
+  workdir="$(mktemp -d)"
+  printf 'Error: boom\nok\n' > "${workdir}/f"
+
+  out="$(borescope_run -c "grep -i error ${workdir}/f")"
+  echo "$out" | MATCH '^Error: boom$'
+
+  rm -rf "${workdir}"
+
+restore: |
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_down

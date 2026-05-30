@@ -1,0 +1,23 @@
+summary: |
+  POSIX XCU §cp — `cp src dst` writes a copy of src at dst.
+systems:
+  - ubuntu-24.04
+
+execute: |
+  # https://pubs.opengroup.org/onlinepubs/9699919799/utilities/cp.html
+  # "In the first synopsis form, the cp utility shall copy the contents of
+  #  source_file ... to the destination path named by target_file."
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_up
+
+  workdir="$(mktemp -d)"
+  printf 'payload\n' > "${workdir}/src"
+
+  borescope_run -c "cp ${workdir}/src ${workdir}/dst"
+  cat "${workdir}/dst" | MATCH '^payload$'
+
+  rm -rf "${workdir}"
+
+restore: |
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_down

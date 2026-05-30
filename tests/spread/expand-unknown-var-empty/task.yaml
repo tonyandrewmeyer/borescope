@@ -1,0 +1,23 @@
+summary: |
+  POSIX XCU §2.5.2 — referencing an unset variable expands to an empty
+  string (under the default `set +u` behavior).
+systems:
+  - ubuntu-24.04
+
+execute: |
+  # https://pubs.opengroup.org/onlinepubs/9699919799/utilities/V3_chap02.html#tag_18_05_02
+  # "If the parameter is unset, the expansion of word ... shall be
+  #  substituted; otherwise, the value of parameter shall be substituted."
+  # With no default (just $UNSET), POSIX expands to empty under the default
+  # nounset=off mode that all interactive shells use.
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_up
+
+  # Use braces so the boundary is unambiguous; bare $UNSETb would treat
+  # `UNSETb` as the parameter name.
+  out="$(borescope_run -c 'echo a${UNSET}b')"
+  echo "$out" | MATCH '^ab$'
+
+restore: |
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_down

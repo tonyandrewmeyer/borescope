@@ -1,0 +1,19 @@
+summary: |
+  POSIX XCU §2.6.2 — `${name}` introduces the same substitution as `$name`,
+  with explicit delimiters.
+systems:
+  - ubuntu-24.04
+
+execute: |
+  # https://pubs.opengroup.org/onlinepubs/9699919799/utilities/V3_chap02.html#tag_18_06_02
+  # "The braces are required when ... the variable name is followed by a
+  #  character that could be interpreted as part of the name."
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_up
+
+  out="$(borescope_run -c 'echo ${HOME}/sub')"
+  echo "$out" | MATCH '^/root/sub$'
+
+restore: |
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_down

@@ -1,0 +1,25 @@
+summary: |
+  KNOWN DIVERGENCE from POSIX XCU §exit — borescope coerces a non-numeric
+  operand to exit status 1, where bash/dash exit 2 (and some shells warn).
+systems:
+  - ubuntu-24.04
+
+# Many POSIX shells write a diagnostic and exit with a non-zero status (commonly
+# 2) when `exit` is given a non-numeric operand. borescope's exit catches the
+# ValueError silently and uses 1. This task encodes the *current* behavior so
+# future reconciliation flips it green by reversal.
+execute: |
+  # https://pubs.opengroup.org/onlinepubs/9699919799/utilities/V3_chap02.html#tag_18_25
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_up
+
+  set +e
+  printf 'exit oops\n' | borescope_script
+  rc=$?
+  set -e
+
+  test "$rc" -eq 1
+
+restore: |
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_down

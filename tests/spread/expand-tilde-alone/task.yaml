@@ -1,0 +1,19 @@
+summary: |
+  POSIX XCU §2.6.1 — a bare `~` at the start of a word expands to the
+  value of $HOME.
+systems:
+  - ubuntu-24.04
+
+execute: |
+  # https://pubs.opengroup.org/onlinepubs/9699919799/utilities/V3_chap02.html#tag_18_06_01
+  # "If the login name is null (that is, the tilde-prefix contains only the
+  #  tilde), the tilde-prefix is replaced by the value of the variable HOME."
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_up
+
+  out="$(borescope_run -c 'echo ~')"
+  echo "$out" | MATCH '^/root$'
+
+restore: |
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_down

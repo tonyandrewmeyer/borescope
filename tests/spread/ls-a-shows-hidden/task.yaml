@@ -1,0 +1,25 @@
+summary: |
+  POSIX XCU §ls — the -a option writes out all directory entries, including
+  those whose names begin with '.'.
+systems:
+  - ubuntu-24.04
+
+execute: |
+  # https://pubs.opengroup.org/onlinepubs/9699919799/utilities/ls.html
+  # "-a   Write out all directory entries, including those whose names begin
+  #       with a <period> ('.')."
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_up
+
+  workdir="$(mktemp -d)"
+  touch "${workdir}/visible" "${workdir}/.hidden"
+
+  out="$(borescope_run -c "ls -a ${workdir}")"
+  echo "$out" | MATCH '^visible$'
+  echo "$out" | MATCH '^\.hidden$'
+
+  rm -rf "${workdir}"
+
+restore: |
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_down

@@ -1,0 +1,20 @@
+summary: |
+  POSIX XCU §echo — an empty-string operand is still written, followed by
+  the mandatory trailing <newline>.
+systems:
+  - ubuntu-24.04
+
+# Known divergence: borescope's repl gates on truthy output and so swallows
+# the empty argument and the trailing newline. Expected to fail until the
+# emitter is reconciled with the spec.
+execute: |
+  # https://pubs.opengroup.org/onlinepubs/9699919799/utilities/echo.html
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_up
+
+  raw="$(borescope_run -c "echo ''" | wc -c)"
+  test "$raw" -eq 1  # just "\n" (empty arg contributes zero bytes)
+
+restore: |
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_down

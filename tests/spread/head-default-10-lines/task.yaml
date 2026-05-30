@@ -1,0 +1,28 @@
+summary: |
+  POSIX XCU §head — without -n, write the first 10 lines of each file.
+systems:
+  - ubuntu-24.04
+
+execute: |
+  # https://pubs.opengroup.org/onlinepubs/9699919799/utilities/head.html
+  # "By default, head shall copy its input to standard output, ending the
+  #  output for each file at a designated point. ... the default is to
+  #  copy 10 lines."
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_up
+
+  workdir="$(mktemp -d)"
+  seq 1 20 > "${workdir}/twenty"
+
+  out="$(borescope_run -c "head ${workdir}/twenty")"
+  # First and tenth lines present.
+  echo "$out" | MATCH '^1$'
+  echo "$out" | MATCH '^10$'
+  # Eleventh line absent.
+  echo "$out" | NOMATCH '^11$'
+
+  rm -rf "${workdir}"
+
+restore: |
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_down

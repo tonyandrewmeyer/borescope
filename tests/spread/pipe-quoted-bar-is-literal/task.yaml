@@ -1,0 +1,19 @@
+summary: |
+  POSIX XCU §2.2.2 — characters inside single quotes preserve their literal
+  value, so a '|' inside '...' is not a pipeline separator.
+systems:
+  - ubuntu-24.04
+
+execute: |
+  # https://pubs.opengroup.org/onlinepubs/9699919799/utilities/V3_chap02.html#tag_18_02_02
+  # "Enclosing characters in single-quotes ('') shall preserve the literal
+  #  value of each character within the single-quotes."
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_up
+
+  out="$(borescope_run -c "echo 'a | b'")"
+  echo "$out" | MATCH '^a \| b$'
+
+restore: |
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_down

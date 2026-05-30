@@ -1,0 +1,26 @@
+summary: |
+  KNOWN DIVERGENCE from POSIX XCU §2.9.3 — borescope v1 rejects ';' instead
+  of treating it as a sequential-list separator.
+systems:
+  - ubuntu-24.04
+
+# This task encodes the v1 design choice: parser.py treats ';' (and '&&', '||',
+# '&', '>', '<') as unsupported syntax. POSIX requires ';' to run the left and
+# right commands sequentially. We assert borescope's *current* behavior so the
+# divergence is visible and any future fix flips this task green by reversal.
+execute: |
+  # https://pubs.opengroup.org/onlinepubs/9699919799/utilities/V3_chap02.html#tag_18_09_03
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_up
+
+  set +e
+  out="$(borescope_run -c 'echo a ; echo b' 2>&1)"
+  rc=$?
+  set -e
+
+  test "$rc" -ne 0
+  echo "$out" | MATCH 'sequencing|not supported'
+
+restore: |
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_down

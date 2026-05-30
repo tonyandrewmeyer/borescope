@@ -1,0 +1,29 @@
+summary: |
+  POSIX XCU §find — `-name pattern` matches the basename against a pattern
+  using fnmatch.
+systems:
+  - ubuntu-24.04
+
+execute: |
+  # https://pubs.opengroup.org/onlinepubs/9699919799/utilities/find.html
+  # "-name pattern  The primary shall evaluate as true if the basename of
+  #                 the current pathname matches pattern using the pattern
+  #                 matching notation described in fnmatch()."
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_up
+
+  workdir="$(mktemp -d)"
+  touch "${workdir}/keep.log" "${workdir}/skip.txt"
+  mkdir "${workdir}/sub"
+  touch "${workdir}/sub/nested.log"
+
+  out="$(borescope_run -c "find ${workdir} -name *.log")"
+  echo "$out" | MATCH "${workdir}/keep\.log"
+  echo "$out" | MATCH "${workdir}/sub/nested\.log"
+  echo "$out" | NOMATCH "skip\.txt"
+
+  rm -rf "${workdir}"
+
+restore: |
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_down

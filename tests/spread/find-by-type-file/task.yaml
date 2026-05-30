@@ -1,0 +1,25 @@
+summary: |
+  POSIX XCU §find — `-type f` matches only regular files.
+systems:
+  - ubuntu-24.04
+
+execute: |
+  # https://pubs.opengroup.org/onlinepubs/9699919799/utilities/find.html
+  # "-type c  ... 'f' (regular file)."
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_up
+
+  workdir="$(mktemp -d)"
+  mkdir "${workdir}/d"
+  touch "${workdir}/f1" "${workdir}/f2"
+
+  out="$(borescope_run -c "find ${workdir} -type f")"
+  echo "$out" | MATCH "${workdir}/f1$"
+  echo "$out" | MATCH "${workdir}/f2$"
+  echo "$out" | NOMATCH "${workdir}/d$"
+
+  rm -rf "${workdir}"
+
+restore: |
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_down

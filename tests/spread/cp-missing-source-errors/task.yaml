@@ -1,0 +1,28 @@
+summary: |
+  POSIX XCU §cp — a missing source file is a diagnostic and a non-zero
+  exit status.
+systems:
+  - ubuntu-24.04
+
+execute: |
+  # https://pubs.opengroup.org/onlinepubs/9699919799/utilities/cp.html
+  # "EXIT STATUS: >0  An error occurred."
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_up
+
+  workdir="$(mktemp -d)"
+
+  set +e
+  out="$(borescope_run -c "cp /no/such/file ${workdir}/dst" 2>&1)"
+  rc=$?
+  set -e
+
+  test "$rc" -ne 0
+  echo "$out" | MATCH 'cp:.*/no/such/file'
+  test ! -e "${workdir}/dst"
+
+  rm -rf "${workdir}"
+
+restore: |
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_down

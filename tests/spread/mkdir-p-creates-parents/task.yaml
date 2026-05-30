@@ -1,0 +1,23 @@
+summary: |
+  POSIX XCU §mkdir — `-p` creates any missing intermediate directories.
+systems:
+  - ubuntu-24.04
+
+execute: |
+  # https://pubs.opengroup.org/onlinepubs/9699919799/utilities/mkdir.html
+  # "-p  Create any missing intermediate pathname components."
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_up
+
+  workdir="$(mktemp -d)"
+
+  borescope_run -c "mkdir -p ${workdir}/a/b/c"
+  test -d "${workdir}/a"
+  test -d "${workdir}/a/b"
+  test -d "${workdir}/a/b/c"
+
+  rm -rf "${workdir}"
+
+restore: |
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_down

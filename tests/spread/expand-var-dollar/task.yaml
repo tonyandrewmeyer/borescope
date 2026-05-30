@@ -1,0 +1,19 @@
+summary: |
+  POSIX XCU §2.6.2 — `$name` is replaced by the value of the named
+  parameter.
+systems:
+  - ubuntu-24.04
+
+execute: |
+  # https://pubs.opengroup.org/onlinepubs/9699919799/utilities/V3_chap02.html#tag_18_06_02
+  # "The shell shall recognize an unquoted '$' that is followed by a
+  #  <dollar-sign> ... as introducing a substitution."
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_up
+
+  out="$(borescope_run -c 'echo $HOME')"
+  echo "$out" | MATCH '^/root$'
+
+restore: |
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_down
