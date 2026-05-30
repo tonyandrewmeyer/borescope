@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tutorial: Debug your first container &mdash; borescope</title>
+<meta name="description" content="A step-by-step tutorial: install borescope and explore a live Juju Kubernetes workload container &mdash; services, logs, files, and the plan.">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.bunny.net">
+<link rel="stylesheet" href="https://fonts.bunny.net/css?family=inter:400,500,600,700,800|jetbrains-mono:400&display=swap">
+<link rel="stylesheet" href="docs.css">
+</head>
+<body>
+
+<a href="#main" class="skip-link">Skip to content</a>
+
+<nav class="doc-nav" aria-label="Main">
+  <div class="doc-nav-inner">
+    <a href="../index.html" class="doc-nav-logo">
+      <img src="../logo.svg" alt="borescope" width="28" height="28">
+      <span>borescope</span>
+    </a>
+    <button class="doc-nav-toggle" aria-label="Open menu" aria-expanded="false" aria-controls="nav-menu">
+      <span></span><span></span><span></span>
+    </button>
+    <div class="doc-nav-links" id="nav-menu">
+      <a href="index.html" class="current">Docs</a>
+      <a href="../index.html#features">Features</a>
+      <a href="https://github.com/tonyandrewmeyer/borescope" target="_blank" rel="noopener">GitHub</a>
+    </div>
+  </div>
+</nav>
+<div class="doc-layout">
+  <aside class="doc-sidebar">
+    <h4>Tutorial</h4>
+    <ul>
+      <li><a href="#overview" class="current">Overview</a></li>
+      <li><a href="#prerequisites">Prerequisites</a></li>
+      <li><a href="#install">Install borescope</a></li>
+      <li><a href="#connect">Connect to a unit</a></li>
+      <li><a href="#look-around">Look around the filesystem</a></li>
+      <li><a href="#services">Inspect services and logs</a></li>
+      <li><a href="#plan">Read the plan and checks</a></li>
+      <li><a href="#exec">Reach for exec</a></li>
+      <li><a href="#leave">Leave the session</a></li>
+      <li><a href="#next-steps">Next steps</a></li>
+    </ul>
+    <h4>See also</h4>
+    <ul>
+      <li><a href="howto-connect.html">Connect to a unit</a></li>
+      <li><a href="reference-commands.html">Command reference</a></li>
+    </ul>
+  </aside>
+
+  <main id="main" class="doc-content">
+    <div class="breadcrumb">
+      <a href="index.html">Docs</a><span class="sep">/</span>Tutorial
+    </div>
+
+    <h1>Debug your first container</h1>
+    <p class="subtitle">
+      From install to poking around a live workload container, in about ten minutes. No prior borescope experience required.
+    </p>
+
+<h2 id="overview">Overview</h2>
+<p>Kubernetes charm workload containers usually run a
+<a href="https://documentation.ubuntu.com/rockcraft/" target="_blank" rel="noopener">rock</a> with no shell, so
+<code>juju ssh --container=workload &hellip;</code> drops you nowhere useful. borescope gives you
+a prompt that <em>feels</em> like <code>bash</code> but talks to the container's
+<a href="https://documentation.ubuntu.com/pebble/" target="_blank" rel="noopener">Pebble</a> instead.</p>
+<p>In this tutorial you'll install borescope, connect to a running unit, and use
+it to read the filesystem, inspect services, follow logs, and run a tool that
+lives in the container. By the end you'll know your way around a borescope
+session.</p>
+<h2 id="prerequisites">Prerequisites</h2>
+<p>You need:</p>
+<ul>
+<li>A working <code>juju</code> CLI, logged in to a controller, with a <strong>Kubernetes</strong> model
+containing at least one deployed application. If <code>juju ssh &lt;unit&gt;</code> works for
+you, borescope will too.</li>
+<li><a href="https://docs.astral.sh/uv/" target="_blank" rel="noopener"><code>uv</code></a> or <code>pipx</code> to install borescope.</li>
+<li>A checkout of borescope (v1 isn't on PyPI yet).</li>
+</ul>
+<p>If you don't have a charm deployed, any Kubernetes charm will do. For example:</p>
+<pre><code class="language-console">juju add-model tutorial
+juju deploy grafana-k8s
+juju status --watch 2s        # wait until the unit is active/idle
+</code></pre>
+<p>Throughout this tutorial, replace <code>myapp/0</code> with your unit (for example
+<code>grafana-k8s/0</code>).</p>
+<h2 id="install">Install borescope</h2>
+<p>From your checkout:</p>
+<pre><code><span class="prompt">$</span> uv tool install .        <span class="comment"># or: pipx install .</span></code></pre>
+<p>Check it's on your <code>PATH</code>:</p>
+<pre><code><span class="prompt">$</span> borescope --version
+borescope 0.1.0.dev1</code></pre>
+<h2 id="connect">Connect to a unit</h2>
+<p>Point borescope at your unit:</p>
+<pre><code><span class="prompt">$</span> borescope myapp/0
+pebble:/#</code></pre>
+<p>borescope picked up your current Juju controller and model, confirmed the unit
+exists, read the charm's metadata to find its workload container, and checked
+that the container's Pebble answers. The <code>pebble:/#</code> prompt is borescope's, not
+a real shell &mdash; but it behaves like one. You're in the container's root
+directory.</p>
+<blockquote>
+<p>If the application declares more than one workload container, borescope uses
+the first one declared. Pick a specific one with
+<a href="howto-connect.html#container"><code>--container</code></a>.</p>
+</blockquote>
+<h2 id="look-around">Look around the filesystem</h2>
+<p>The familiar commands work, even though the rock has no shell or coreutils &mdash;
+borescope implements them over Pebble's files API:</p>
+<pre><code><span class="prompt">pebble:/#</span> pwd
+/
+<span class="prompt">pebble:/#</span> ls
+bin  etc  usr  var
+<span class="prompt">pebble:/#</span> cd /var/log
+<span class="prompt">pebble:/var/log#</span> ls -l
+-rw-r--r--      1024 2026-05-31 09:14 myapp.log</code></pre>
+<p>Tab-completion is path-aware: type <code>cat /var/lo</code> and press <kbd>Tab</kbd> to
+complete the path. Read a file with <code>cat</code>, or peek at the first or last lines
+with <code>head</code> and <code>tail</code>:</p>
+<pre><code><span class="prompt">pebble:/var/log#</span> tail -n 20 myapp.log</code></pre>
+<h2 id="services">Inspect services and logs</h2>
+<p>Pebble's own vocabulary is built in &mdash; no <code>pebble</code> prefix. List the services
+Pebble is supervising:</p>
+<pre><code><span class="prompt">pebble:/#</span> services
+Service  Startup   Current
+myapp    enabled   active</code></pre>
+<p>Follow a service's logs the way you would with <code>tail -f</code>:</p>
+<pre><code><span class="prompt">pebble:/#</span> logs --follow myapp</code></pre>
+<p>Press <kbd>Ctrl-C</kbd> to stop following. You can also restrict to the last
+<em>N</em> lines with <code>logs -n 50</code>, and pipe the output through <code>grep</code>:</p>
+<pre><code><span class="prompt">pebble:/#</span> logs -n 200 myapp | grep error</code></pre>
+<h2 id="plan">Read the plan and checks</h2>
+<p>The merged Pebble plan tells you how each service is configured to run:</p>
+<pre><code><span class="prompt">pebble:/#</span> plan</code></pre>
+<p>If the charm defines health checks, list them and their status:</p>
+<pre><code><span class="prompt">pebble:/#</span> checks
+<span class="prompt">pebble:/#</span> health</code></pre>
+<p>When you're chasing a failed deploy, <code>changes</code> and <code>tasks</code> show what Pebble has
+recently done and whether any step errored.</p>
+<h2 id="exec">Reach for exec</h2>
+<p>borescope ships a deliberately small command set. For anything else, <code>exec</code>
+runs a binary that's <em>already in the container</em>, with your current working
+directory:</p>
+<pre><code><span class="prompt">pebble:/#</span> exec ps aux
+<span class="prompt">pebble:/#</span> exec cat /proc/1/status</code></pre>
+<p>If the tool isn't in the rock, <code>exec</code> will tell you it can't find it &mdash; that's
+expected on a minimal image. (See
+<a href="explanation-scope.html">Scope and philosophy</a> for why borescope leans on
+<code>exec</code> rather than bundling tools.)</p>
+<h2 id="leave">Leave the session</h2>
+<p>Type <code>exit</code> (or press <kbd>Ctrl-D</kbd>):</p>
+<pre><code><span class="prompt">pebble:/#</span> exit
+<span class="prompt">$</span></code></pre>
+<h2 id="next-steps">Next steps</h2>
+<p>You've connected to a unit, read its filesystem, inspected services and logs,
+and run a container tool. From here:</p>
+<ul>
+<li><a href="howto-connect.html">Connect to a unit</a> &mdash; choose a container, model, or
+controller explicitly.</li>
+<li><a href="howto-oneshot.html">Run one command (no REPL)</a> &mdash; use borescope from scripts.</li>
+<li><a href="howto-snapshot.html">Capture a state snapshot</a> &mdash; dump container state as JSON
+for a bug report.</li>
+<li><a href="reference-commands.html">Command reference</a> &mdash; the full built-in command set.</li>
+</ul>
+  </main>
+</div>
+
+<footer class="doc-footer">
+  <div class="doc-footer-inner">
+    <span>borescope &mdash; free &amp; open source &middot; Apache 2.0</span>
+    <div>
+      <a href="https://github.com/tonyandrewmeyer/borescope" target="_blank" rel="noopener">GitHub</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+(function() {
+  var toggle = document.querySelector('.doc-nav-toggle');
+  var links = document.querySelector('.doc-nav-links');
+  if (!toggle || !links) return;
+  toggle.addEventListener('click', function() {
+    var open = links.classList.toggle('open');
+    toggle.classList.toggle('open', open);
+    toggle.setAttribute('aria-expanded', String(open));
+    toggle.setAttribute('aria-label', open ? 'Close menu' : 'Open menu');
+  });
+  links.querySelectorAll('a').forEach(function(a) {
+    a.addEventListener('click', function() {
+      links.classList.remove('open');
+      toggle.classList.remove('open');
+      toggle.setAttribute('aria-expanded', 'false');
+      toggle.setAttribute('aria-label', 'Open menu');
+    });
+  });
+})();
+
+(function() {
+  document.querySelectorAll('.doc-content pre').forEach(function(pre) {
+    var code = pre.querySelector('code');
+    if (!code) return;
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'copy-btn';
+    btn.textContent = 'Copy';
+    btn.setAttribute('aria-label', 'Copy code to clipboard');
+    btn.addEventListener('click', function() {
+      var text = code.innerText;
+      var done = function() {
+        btn.textContent = 'Copied';
+        btn.classList.add('copied');
+        setTimeout(function() {
+          btn.textContent = 'Copy';
+          btn.classList.remove('copied');
+        }, 1500);
+      };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(done, function() {});
+      } else {
+        var ta = document.createElement('textarea');
+        ta.value = text;
+        ta.setAttribute('readonly', '');
+        ta.style.position = 'absolute';
+        ta.style.left = '-9999px';
+        document.body.appendChild(ta);
+        ta.select();
+        try { document.execCommand('copy'); done(); } catch (e) {}
+        document.body.removeChild(ta);
+      }
+    });
+    pre.appendChild(btn);
+  });
+})();
+</script>
+
+</body>
+</html>

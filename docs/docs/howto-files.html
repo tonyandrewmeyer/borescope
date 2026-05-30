@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>How to copy files in and out &mdash; borescope</title>
+<meta name="description" content="Pull files out of a shell-less Juju Kubernetes workload container, or push files in, with borescope's pull and push commands.">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.bunny.net">
+<link rel="stylesheet" href="https://fonts.bunny.net/css?family=inter:400,500,600,700,800|jetbrains-mono:400&display=swap">
+<link rel="stylesheet" href="docs.css">
+</head>
+<body>
+
+<a href="#main" class="skip-link">Skip to content</a>
+
+<nav class="doc-nav" aria-label="Main">
+  <div class="doc-nav-inner">
+    <a href="../index.html" class="doc-nav-logo">
+      <img src="../logo.svg" alt="borescope" width="28" height="28">
+      <span>borescope</span>
+    </a>
+    <button class="doc-nav-toggle" aria-label="Open menu" aria-expanded="false" aria-controls="nav-menu">
+      <span></span><span></span><span></span>
+    </button>
+    <div class="doc-nav-links" id="nav-menu">
+      <a href="index.html" class="current">Docs</a>
+      <a href="../index.html#features">Features</a>
+      <a href="https://github.com/tonyandrewmeyer/borescope" target="_blank" rel="noopener">GitHub</a>
+    </div>
+  </div>
+</nav>
+<div class="doc-layout">
+  <aside class="doc-sidebar">
+    <h4>How-to guides</h4>
+    <ul>
+      <li><a href="howto-connect.html">Connect to a unit</a></li>
+      <li><a href="howto-here.html">Run inside the charm container</a></li>
+      <li><a href="howto-oneshot.html">Run one command (no REPL)</a></li>
+      <li><a href="howto-files.html" class="current">Copy files in and out</a></li>
+      <li><a href="howto-snapshot.html">Capture a state snapshot</a></li>
+    </ul>
+    <h4>On this page</h4>
+    <ul>
+      <li><a href="#pull">Pull a file out</a></li>
+      <li><a href="#push">Push a file in</a></li>
+      <li><a href="#vs-cat">pull/push vs cat/cp</a></li>
+      <li><a href="#limits">What works, what doesn't</a></li>
+    </ul>
+    <h4>See also</h4>
+    <ul>
+      <li><a href="reference-commands.html">Command reference</a></li>
+      <li><a href="howto-snapshot.html">Capture a state snapshot</a></li>
+    </ul>
+  </aside>
+
+  <main id="main" class="doc-content">
+    <div class="breadcrumb">
+      <a href="index.html">Docs</a><span class="sep">/</span>How-to guides<span class="sep">/</span>Copy files in and out
+    </div>
+
+    <h1>Copy files in and out</h1>
+    <p class="subtitle">
+      Get a log or config file off a shell-less container, or push a patched file back in, over Pebble's files API.
+    </p>
+
+<p>Because the workload rock often has no shell, you can't <code>scp</code> out of it the way
+you might a machine. borescope moves files over Pebble's files API instead, with
+two commands that cross the boundary between the container and your local host.</p>
+<h2 id="pull">Pull a file out</h2>
+<p><code>pull &lt;remote&gt; &lt;local&gt;</code> copies a file <em>from the container</em> to your local
+filesystem:</p>
+<pre><code><span class="prompt">pebble:/#</span> pull /var/log/myapp/error.log ./error.log
+Pulled /var/log/myapp/error.log -&gt; ./error.log</code></pre>
+<p>The remote path is resolved relative to your current directory in the session,
+so this works too:</p>
+<pre><code><span class="prompt">pebble:/#</span> cd /var/log/myapp
+<span class="prompt">pebble:/var/log/myapp#</span> pull error.log ~/error.log</code></pre>
+<h2 id="push">Push a file in</h2>
+<p><code>push &lt;local&gt; &lt;remote&gt;</code> copies a local file <em>into the container</em>:</p>
+<pre><code><span class="prompt">pebble:/#</span> push ./fixed-config.yaml /etc/myapp/config.yaml
+Pushed ./fixed-config.yaml -&gt; /etc/myapp/config.yaml</code></pre>
+<p><code>push</code> creates any missing parent directories on the remote side, so you don't
+need to <code>mkdir</code> first.</p>
+<blockquote>
+<p>Pushing a file changes the running container. Pebble won't restart a service
+for you &mdash; use <a href="reference-commands.html#pebble-native"><code>restart</code></a> afterwards if
+the workload needs to re-read the file.</p>
+</blockquote>
+<h2 id="vs-cat">pull/push vs cat/cp</h2>
+<p>borescope has a few overlapping ways to move bytes; pick by intent:</p>
+<table>
+<thead>
+<tr>
+<th>Want to&hellip;</th>
+<th>Use</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Copy a file between the container and the host</td>
+<td><code>pull</code> / <code>push</code></td>
+</tr>
+<tr>
+<td>Read a file's contents to the terminal</td>
+<td><code>cat</code></td>
+</tr>
+<tr>
+<td>Copy a file <em>within</em> the container</td>
+<td><code>cp</code></td>
+</tr>
+<tr>
+<td>Save terminal output locally</td>
+<td>redirect borescope's own stdout in your shell</td>
+</tr>
+</tbody>
+</table>
+<p><code>pull</code>/<code>push</code> always cross the host/container boundary; <code>cp</code>, <code>mv</code>, <code>cat</code>,
+<code>head</code>, and <code>tail</code> operate inside the container.</p>
+<h2 id="limits">What works, what doesn't</h2>
+<ul>
+<li><strong>Single files.</strong> <code>pull</code> and <code>push</code> move one file at a time. Loop in a script
+for several, or <code>exec tar</code> in the container to bundle a tree first.</li>
+<li><strong>Binary-safe.</strong> Files are transferred as raw bytes, so binaries and archives
+survive the round trip intact.</li>
+<li><strong>Permissions follow Pebble.</strong> A <code>push</code> writes with Pebble's defaults; the
+workload must have permission to read the destination path.</li>
+<li><strong>No globbing.</strong> Paths are literal &mdash; <code>pull /var/log/*.log</code> won't expand. Use
+<code>find</code> to locate files, then pull them by name.</li>
+</ul>
+  </main>
+</div>
+
+<footer class="doc-footer">
+  <div class="doc-footer-inner">
+    <span>borescope &mdash; free &amp; open source &middot; Apache 2.0</span>
+    <div>
+      <a href="https://github.com/tonyandrewmeyer/borescope" target="_blank" rel="noopener">GitHub</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+(function() {
+  var toggle = document.querySelector('.doc-nav-toggle');
+  var links = document.querySelector('.doc-nav-links');
+  if (!toggle || !links) return;
+  toggle.addEventListener('click', function() {
+    var open = links.classList.toggle('open');
+    toggle.classList.toggle('open', open);
+    toggle.setAttribute('aria-expanded', String(open));
+    toggle.setAttribute('aria-label', open ? 'Close menu' : 'Open menu');
+  });
+  links.querySelectorAll('a').forEach(function(a) {
+    a.addEventListener('click', function() {
+      links.classList.remove('open');
+      toggle.classList.remove('open');
+      toggle.setAttribute('aria-expanded', 'false');
+      toggle.setAttribute('aria-label', 'Open menu');
+    });
+  });
+})();
+
+(function() {
+  document.querySelectorAll('.doc-content pre').forEach(function(pre) {
+    var code = pre.querySelector('code');
+    if (!code) return;
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'copy-btn';
+    btn.textContent = 'Copy';
+    btn.setAttribute('aria-label', 'Copy code to clipboard');
+    btn.addEventListener('click', function() {
+      var text = code.innerText;
+      var done = function() {
+        btn.textContent = 'Copied';
+        btn.classList.add('copied');
+        setTimeout(function() {
+          btn.textContent = 'Copy';
+          btn.classList.remove('copied');
+        }, 1500);
+      };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(done, function() {});
+      } else {
+        var ta = document.createElement('textarea');
+        ta.value = text;
+        ta.setAttribute('readonly', '');
+        ta.style.position = 'absolute';
+        ta.style.left = '-9999px';
+        document.body.appendChild(ta);
+        ta.select();
+        try { document.execCommand('copy'); done(); } catch (e) {}
+        document.body.removeChild(ta);
+      }
+    });
+    pre.appendChild(btn);
+  });
+})();
+</script>
+
+</body>
+</html>

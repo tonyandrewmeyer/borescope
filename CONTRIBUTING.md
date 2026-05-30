@@ -58,6 +58,19 @@ comment explaining why. A future reconciliation then flips the task green by
 reversal (red/green workflow), so divergences stay visible rather than rotting
 into forgotten gaps.
 
+## Documentation
+
+The docs site lives under `docs/`. Sources are Markdown in `docs/src/*.md`;
+the committed HTML under `docs/docs/` is generated and checked in (GitHub Pages
+serves it directly). After editing any source, rebuild and commit both:
+
+```console
+uv run python docs/src/_build.py     # or: tox -e docs
+uv run python docs/src/_build.py --check   # what CI runs
+```
+
+See `docs/README.md` for frontmatter and authoring conventions.
+
 ## Design notes
 
 - Keep the **Transport** interface narrow; it's the only code that touches Pebble,

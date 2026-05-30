@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>How to connect to a unit &mdash; borescope</title>
+<meta name="description" content="Target the right Juju Kubernetes workload container, model, and controller with borescope.">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.bunny.net">
+<link rel="stylesheet" href="https://fonts.bunny.net/css?family=inter:400,500,600,700,800|jetbrains-mono:400&display=swap">
+<link rel="stylesheet" href="docs.css">
+</head>
+<body>
+
+<a href="#main" class="skip-link">Skip to content</a>
+
+<nav class="doc-nav" aria-label="Main">
+  <div class="doc-nav-inner">
+    <a href="../index.html" class="doc-nav-logo">
+      <img src="../logo.svg" alt="borescope" width="28" height="28">
+      <span>borescope</span>
+    </a>
+    <button class="doc-nav-toggle" aria-label="Open menu" aria-expanded="false" aria-controls="nav-menu">
+      <span></span><span></span><span></span>
+    </button>
+    <div class="doc-nav-links" id="nav-menu">
+      <a href="index.html" class="current">Docs</a>
+      <a href="../index.html#features">Features</a>
+      <a href="https://github.com/tonyandrewmeyer/borescope" target="_blank" rel="noopener">GitHub</a>
+    </div>
+  </div>
+</nav>
+<div class="doc-layout">
+  <aside class="doc-sidebar">
+    <h4>How-to guides</h4>
+    <ul>
+      <li><a href="howto-connect.html" class="current">Connect to a unit</a></li>
+      <li><a href="howto-here.html">Run inside the charm container</a></li>
+      <li><a href="howto-oneshot.html">Run one command (no REPL)</a></li>
+      <li><a href="howto-files.html">Copy files in and out</a></li>
+      <li><a href="howto-snapshot.html">Capture a state snapshot</a></li>
+    </ul>
+    <h4>On this page</h4>
+    <ul>
+      <li><a href="#basic">The basic case</a></li>
+      <li><a href="#container">Choose a container</a></li>
+      <li><a href="#model">Choose a model</a></li>
+      <li><a href="#controller">Use a different juju</a></li>
+      <li><a href="#what-it-checks">What borescope checks</a></li>
+      <li><a href="#errors">Common errors</a></li>
+    </ul>
+    <h4>See also</h4>
+    <ul>
+      <li><a href="howto-here.html">Run inside the charm container</a></li>
+      <li><a href="reference-cli.html">CLI reference</a></li>
+      <li><a href="explanation-transport.html">How it reaches Pebble</a></li>
+    </ul>
+  </aside>
+
+  <main id="main" class="doc-content">
+    <div class="breadcrumb">
+      <a href="index.html">Docs</a><span class="sep">/</span>How-to guides<span class="sep">/</span>Connect to a unit
+    </div>
+
+    <h1>Connect to a unit</h1>
+    <p class="subtitle">
+      Point borescope at exactly the workload container you want to debug.
+    </p>
+
+<h2 id="basic">The basic case</h2>
+<p>Give borescope a unit reference (<code>app/n</code>):</p>
+<pre><code><span class="prompt">$</span> borescope myapp/0</code></pre>
+<p>That's all most sessions need. borescope uses your <strong>current</strong> Juju controller
+and model &mdash; exactly the ones <code>juju status</code> would show &mdash; and your existing Juju
+authority. There's no separate login: if you can <code>juju ssh myapp/0</code>, borescope
+works; if you can't, it fails the same way.</p>
+<h2 id="container">Choose a container</h2>
+<p>A charm can declare several workload containers. Without <code>--container</code>,
+borescope reads the charm's <code>metadata.yaml</code> and uses the <strong>first</strong> declared
+workload container. To target a specific one:</p>
+<pre><code><span class="prompt">$</span> borescope myapp/0 --container=workload</code></pre>
+<p>If you name a container the charm doesn't declare, borescope lists the names it
+found so you can pick a valid one.</p>
+<h2 id="model">Choose a model</h2>
+<p>By default borescope talks to your current model. Target another with
+<code>-m</code>/<code>--model</code>:</p>
+<pre><code><span class="prompt">$</span> borescope --model prod myapp/0
+<span class="prompt">$</span> borescope -m prod myapp/0</code></pre>
+<p>The value is passed straight to <code>juju</code>, so anything <code>juju --model</code> accepts
+(including <code>controller:model</code> qualifiers) works here too.</p>
+<h2 id="controller">Use a different juju</h2>
+<p>borescope shells out to whatever <code>juju</code> is on your <code>PATH</code>. To use a specific
+binary &mdash; a snap alias, a development build, or a non-standard install &mdash; pass
+<code>--juju</code>:</p>
+<pre><code><span class="prompt">$</span> borescope --juju /snap/bin/juju myapp/0</code></pre>
+<p>The controller is always the one that <code>juju</code> itself considers current; borescope
+doesn't switch controllers for you. Switch with <code>juju switch</code> first if you need
+a different one.</p>
+<h2 id="what-it-checks">What borescope checks</h2>
+<p>Before dropping you at a prompt, borescope's discovery layer:</p>
+<ol>
+<li><strong>Parses</strong> the unit reference and rejects anything that isn't <code>app/n</code>.</li>
+<li><strong>Confirms</strong> the model is a Kubernetes (CAAS) model &mdash; machine (IAAS) models
+are out of scope (they already have a real shell).</li>
+<li><strong>Confirms</strong> the application and unit exist in the model.</li>
+<li><strong>Reads</strong> the charm's <code>metadata.yaml</code> (falling back to <code>charmcraft.yaml</code>)
+from the charm container to find workload container names.</li>
+<li><strong>Probes</strong> the container's Pebble to confirm it answers and is new enough to
+support the <code>--format json</code> output borescope relies on.</li>
+</ol>
+<p>All of this uses only your Juju model access &mdash; never <code>kubectl</code> or
+cluster-admin. See <a href="explanation-transport.html">How it reaches Pebble</a> for the
+details.</p>
+<h2 id="errors">Common errors</h2>
+<table>
+<thead>
+<tr>
+<th>Message</th>
+<th>Cause</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>'&hellip;' is not a valid unit reference</code></td>
+<td>The argument wasn't <code>app/n</code> (for example <code>myapp</code> with no unit number).</td>
+</tr>
+<tr>
+<td><code>&hellip; is on a machine (IAAS) model</code></td>
+<td>The unit is a machine charm. borescope is Kubernetes-only &mdash; use <code>juju ssh</code>.</td>
+</tr>
+<tr>
+<td><code>application '&hellip;' not found</code></td>
+<td>No such application in the target model. Check <code>juju status</code> and <code>--model</code>.</td>
+</tr>
+<tr>
+<td><code>unit '&hellip;' not found</code></td>
+<td>The application exists but not that unit number; borescope lists the units it found.</td>
+</tr>
+<tr>
+<td><code>no workload containers declared</code></td>
+<td>The charm declares no containers &mdash; likely not a sidecar (Kubernetes) charm.</td>
+</tr>
+<tr>
+<td><code>the Pebble in &hellip; is too old</code></td>
+<td>The container's Pebble predates <code>--format json</code>. borescope v1 needs a newer Pebble.</td>
+</tr>
+</tbody>
+</table>
+<p>Most failures are the same ones you'd hit with <code>juju ssh</code>, surfaced earlier and
+with a clearer message.</p>
+  </main>
+</div>
+
+<footer class="doc-footer">
+  <div class="doc-footer-inner">
+    <span>borescope &mdash; free &amp; open source &middot; Apache 2.0</span>
+    <div>
+      <a href="https://github.com/tonyandrewmeyer/borescope" target="_blank" rel="noopener">GitHub</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+(function() {
+  var toggle = document.querySelector('.doc-nav-toggle');
+  var links = document.querySelector('.doc-nav-links');
+  if (!toggle || !links) return;
+  toggle.addEventListener('click', function() {
+    var open = links.classList.toggle('open');
+    toggle.classList.toggle('open', open);
+    toggle.setAttribute('aria-expanded', String(open));
+    toggle.setAttribute('aria-label', open ? 'Close menu' : 'Open menu');
+  });
+  links.querySelectorAll('a').forEach(function(a) {
+    a.addEventListener('click', function() {
+      links.classList.remove('open');
+      toggle.classList.remove('open');
+      toggle.setAttribute('aria-expanded', 'false');
+      toggle.setAttribute('aria-label', 'Open menu');
+    });
+  });
+})();
+
+(function() {
+  document.querySelectorAll('.doc-content pre').forEach(function(pre) {
+    var code = pre.querySelector('code');
+    if (!code) return;
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'copy-btn';
+    btn.textContent = 'Copy';
+    btn.setAttribute('aria-label', 'Copy code to clipboard');
+    btn.addEventListener('click', function() {
+      var text = code.innerText;
+      var done = function() {
+        btn.textContent = 'Copied';
+        btn.classList.add('copied');
+        setTimeout(function() {
+          btn.textContent = 'Copy';
+          btn.classList.remove('copied');
+        }, 1500);
+      };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(done, function() {});
+      } else {
+        var ta = document.createElement('textarea');
+        ta.value = text;
+        ta.setAttribute('readonly', '');
+        ta.style.position = 'absolute';
+        ta.style.left = '-9999px';
+        document.body.appendChild(ta);
+        ta.select();
+        try { document.execCommand('copy'); done(); } catch (e) {}
+        document.body.removeChild(ta);
+      }
+    });
+    pre.appendChild(btn);
+  });
+})();
+</script>
+
+</body>
+</html>

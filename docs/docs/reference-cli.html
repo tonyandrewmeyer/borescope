@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CLI reference &mdash; borescope</title>
+<meta name="description" content="Complete reference for borescope's command-line arguments, modes, and exit codes.">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.bunny.net">
+<link rel="stylesheet" href="https://fonts.bunny.net/css?family=inter:400,500,600,700,800|jetbrains-mono:400&display=swap">
+<link rel="stylesheet" href="docs.css">
+</head>
+<body>
+
+<a href="#main" class="skip-link">Skip to content</a>
+
+<nav class="doc-nav" aria-label="Main">
+  <div class="doc-nav-inner">
+    <a href="../index.html" class="doc-nav-logo">
+      <img src="../logo.svg" alt="borescope" width="28" height="28">
+      <span>borescope</span>
+    </a>
+    <button class="doc-nav-toggle" aria-label="Open menu" aria-expanded="false" aria-controls="nav-menu">
+      <span></span><span></span><span></span>
+    </button>
+    <div class="doc-nav-links" id="nav-menu">
+      <a href="index.html" class="current">Docs</a>
+      <a href="../index.html#features">Features</a>
+      <a href="https://github.com/tonyandrewmeyer/borescope" target="_blank" rel="noopener">GitHub</a>
+    </div>
+  </div>
+</nav>
+<div class="doc-layout">
+  <aside class="doc-sidebar">
+    <h4>Reference</h4>
+    <ul>
+      <li><a href="reference-cli.html" class="current">CLI reference</a></li>
+      <li><a href="reference-commands.html">Command reference</a></li>
+    </ul>
+    <h4>On this page</h4>
+    <ul>
+      <li><a href="#synopsis">Synopsis</a></li>
+      <li><a href="#target">Target arguments</a></li>
+      <li><a href="#modes">Mode arguments</a></li>
+      <li><a href="#behaviour">Behaviour arguments</a></li>
+      <li><a href="#transport">Transport arguments</a></li>
+      <li><a href="#meta">Meta</a></li>
+      <li><a href="#exit-codes">Exit codes</a></li>
+      <li><a href="#environment">Environment</a></li>
+    </ul>
+    <h4>See also</h4>
+    <ul>
+      <li><a href="reference-commands.html">Command reference</a></li>
+      <li><a href="howto-connect.html">Connect to a unit</a></li>
+    </ul>
+  </aside>
+
+  <main id="main" class="doc-content">
+    <div class="breadcrumb">
+      <a href="index.html">Docs</a><span class="sep">/</span>Reference<span class="sep">/</span>CLI reference
+    </div>
+
+    <h1>CLI reference</h1>
+    <p class="subtitle">
+      Every command-line argument, the modes they select, and exit codes.
+    </p>
+
+<h2 id="synopsis">Synopsis</h2>
+<pre><code>borescope [UNIT] [OPTIONS]
+</code></pre>
+<p><code>UNIT</code> is a unit reference such as <code>myapp/0</code>. It is required unless you pass
+<code>--here</code> or <code>--socket</code>. With no <code>--command</code> and an interactive terminal,
+borescope opens a REPL; otherwise it runs non-interactively (see
+<a href="#behaviour">Behaviour arguments</a>).</p>
+<h2 id="target">Target arguments</h2>
+<p>These select <em>which</em> workload container borescope talks to.</p>
+<table>
+<thead>
+<tr>
+<th>Argument</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>UNIT</code></td>
+<td>Positional. Unit reference (<code>app/n</code>), for example <code>myapp/0</code>. Required unless <code>--here</code>/<code>--socket</code> is given.</td>
+</tr>
+<tr>
+<td><code>--container NAME</code></td>
+<td>Workload container name. Defaults to the first container declared in the charm's metadata.</td>
+</tr>
+<tr>
+<td><code>-m</code>, <code>--model MODEL</code></td>
+<td>Juju model. Defaults to the current model. Passed through to <code>juju</code>.</td>
+</tr>
+<tr>
+<td><code>--juju PATH</code></td>
+<td>The <code>juju</code> binary to invoke. Default: <code>juju</code> (found on <code>PATH</code>).</td>
+</tr>
+</tbody>
+</table>
+<h2 id="modes">Mode arguments</h2>
+<p>These change <em>how</em> borescope finds the Pebble. Without either, borescope
+resolves the target through Juju (the default for a remote unit).</p>
+<table>
+<thead>
+<tr>
+<th>Argument</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--here</code></td>
+<td>Run inside the charm container: auto-detect a workload's mounted Pebble socket under <code>/charm/containers/</code>. Use <code>--container</code> to choose when there are several. No Juju access needed.</td>
+</tr>
+<tr>
+<td><code>--socket PATH</code></td>
+<td>Talk directly to a Pebble Unix socket at <code>PATH</code>, skipping Juju discovery entirely.</td>
+</tr>
+</tbody>
+</table>
+<p>See <a href="howto-here.html">Run inside the charm container</a> for when to use each.</p>
+<h2 id="behaviour">Behaviour arguments</h2>
+<p>These change what borescope <em>does</em> once connected.</p>
+<table>
+<thead>
+<tr>
+<th>Argument</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>-c</code>, <code>--command CMD</code></td>
+<td>Run a single command <code>CMD</code> and exit, without entering the REPL.</td>
+</tr>
+<tr>
+<td><code>--snapshot</code></td>
+<td>Dump the container's state as JSON and exit. See <a href="howto-snapshot.html">Capture a state snapshot</a>.</td>
+</tr>
+</tbody>
+</table>
+<p>With neither flag set: if stdin is a terminal, borescope opens the interactive
+REPL; if stdin is <strong>not</strong> a terminal, it reads commands line by line from stdin,
+runs each, and exits with the status of the last. See
+<a href="howto-oneshot.html">Run one command (no REPL)</a>.</p>
+<h2 id="transport">Transport arguments</h2>
+<table>
+<thead>
+<tr>
+<th>Argument</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--via {ssh,exec}</code></td>
+<td>The Juju relay to use when going through Juju (the default mode). <code>ssh</code> (default) streams over <code>juju ssh</code>; <code>exec</code> uses request/response <code>juju exec</code>, for sites where <code>juju ssh</code> is disabled. Ignored when <code>--socket</code>/<code>--here</code> is in effect.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="meta">Meta</h2>
+<table>
+<thead>
+<tr>
+<th>Argument</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--version</code></td>
+<td>Print the borescope version and exit.</td>
+</tr>
+<tr>
+<td><code>-h</code>, <code>--help</code></td>
+<td>Print usage and exit.</td>
+</tr>
+</tbody>
+</table>
+<p><code>--help</code> and <code>--version</code> are fast: borescope defers its heavier imports until
+after argument parsing.</p>
+<h2 id="exit-codes">Exit codes</h2>
+<table>
+<thead>
+<tr>
+<th>Code</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>0</code></td>
+<td>Success.</td>
+</tr>
+<tr>
+<td><code>1</code></td>
+<td>A command failed, or discovery/connection failed. The reason is printed to stderr as <code>borescope: &hellip;</code>.</td>
+</tr>
+<tr>
+<td><code>2</code></td>
+<td>Usage error &mdash; no unit reference and neither <code>--here</code> nor <code>--socket</code>.</td>
+</tr>
+</tbody>
+</table>
+<p>In non-interactive modes the exit code is that of the command run (or the last
+command, when reading from stdin), making borescope safe to use in shell
+conditionals and CI.</p>
+<h2 id="environment">Environment</h2>
+<p>borescope has no environment variables of its own. It inherits the environment
+of the <code>juju</code> CLI it shells out to &mdash; so the controller and model selection,
+<code>JUJU_DATA</code>, and your Juju credentials are all picked up exactly as <code>juju</code>
+would use them. If <code>juju status</code> and <code>juju ssh</code> work in your shell, borescope
+works too.</p>
+  </main>
+</div>
+
+<footer class="doc-footer">
+  <div class="doc-footer-inner">
+    <span>borescope &mdash; free &amp; open source &middot; Apache 2.0</span>
+    <div>
+      <a href="https://github.com/tonyandrewmeyer/borescope" target="_blank" rel="noopener">GitHub</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+(function() {
+  var toggle = document.querySelector('.doc-nav-toggle');
+  var links = document.querySelector('.doc-nav-links');
+  if (!toggle || !links) return;
+  toggle.addEventListener('click', function() {
+    var open = links.classList.toggle('open');
+    toggle.classList.toggle('open', open);
+    toggle.setAttribute('aria-expanded', String(open));
+    toggle.setAttribute('aria-label', open ? 'Close menu' : 'Open menu');
+  });
+  links.querySelectorAll('a').forEach(function(a) {
+    a.addEventListener('click', function() {
+      links.classList.remove('open');
+      toggle.classList.remove('open');
+      toggle.setAttribute('aria-expanded', 'false');
+      toggle.setAttribute('aria-label', 'Open menu');
+    });
+  });
+})();
+
+(function() {
+  document.querySelectorAll('.doc-content pre').forEach(function(pre) {
+    var code = pre.querySelector('code');
+    if (!code) return;
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'copy-btn';
+    btn.textContent = 'Copy';
+    btn.setAttribute('aria-label', 'Copy code to clipboard');
+    btn.addEventListener('click', function() {
+      var text = code.innerText;
+      var done = function() {
+        btn.textContent = 'Copied';
+        btn.classList.add('copied');
+        setTimeout(function() {
+          btn.textContent = 'Copy';
+          btn.classList.remove('copied');
+        }, 1500);
+      };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(done, function() {});
+      } else {
+        var ta = document.createElement('textarea');
+        ta.value = text;
+        ta.setAttribute('readonly', '');
+        ta.style.position = 'absolute';
+        ta.style.left = '-9999px';
+        document.body.appendChild(ta);
+        ta.select();
+        try { document.execCommand('copy'); done(); } catch (e) {}
+        document.body.removeChild(ta);
+      }
+    });
+    pre.appendChild(btn);
+  });
+})();
+</script>
+
+</body>
+</html>

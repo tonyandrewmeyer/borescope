@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>How to run one command without the REPL &mdash; borescope</title>
+<meta name="description" content="Drive borescope non-interactively with --command or by piping a script on stdin, for aliases, CI, and automation.">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.bunny.net">
+<link rel="stylesheet" href="https://fonts.bunny.net/css?family=inter:400,500,600,700,800|jetbrains-mono:400&display=swap">
+<link rel="stylesheet" href="docs.css">
+</head>
+<body>
+
+<a href="#main" class="skip-link">Skip to content</a>
+
+<nav class="doc-nav" aria-label="Main">
+  <div class="doc-nav-inner">
+    <a href="../index.html" class="doc-nav-logo">
+      <img src="../logo.svg" alt="borescope" width="28" height="28">
+      <span>borescope</span>
+    </a>
+    <button class="doc-nav-toggle" aria-label="Open menu" aria-expanded="false" aria-controls="nav-menu">
+      <span></span><span></span><span></span>
+    </button>
+    <div class="doc-nav-links" id="nav-menu">
+      <a href="index.html" class="current">Docs</a>
+      <a href="../index.html#features">Features</a>
+      <a href="https://github.com/tonyandrewmeyer/borescope" target="_blank" rel="noopener">GitHub</a>
+    </div>
+  </div>
+</nav>
+<div class="doc-layout">
+  <aside class="doc-sidebar">
+    <h4>How-to guides</h4>
+    <ul>
+      <li><a href="howto-connect.html">Connect to a unit</a></li>
+      <li><a href="howto-here.html">Run inside the charm container</a></li>
+      <li><a href="howto-oneshot.html" class="current">Run one command (no REPL)</a></li>
+      <li><a href="howto-files.html">Copy files in and out</a></li>
+      <li><a href="howto-snapshot.html">Capture a state snapshot</a></li>
+    </ul>
+    <h4>On this page</h4>
+    <ul>
+      <li><a href="#command">Run one command</a></li>
+      <li><a href="#exit-codes">Exit codes</a></li>
+      <li><a href="#stdin">Pipe a script on stdin</a></li>
+      <li><a href="#exec">Running container tools</a></li>
+      <li><a href="#tips">Scripting tips</a></li>
+    </ul>
+    <h4>See also</h4>
+    <ul>
+      <li><a href="howto-snapshot.html">Capture a state snapshot</a></li>
+      <li><a href="reference-cli.html">CLI reference</a></li>
+    </ul>
+  </aside>
+
+  <main id="main" class="doc-content">
+    <div class="breadcrumb">
+      <a href="index.html">Docs</a><span class="sep">/</span>How-to guides<span class="sep">/</span>Run one command (no REPL)
+    </div>
+
+    <h1>Run one command (no REPL)</h1>
+    <p class="subtitle">
+      Use borescope from scripts: run a single command and exit, or pipe a sequence of commands in on stdin.
+    </p>
+
+<p>Most of the time borescope is an interactive prompt. For scripts, aliases, and
+CI, you can run it non-interactively instead.</p>
+<h2 id="command">Run one command</h2>
+<p>Pass <code>-c</code>/<code>--command</code> to run a single command and exit, without ever entering
+the REPL:</p>
+<pre><code><span class="prompt">$</span> borescope myapp/0 --command "services"
+<span class="prompt">$</span> borescope myapp/0 -c "plan"
+<span class="prompt">$</span> borescope myapp/0 -c "logs -n 100 myapp"</code></pre>
+<p>The command is parsed and run exactly as if you'd typed it at the prompt &mdash;
+including pipes:</p>
+<pre><code><span class="prompt">$</span> borescope myapp/0 -c "logs -n 500 myapp | grep -i error"</code></pre>
+<p>Output goes to stdout, errors to stderr.</p>
+<h2 id="exit-codes">Exit codes</h2>
+<p>borescope's process exit code reflects what happened:</p>
+<table>
+<thead>
+<tr>
+<th>Code</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>0</code></td>
+<td>The command ran and reported success.</td>
+</tr>
+<tr>
+<td><code>1</code></td>
+<td>The command failed, or discovery/connection failed (<code>borescope: &hellip;</code> on stderr).</td>
+</tr>
+<tr>
+<td><code>2</code></td>
+<td>Usage error &mdash; no unit reference and no <code>--here</code>/<code>--socket</code>.</td>
+</tr>
+</tbody>
+</table>
+<p>That makes <code>--command</code> safe to use in shell conditionals:</p>
+<pre><code><span class="prompt">$</span> if borescope myapp/0 -c "health" >/dev/null; then echo healthy; fi</code></pre>
+<h2 id="stdin">Pipe a script on stdin</h2>
+<p>When borescope's stdin isn't a terminal and you haven't passed <code>--command</code>, it
+reads commands from stdin one line at a time, runs each, and exits with the
+status of the last:</p>
+<pre><code><span class="prompt">$</span> borescope myapp/0 &lt;&lt;'EOF'
+services
+plan
+logs -n 50 myapp
+EOF</code></pre>
+<p>Or pipe a file:</p>
+<pre><code><span class="prompt">$</span> cat checks.borescope | borescope myapp/0</code></pre>
+<p>Blank lines are skipped. This is handy for canned diagnostic runbooks you keep
+in version control.</p>
+<h2 id="exec">Running container tools</h2>
+<p><code>exec</code> works the same non-interactively, so you can reach any tool in the
+container from a script:</p>
+<pre><code><span class="prompt">$</span> borescope myapp/0 -c "exec cat /proc/1/cmdline"
+<span class="prompt">$</span> borescope myapp/0 -c "exec ps aux"</code></pre>
+<h2 id="tips">Scripting tips</h2>
+<ul>
+<li><strong>Quote the whole command.</strong> <code>--command &quot;logs -n 100 myapp&quot;</code> is one argument;
+borescope parses it the same way the REPL does.</li>
+<li><strong>Pick the model explicitly</strong> in automation with <code>--model</code>, rather than
+relying on whatever model happens to be current.</li>
+<li><strong>Prefer <code>--snapshot</code></strong> when you want structured, machine-readable state
+rather than the human-formatted output of individual commands. See
+<a href="howto-snapshot.html">Capture a state snapshot</a>.</li>
+<li><strong>One unit per invocation.</strong> borescope targets a single unit; loop in your
+shell to sweep several.</li>
+</ul>
+  </main>
+</div>
+
+<footer class="doc-footer">
+  <div class="doc-footer-inner">
+    <span>borescope &mdash; free &amp; open source &middot; Apache 2.0</span>
+    <div>
+      <a href="https://github.com/tonyandrewmeyer/borescope" target="_blank" rel="noopener">GitHub</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+(function() {
+  var toggle = document.querySelector('.doc-nav-toggle');
+  var links = document.querySelector('.doc-nav-links');
+  if (!toggle || !links) return;
+  toggle.addEventListener('click', function() {
+    var open = links.classList.toggle('open');
+    toggle.classList.toggle('open', open);
+    toggle.setAttribute('aria-expanded', String(open));
+    toggle.setAttribute('aria-label', open ? 'Close menu' : 'Open menu');
+  });
+  links.querySelectorAll('a').forEach(function(a) {
+    a.addEventListener('click', function() {
+      links.classList.remove('open');
+      toggle.classList.remove('open');
+      toggle.setAttribute('aria-expanded', 'false');
+      toggle.setAttribute('aria-label', 'Open menu');
+    });
+  });
+})();
+
+(function() {
+  document.querySelectorAll('.doc-content pre').forEach(function(pre) {
+    var code = pre.querySelector('code');
+    if (!code) return;
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'copy-btn';
+    btn.textContent = 'Copy';
+    btn.setAttribute('aria-label', 'Copy code to clipboard');
+    btn.addEventListener('click', function() {
+      var text = code.innerText;
+      var done = function() {
+        btn.textContent = 'Copied';
+        btn.classList.add('copied');
+        setTimeout(function() {
+          btn.textContent = 'Copy';
+          btn.classList.remove('copied');
+        }, 1500);
+      };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(done, function() {});
+      } else {
+        var ta = document.createElement('textarea');
+        ta.value = text;
+        ta.setAttribute('readonly', '');
+        ta.style.position = 'absolute';
+        ta.style.left = '-9999px';
+        document.body.appendChild(ta);
+        ta.select();
+        try { document.execCommand('copy'); done(); } catch (e) {}
+        document.body.removeChild(ta);
+      }
+    });
+    pre.appendChild(btn);
+  });
+})();
+</script>
+
+</body>
+</html>

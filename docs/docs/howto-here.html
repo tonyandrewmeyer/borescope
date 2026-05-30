@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>How to run inside the charm container &mdash; borescope</title>
+<meta name="description" content="Use borescope from inside a Juju Kubernetes charm container, or against a Pebble socket directly, with --here and --socket.">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.bunny.net">
+<link rel="stylesheet" href="https://fonts.bunny.net/css?family=inter:400,500,600,700,800|jetbrains-mono:400&display=swap">
+<link rel="stylesheet" href="docs.css">
+</head>
+<body>
+
+<a href="#main" class="skip-link">Skip to content</a>
+
+<nav class="doc-nav" aria-label="Main">
+  <div class="doc-nav-inner">
+    <a href="../index.html" class="doc-nav-logo">
+      <img src="../logo.svg" alt="borescope" width="28" height="28">
+      <span>borescope</span>
+    </a>
+    <button class="doc-nav-toggle" aria-label="Open menu" aria-expanded="false" aria-controls="nav-menu">
+      <span></span><span></span><span></span>
+    </button>
+    <div class="doc-nav-links" id="nav-menu">
+      <a href="index.html" class="current">Docs</a>
+      <a href="../index.html#features">Features</a>
+      <a href="https://github.com/tonyandrewmeyer/borescope" target="_blank" rel="noopener">GitHub</a>
+    </div>
+  </div>
+</nav>
+<div class="doc-layout">
+  <aside class="doc-sidebar">
+    <h4>How-to guides</h4>
+    <ul>
+      <li><a href="howto-connect.html">Connect to a unit</a></li>
+      <li><a href="howto-here.html" class="current">Run inside the charm container</a></li>
+      <li><a href="howto-oneshot.html">Run one command (no REPL)</a></li>
+      <li><a href="howto-files.html">Copy files in and out</a></li>
+      <li><a href="howto-snapshot.html">Capture a state snapshot</a></li>
+    </ul>
+    <h4>On this page</h4>
+    <ul>
+      <li><a href="#here">Auto-detect with --here</a></li>
+      <li><a href="#multiple">Several containers</a></li>
+      <li><a href="#socket">Point at a socket</a></li>
+      <li><a href="#when">When to use which</a></li>
+    </ul>
+    <h4>See also</h4>
+    <ul>
+      <li><a href="howto-connect.html">Connect to a unit</a></li>
+      <li><a href="explanation-transport.html">How it reaches Pebble</a></li>
+    </ul>
+  </aside>
+
+  <main id="main" class="doc-content">
+    <div class="breadcrumb">
+      <a href="index.html">Docs</a><span class="sep">/</span>How-to guides<span class="sep">/</span>Run inside the charm container
+    </div>
+
+    <h1>Run inside the charm container</h1>
+    <p class="subtitle">
+      Skip Juju entirely and talk to a mounted Pebble socket directly &mdash; from a charm hook, a debug-hooks session, or against any socket path.
+    </p>
+
+<p>When borescope runs <em>inside</em> a Juju Kubernetes charm container, it doesn't need
+Juju at all. Juju mounts each workload's Pebble socket into the charm container
+at <code>/charm/containers/&lt;name&gt;/pebble.socket</code>, and borescope can talk to that
+socket directly with the real <code>ops.pebble.Client</code> API.</p>
+<h2 id="here">Auto-detect with <code>--here</code></h2>
+<p>From a <code>juju ssh &lt;unit&gt;</code> session, a <code>juju debug-hooks</code> shell, or charm code,
+run:</p>
+<pre><code><span class="prompt">$</span> borescope --here</code></pre>
+<p>borescope scans <code>/charm/containers/</code> for mounted Pebble sockets. If the charm
+declares exactly one workload container, it connects to that one &mdash; no unit
+reference, no model, no Juju round-trip.</p>
+<h2 id="multiple">Several containers</h2>
+<p>If the charm has more than one workload container, <code>--here</code> can't guess which
+you mean, so name it:</p>
+<pre><code><span class="prompt">$</span> borescope --here --container=workload</code></pre>
+<p>If you omit <code>--container</code> with multiple containers present, borescope lists the
+available names and asks you to choose one.</p>
+<h2 id="socket">Point at a socket</h2>
+<p>To talk to a Pebble over a specific Unix socket &mdash; a workload socket at a
+non-standard path, or a local Pebble you're running yourself &mdash; pass <code>--socket</code>:</p>
+<pre><code><span class="prompt">$</span> borescope --socket /charm/containers/workload/pebble.socket
+<span class="prompt">$</span> borescope --socket /var/run/pebble.socket</code></pre>
+<p>With <code>--socket</code>, borescope skips Juju discovery entirely and connects straight
+to that socket via the HTTP API. You can still pass a unit reference for
+labelling (it's used for the history key and the prompt), but it isn't required.</p>
+<h2 id="when">When to use which</h2>
+<table>
+<thead>
+<tr>
+<th>You are&hellip;</th>
+<th>Use</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>On your workstation, debugging a remote unit</td>
+<td><code>borescope myapp/0</code> (the <a href="howto-connect.html">default</a>)</td>
+</tr>
+<tr>
+<td>Inside the charm container already</td>
+<td><code>borescope --here</code></td>
+</tr>
+<tr>
+<td>Inside, with multiple workloads</td>
+<td><code>borescope --here --container=&lt;name&gt;</code></td>
+</tr>
+<tr>
+<td>Pointing at a specific or local socket</td>
+<td><code>borescope --socket &lt;path&gt;</code></td>
+</tr>
+</tbody>
+</table>
+<p><code>--here</code> and <code>--socket</code> both use the direct socket transport, which is faster
+than going through <code>juju ssh</code> and works without any Juju access &mdash; but only
+from somewhere that can see the socket. From your workstation, use a unit
+reference instead. See <a href="explanation-transport.html">How it reaches Pebble</a> for
+how the two transports differ.</p>
+  </main>
+</div>
+
+<footer class="doc-footer">
+  <div class="doc-footer-inner">
+    <span>borescope &mdash; free &amp; open source &middot; Apache 2.0</span>
+    <div>
+      <a href="https://github.com/tonyandrewmeyer/borescope" target="_blank" rel="noopener">GitHub</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+(function() {
+  var toggle = document.querySelector('.doc-nav-toggle');
+  var links = document.querySelector('.doc-nav-links');
+  if (!toggle || !links) return;
+  toggle.addEventListener('click', function() {
+    var open = links.classList.toggle('open');
+    toggle.classList.toggle('open', open);
+    toggle.setAttribute('aria-expanded', String(open));
+    toggle.setAttribute('aria-label', open ? 'Close menu' : 'Open menu');
+  });
+  links.querySelectorAll('a').forEach(function(a) {
+    a.addEventListener('click', function() {
+      links.classList.remove('open');
+      toggle.classList.remove('open');
+      toggle.setAttribute('aria-expanded', 'false');
+      toggle.setAttribute('aria-label', 'Open menu');
+    });
+  });
+})();
+
+(function() {
+  document.querySelectorAll('.doc-content pre').forEach(function(pre) {
+    var code = pre.querySelector('code');
+    if (!code) return;
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'copy-btn';
+    btn.textContent = 'Copy';
+    btn.setAttribute('aria-label', 'Copy code to clipboard');
+    btn.addEventListener('click', function() {
+      var text = code.innerText;
+      var done = function() {
+        btn.textContent = 'Copied';
+        btn.classList.add('copied');
+        setTimeout(function() {
+          btn.textContent = 'Copy';
+          btn.classList.remove('copied');
+        }, 1500);
+      };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(done, function() {});
+      } else {
+        var ta = document.createElement('textarea');
+        ta.value = text;
+        ta.setAttribute('readonly', '');
+        ta.style.position = 'absolute';
+        ta.style.left = '-9999px';
+        document.body.appendChild(ta);
+        ta.select();
+        try { document.execCommand('copy'); done(); } catch (e) {}
+        document.body.removeChild(ta);
+      }
+    });
+    pre.appendChild(btn);
+  });
+})();
+</script>
+
+</body>
+</html>

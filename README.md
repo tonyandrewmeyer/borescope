@@ -39,6 +39,20 @@ borescope <unit> --command "services"  # one-shot, no REPL (for scripts)
 borescope <unit> --snapshot            # dump container state as JSON
 ```
 
+## Documentation
+
+Full documentation — a tutorial, how-to guides, and CLI/command reference — is
+at **<https://tonyandrewmeyer.github.io/borescope/>**.
+
+The docs are plain Markdown under [`docs/src/`](docs/src/), built into static
+HTML with a small script (no docs framework). To build them locally:
+
+```console
+uv run python docs/src/_build.py     # or: tox -e docs
+```
+
+See [`docs/README.md`](docs/README.md) for the authoring rules.
+
 ## How it works
 
 borescope is three thin, independently-testable layers:

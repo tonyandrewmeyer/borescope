@@ -41,6 +41,12 @@ dev = [
     "tox>=4.22.0",
     "pre-commit>=3.0.0",
 ]
+docs = [
+    "jinja2>=3.1",
+    "markdown-it-py>=3.0",
+    "mdit-py-plugins>=0.4",
+    "PyYAML>=6.0",
+]
 
 [project.scripts]
 borescope = "borescope.cli:main"
@@ -156,6 +162,15 @@ notice-rgx = "(?i)Copyright \\d{4} Tony Meyer"
     # Hard-coded "secrets" are fine in tests.
     "S105",
     "S106",
+]
+# The docs build script intentionally keeps two things ruff would flag:
+"docs/src/_build.py" = [
+    # The entity-rewrite table maps literal "ambiguous" Unicode characters
+    # (en dash, curly quotes, ...) to HTML entities — they must stay as-is.
+    "RUF001",
+    # Jinja2 autoescape is deliberately off: the body is trusted, already-
+    # rendered HTML, and escaping it would double-encode the docs.
+    "S701",
 ]
 
 [tool.ruff.lint.isort]
