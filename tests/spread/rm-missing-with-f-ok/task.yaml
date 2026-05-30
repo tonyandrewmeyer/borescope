@@ -12,12 +12,21 @@ execute: |
   pebble_up
 
   set +e
-  out="$(borescope_run -c 'rm -f /no/such/file' 2>&1)"
+  # No 2>&1: spread runs tasks under `set -x`, which sends xtrace to stderr.
+  # Capturing combined streams would put the trace into $out and break the
+  # `test -z` "no diagnostic" check. The matching stderr-empty assertion is
+  # via a temp file.
+  err="$(mktemp)"
+  out="$(borescope_run -c 'rm -f /no/such/file' 2>"$err")"
   rc=$?
   set -e
 
   test "$rc" -eq 0
   test -z "$out"
+  # POSIX rm -f: "Do not write diagnostic messages ... in the case of
+  # nonexistent operands."
+  test ! -s "$err"
+  rm -f "$err"
 
 restore: |
   source "${SPREAD_PATH}/tests/spread/lib.sh"
