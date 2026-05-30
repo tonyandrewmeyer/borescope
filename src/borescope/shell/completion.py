@@ -12,7 +12,7 @@ from typing import TYPE_CHECKING
 from prompt_toolkit.completion import Completer, Completion
 
 from . import pathutils
-from .sanitize import safe_name
+from .sanitise import safe_name
 
 if TYPE_CHECKING:
     from prompt_toolkit.completion import CompleteEvent

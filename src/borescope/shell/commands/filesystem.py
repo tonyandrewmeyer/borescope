@@ -19,7 +19,7 @@ import time
 from typing import TYPE_CHECKING, Any
 
 from .. import pathutils
-from ..sanitize import safe_name
+from ..sanitise import safe_name
 from ._args import parse_args
 from .base import Command, Result
 

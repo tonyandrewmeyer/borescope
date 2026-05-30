@@ -5,7 +5,7 @@
 
 from __future__ import annotations
 
-from borescope.shell.sanitize import safe_name
+from borescope.shell.sanitise import safe_name
 
 
 def test_plain_name_unchanged():
