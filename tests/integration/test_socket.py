@@ -56,3 +56,50 @@ def test_filesystem_over_socket(shell):
 def test_pipe_over_socket(shell):
     result = shell.run_line("cat /etc/passwd | grep root")
     assert "root" in result.output
+
+
+# --------------------------------------------------------------------------- #
+# Entrypoint smoke: exercise the actual `cascade` CLI subprocess.
+# These catch breakage in argparse, exit codes, JSON serialization, and the
+# Shell -> stdout glue that the Shell-class tests above don't see.
+# --------------------------------------------------------------------------- #
+import json
+import subprocess
+import sys
+
+
+def _run_cascade(*args: str, timeout: float = 30.0) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(
+        [sys.executable, "-m", "cascade", *args],
+        capture_output=True,
+        text=True,
+        timeout=timeout,
+        check=False,
+    )
+
+
+def test_entrypoint_version():
+    result = _run_cascade("--version")
+    assert result.returncode == 0
+    assert "cascade" in result.stdout.lower()
+
+
+def test_entrypoint_no_unit_or_socket_errors_clearly():
+    result = _run_cascade()
+    assert result.returncode == 2
+    assert "unit reference is required" in result.stderr
+
+
+def test_entrypoint_snapshot_against_real_pebble(pebble_socket):
+    result = _run_cascade("--socket", pebble_socket, "--snapshot")
+    assert result.returncode == 0, result.stderr
+    data = json.loads(result.stdout)
+    assert data["unit"] == "local"
+    assert data["system"]["version"]
+    assert any(s["name"] == "hello" for s in data["services"])
+
+
+def test_entrypoint_oneshot_command_against_real_pebble(pebble_socket):
+    result = _run_cascade("--socket", pebble_socket, "-c", "services")
+    assert result.returncode == 0, result.stderr
+    assert "hello" in result.stdout
