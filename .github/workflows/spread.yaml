@@ -74,3 +74,22 @@ jobs:
           TASK: ${{ matrix.task }}
         run: |
           spread -v "github-ci:ubuntu-24.04:tests/spread/${TASK}"
+
+  # Single rollup of the matrix so the branch-protection ruleset can require
+  # one stable check name instead of every task name. `needs.spread.result`
+  # is "success" only when every matrix expansion succeeded; otherwise this
+  # job fails and surfaces which result triggered it.
+  all:
+    name: All spread tasks
+    needs: spread
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check matrix result
+        env:
+          RESULT: ${{ needs.spread.result }}
+        run: |
+          if [ "${RESULT}" != "success" ]; then
+            echo "Spread matrix did not succeed (result: ${RESULT})."
+            exit 1
+          fi
