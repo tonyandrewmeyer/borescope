@@ -194,7 +194,7 @@ class Health(Command):
 
     def run(self, ctx: ShellContext, args: list[str], stdin: str | None = None) -> Result:
         infos = ctx.transport.get_checks()
-        failing = [i.name for i in infos if _enum_value(i.status).lower() != 'up']
+        failing = [i.name for i in infos if i.status is not pebble.CheckStatus.UP]
         if not infos:
             return Result.ok('healthy (no checks configured)')
         if failing:
