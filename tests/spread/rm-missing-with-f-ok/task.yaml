@@ -12,10 +12,9 @@ execute: |
   pebble_up
 
   set +e
-  # No 2>&1: spread runs tasks under `set -x`, which sends xtrace to stderr.
-  # Capturing combined streams would put the trace into $out and break the
-  # `test -z` "no diagnostic" check. The matching stderr-empty assertion is
-  # via a temp file.
+  # Capture stderr separately. POSIX forbids the rm-specific *diagnostic*,
+  # not any byte on stderr — borescope's startup (ops/pebble client) is
+  # entitled to log; we only assert that no `rm:` line was emitted.
   err="$(mktemp)"
   out="$(borescope_run -c 'rm -f /no/such/file' 2>"$err")"
   rc=$?
@@ -25,7 +24,11 @@ execute: |
   test -z "$out"
   # POSIX rm -f: "Do not write diagnostic messages ... in the case of
   # nonexistent operands."
-  test ! -s "$err"
+  if grep -q '^rm:' "$err"; then
+      echo "rm -f wrote a diagnostic when POSIX forbids it:" >&2
+      cat "$err" >&2
+      exit 1
+  fi
   rm -f "$err"
 
 restore: |
