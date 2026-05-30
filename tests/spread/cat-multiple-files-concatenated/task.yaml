@@ -1,0 +1,28 @@
+summary: |
+  POSIX XCU §cat — multiple file operands are concatenated in the order
+  given.
+systems:
+  - ubuntu-24.04
+
+execute: |
+  # https://pubs.opengroup.org/onlinepubs/9699919799/utilities/cat.html
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_up
+
+  workdir="$(mktemp -d)"
+  printf 'first\n'  > "${workdir}/a"
+  printf 'second\n' > "${workdir}/b"
+
+  out="$(borescope_run -c "cat ${workdir}/a ${workdir}/b")"
+  echo "$out" | MATCH '^first$'
+  echo "$out" | MATCH '^second$'
+  # Order: first before second.
+  test "$(echo "$out" | grep -n '^first$' | cut -d: -f1)" \
+       -lt \
+       "$(echo "$out" | grep -n '^second$' | cut -d: -f1)"
+
+  rm -rf "${workdir}"
+
+restore: |
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_down

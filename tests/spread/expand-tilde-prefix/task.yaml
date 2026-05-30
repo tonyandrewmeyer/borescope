@@ -1,0 +1,17 @@
+summary: |
+  POSIX XCU §2.6.1 — `~/path` expands to the user's home directory
+  joined with the remainder.
+systems:
+  - ubuntu-24.04
+
+execute: |
+  # https://pubs.opengroup.org/onlinepubs/9699919799/utilities/V3_chap02.html#tag_18_06_01
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_up
+
+  out="$(borescope_run -c 'echo ~/logs')"
+  echo "$out" | MATCH '^/root/logs$'
+
+restore: |
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_down

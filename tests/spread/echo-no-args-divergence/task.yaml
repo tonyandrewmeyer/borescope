@@ -1,0 +1,25 @@
+summary: |
+  KNOWN DIVERGENCE from POSIX XCU §echo — borescope's REPL emitter
+  short-circuits on empty output, so `echo` with no operands writes zero
+  bytes instead of the spec-mandated single <newline>.
+systems:
+  - ubuntu-24.04
+
+# basic.Echo returns `Result.ok(' '.join(args))` — empty for no operands —
+# and repl._emit's `if result.output:` then writes nothing. POSIX requires
+# "only the <newline> shall be written." This task pins *current* behaviour
+# so a future fix (Echo emitting its own trailing newline, or _emit always
+# terminating non-error output) flips it green by reversal.
+execute: |
+  # https://pubs.opengroup.org/onlinepubs/9699919799/utilities/echo.html
+  # "If there are no arguments, only the <newline> shall be written."
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_up
+
+  # Current behaviour: 0 bytes. POSIX would require 1.
+  raw="$(borescope_run -c 'echo' | wc -c)"
+  test "$raw" -eq 0
+
+restore: |
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_down

@@ -1,0 +1,26 @@
+summary: |
+  POSIX XCU §grep — when more than one file is named, each matching line
+  shall be preceded by the filename and a colon.
+systems:
+  - ubuntu-24.04
+
+execute: |
+  # https://pubs.opengroup.org/onlinepubs/9699919799/utilities/grep.html
+  # "If more than one file is named, ... each matched line shall be
+  #  preceded by the filename and a colon."
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_up
+
+  workdir="$(mktemp -d)"
+  printf 'hit-a\n'  > "${workdir}/a"
+  printf 'miss\nhit-b\n' > "${workdir}/b"
+
+  out="$(borescope_run -c "grep hit ${workdir}/a ${workdir}/b")"
+  echo "$out" | MATCH "^${workdir}/a:hit-a$"
+  echo "$out" | MATCH "^${workdir}/b:hit-b$"
+
+  rm -rf "${workdir}"
+
+restore: |
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_down

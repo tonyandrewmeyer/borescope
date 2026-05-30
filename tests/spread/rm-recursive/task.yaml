@@ -1,0 +1,23 @@
+summary: |
+  POSIX XCU §rm — `-r` (or `-R`) recursively removes a non-empty directory.
+systems:
+  - ubuntu-24.04
+
+execute: |
+  # https://pubs.opengroup.org/onlinepubs/9699919799/utilities/rm.html
+  # "-R, -r  Remove file hierarchies."
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_up
+
+  workdir="$(mktemp -d)"
+  mkdir -p "${workdir}/tree/sub"
+  touch "${workdir}/tree/a" "${workdir}/tree/sub/b"
+
+  borescope_run -c "rm -r ${workdir}/tree"
+  test ! -e "${workdir}/tree"
+
+  rm -rf "${workdir}"
+
+restore: |
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_down

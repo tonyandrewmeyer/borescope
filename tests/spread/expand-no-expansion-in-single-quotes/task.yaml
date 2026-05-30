@@ -1,0 +1,20 @@
+summary: |
+  POSIX XCU §2.2.2 — characters enclosed in single quotes preserve their
+  literal value; `$` inside `'...'` does not trigger parameter expansion.
+systems:
+  - ubuntu-24.04
+
+execute: |
+  # https://pubs.opengroup.org/onlinepubs/9699919799/utilities/V3_chap02.html#tag_18_02_02
+  # "Enclosing characters in single-quotes ('') shall preserve the literal
+  #  value of each character within the single-quotes."
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_up
+
+  # Single-quoted `$HOME` must reach the command verbatim, not as /root.
+  out="$(borescope_run -c "echo '\$HOME'")"
+  echo "$out" | MATCH '^\$HOME$'
+
+restore: |
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_down

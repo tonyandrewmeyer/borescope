@@ -1,0 +1,27 @@
+summary: |
+  POSIX XCU §exit — with no operand, exit with the status of the last
+  command (0 here, since the shell has run nothing else).
+systems:
+  - ubuntu-24.04
+
+execute: |
+  # https://pubs.opengroup.org/onlinepubs/9699919799/utilities/V3_chap02.html#tag_18_25
+  # "If n is specified, but its value is not between 0 and 255 inclusively,
+  #  the exit status is undefined. ... A trap on EXIT shall be executed
+  #  before the shell terminates, except when the exit utility is invoked
+  #  in that trap itself"
+  # POSIX doesn't mandate 0 for bare `exit` from a fresh shell, but the
+  # de-facto behaviour is: status of the previous command, which is 0 here.
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_up
+
+  set +e
+  printf 'exit\n' | borescope_script
+  rc=$?
+  set -e
+
+  test "$rc" -eq 0
+
+restore: |
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_down

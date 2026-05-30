@@ -1,0 +1,25 @@
+summary: |
+  POSIX XCU §find — `-type d` matches only directories.
+systems:
+  - ubuntu-24.04
+
+execute: |
+  # https://pubs.opengroup.org/onlinepubs/9699919799/utilities/find.html
+  # "-type c  ... 'd' (directory)."
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_up
+
+  workdir="$(mktemp -d)"
+  mkdir "${workdir}/d1" "${workdir}/d2"
+  touch "${workdir}/file"
+
+  out="$(borescope_run -c "find ${workdir} -type d")"
+  echo "$out" | MATCH "${workdir}/d1$"
+  echo "$out" | MATCH "${workdir}/d2$"
+  echo "$out" | NOMATCH "${workdir}/file$"
+
+  rm -rf "${workdir}"
+
+restore: |
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_down

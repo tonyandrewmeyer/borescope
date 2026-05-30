@@ -1,0 +1,24 @@
+summary: |
+  POSIX XCU §tail — without -n, write the last 10 lines.
+systems:
+  - ubuntu-24.04
+
+execute: |
+  # https://pubs.opengroup.org/onlinepubs/9699919799/utilities/tail.html
+  # "By default, tail shall copy ... the last 10 lines of the input."
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_up
+
+  workdir="$(mktemp -d)"
+  seq 1 20 > "${workdir}/twenty"
+
+  out="$(borescope_run -c "tail ${workdir}/twenty")"
+  echo "$out" | MATCH '^11$'
+  echo "$out" | MATCH '^20$'
+  echo "$out" | NOMATCH '^10$'
+
+  rm -rf "${workdir}"
+
+restore: |
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_down

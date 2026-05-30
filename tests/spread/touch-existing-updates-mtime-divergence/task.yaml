@@ -1,0 +1,36 @@
+summary: |
+  KNOWN DIVERGENCE from POSIX XCU §touch — borescope leaves an existing
+  file's modification time unchanged; POSIX requires it to be updated to
+  the current time (modulo -d/-t/-r options not implemented here).
+systems:
+  - ubuntu-24.04
+
+# Pebble's files API has no "update mtime only" operation, so basic.Touch
+# short-circuits on existing files (see the inline comment in
+# src/borescope/shell/commands/filesystem.py). This task pins the v1 behaviour
+# so a future fix (push-back-with-preserved-content?) flips it green by
+# reversal.
+execute: |
+  # https://pubs.opengroup.org/onlinepubs/9699919799/utilities/touch.html
+  # "The touch utility shall change the last data modification timestamps,
+  #  the last data access timestamps, or both, of the files."
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_up
+
+  workdir="$(mktemp -d)"
+  touch "${workdir}/f"
+  # Force an old mtime so any "update to now" would be detectable.
+  touch -t 200001010000 "${workdir}/f"
+  before="$(stat -c '%Y' "${workdir}/f")"
+
+  borescope_run -c "touch ${workdir}/f"
+  after="$(stat -c '%Y' "${workdir}/f")"
+
+  # Current behaviour: mtime unchanged. POSIX would require after > before.
+  test "$before" = "$after"
+
+  rm -rf "${workdir}"
+
+restore: |
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_down

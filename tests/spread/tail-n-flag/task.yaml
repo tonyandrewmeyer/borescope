@@ -1,0 +1,26 @@
+summary: |
+  POSIX XCU §tail — `-n number` writes the last <number> lines.
+systems:
+  - ubuntu-24.04
+
+execute: |
+  # https://pubs.opengroup.org/onlinepubs/9699919799/utilities/tail.html
+  # "-n number  The application shall ensure that the number option-argument
+  #             is a decimal integer ... The last number lines of the file
+  #             shall be copied to standard output."
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_up
+
+  workdir="$(mktemp -d)"
+  seq 1 5 > "${workdir}/five"
+
+  out="$(borescope_run -c "tail -n 2 ${workdir}/five")"
+  echo "$out" | MATCH '^4$'
+  echo "$out" | MATCH '^5$'
+  echo "$out" | NOMATCH '^3$'
+
+  rm -rf "${workdir}"
+
+restore: |
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_down

@@ -1,0 +1,19 @@
+summary: |
+  POSIX XCU §2.2.3 — characters within double-quotes preserve their
+  literal value, except for $, `, \, and ".
+systems:
+  - ubuntu-24.04
+
+execute: |
+  # https://pubs.opengroup.org/onlinepubs/9699919799/utilities/V3_chap02.html#tag_18_02_03
+  # A double-quoted string with embedded whitespace is one token, not
+  # several.
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_up
+
+  out="$(borescope_run -c 'echo "hello world"')"
+  echo "$out" | MATCH '^hello world$'
+
+restore: |
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_down

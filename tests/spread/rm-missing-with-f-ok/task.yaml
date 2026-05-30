@@ -1,0 +1,36 @@
+summary: |
+  POSIX XCU §rm — with -f, a missing operand does not produce a diagnostic
+  and exit status is 0.
+systems:
+  - ubuntu-24.04
+
+execute: |
+  # https://pubs.opengroup.org/onlinepubs/9699919799/utilities/rm.html
+  # "-f  Do not prompt for confirmation. Do not write diagnostic messages
+  #      or modify the exit status in the case of nonexistent operands."
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_up
+
+  set +e
+  # Capture stderr separately. POSIX forbids the rm-specific *diagnostic*,
+  # not any byte on stderr — borescope's startup (ops/pebble client) is
+  # entitled to log; we only assert that no `rm:` line was emitted.
+  err="$(mktemp)"
+  out="$(borescope_run -c 'rm -f /no/such/file' 2>"$err")"
+  rc=$?
+  set -e
+
+  test "$rc" -eq 0
+  test -z "$out"
+  # POSIX rm -f: "Do not write diagnostic messages ... in the case of
+  # nonexistent operands."
+  if grep -q '^rm:' "$err"; then
+      echo "rm -f wrote a diagnostic when POSIX forbids it:" >&2
+      cat "$err" >&2
+      exit 1
+  fi
+  rm -f "$err"
+
+restore: |
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_down

@@ -1,0 +1,25 @@
+summary: |
+  POSIX XCU §mv — `mv src dst` renames src to dst when dst does not exist.
+systems:
+  - ubuntu-24.04
+
+execute: |
+  # https://pubs.opengroup.org/onlinepubs/9699919799/utilities/mv.html
+  # "In the first synopsis form, the mv utility shall move the file named
+  #  by the source_file operand to the destination path named by the
+  #  target_file operand."
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_up
+
+  workdir="$(mktemp -d)"
+  printf 'moved\n' > "${workdir}/before"
+
+  borescope_run -c "mv ${workdir}/before ${workdir}/after"
+  test ! -e "${workdir}/before"
+  cat "${workdir}/after" | MATCH '^moved$'
+
+  rm -rf "${workdir}"
+
+restore: |
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_down
