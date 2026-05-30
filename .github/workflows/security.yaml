@@ -26,3 +26,28 @@ jobs:
       # Surface findings via the Security tab rather than failing the run (this
       # is not a merge-gating check).
       fail-on-vuln: false
+
+  pip-audit:
+    # PyPA's own scanner against the PyPI Advisory DB / OSV — overlaps with
+    # OSV-Scanner but provides a second, PyPA-maintained source of truth and
+    # scans the resolved (pinned) set rather than the lockfile graph.
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b  # v8.1.0
+      - name: Export runtime deps from uv.lock
+        run: |
+          uv export \
+            --no-dev \
+            --no-hashes \
+            --no-emit-project \
+            --format requirements-txt \
+            > requirements.txt
+      - name: Run pip-audit
+        # --no-deps because the exported file already contains the fully
+        # resolved transitive set; --disable-pip skips re-resolution.
+        run: uvx pip-audit --strict --disable-pip --no-deps --requirement requirements.txt

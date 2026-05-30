@@ -1,0 +1,39 @@
+name: OpenSSF Scorecard
+
+# Continuous supply-chain security score from the OpenSSF Scorecard project.
+# Runs on a weekly schedule, on pushes to main, and when branch protection
+# rules change (so changes to protection surface in the next score).
+
+on:
+  push:
+    branches: ["main"]
+  branch_protection_rule:
+  schedule:
+    - cron: "23 4 * * 1"
+
+permissions: read-all
+
+jobs:
+  analysis:
+    name: Scorecard analysis
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write   # Upload SARIF to the Security tab.
+      id-token: write           # Publish results to scorecard.dev (OIDC).
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - name: Run analysis
+        uses: ossf/scorecard-action@4eaacf0543bb3f2c246792bd56e8cdeffafb205a  # v2.4.3
+        with:
+          results_file: results.sarif
+          results_format: sarif
+          publish_results: true
+      - name: Upload SARIF to code-scanning
+        uses: github/codeql-action/upload-sarif@v4.36.0
+        with:
+          sarif_file: results.sarif
+          category: scorecard
