@@ -1,3 +1,6 @@
+# Copyright 2026 Tony Meyer
+# SPDX-License-Identifier: Apache-2.0
+
 """Run raw ``pebble`` subcommands over the same relay the transport uses.
 
 A few Pebble CLI features (notably ``logs``) aren't part of the
@@ -19,7 +22,7 @@ if TYPE_CHECKING:
 # Juju injects pebble here in every k8s charm container, but does NOT put it on
 # $PATH. So in --here mode `shutil.which("pebble")` finds nothing — fall through
 # to this absolute location before giving up.
-_JUJU_PEBBLE = "/charm/bin/pebble"
+_JUJU_PEBBLE = '/charm/bin/pebble'
 
 
 def _local_pebble_binary() -> str:
@@ -28,7 +31,7 @@ def _local_pebble_binary() -> str:
     Tries ``$PATH`` first (so a dev with a local Pebble install or snap works),
     then the Juju-injected path inside a charm container.
     """
-    found = shutil.which("pebble")
+    found = shutil.which('pebble')
     if found:
         return found
     import os
@@ -37,7 +40,7 @@ def _local_pebble_binary() -> str:
         return _JUJU_PEBBLE
     # Fall back to the bare name — subprocess will raise FileNotFoundError, which
     # callers wrap into a clear "logs_error" / similar.
-    return "pebble"
+    return 'pebble'
 
 
 def pebble_relay(target: Target) -> tuple[list[str], dict[str, str] | None, Any]:
@@ -51,7 +54,7 @@ def pebble_relay(target: Target) -> tuple[list[str], dict[str, str] | None, Any]
 
         from shimmer import LocalSubprocessRunner
 
-        env = {**os.environ, "PEBBLE_SOCKET": target.socket_path}
+        env = {**os.environ, 'PEBBLE_SOCKET': target.socket_path}
         return [_local_pebble_binary()], env, LocalSubprocessRunner()
 
     from .cli_transport import _RUNNERS, REMOTE_PEBBLE_BINARY
@@ -59,7 +62,7 @@ def pebble_relay(target: Target) -> tuple[list[str], dict[str, str] | None, Any]
     # The runner injects the workload socket env itself (via the charm container),
     # so no env is needed here. Pick the runner that matches the target's
     # --via setting so `logs` / `--snapshot` use the same relay as everything else.
-    runner_cls = _RUNNERS.get(target.via, _RUNNERS["ssh"])
+    runner_cls = _RUNNERS.get(target.via, _RUNNERS['ssh'])
     runner = runner_cls(
         target.unit,
         target.container,

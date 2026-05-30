@@ -1,3 +1,6 @@
+# Copyright 2026 Tony Meyer
+# SPDX-License-Identifier: Apache-2.0
+
 """Per-session shell state."""
 
 from __future__ import annotations
@@ -11,7 +14,7 @@ if TYPE_CHECKING:
 
 
 def _default_env() -> dict[str, str]:
-    return {"HOME": "/root", "PWD": "/"}
+    return {'HOME': '/root', 'PWD': '/'}
 
 
 @dataclass
@@ -20,14 +23,16 @@ class ShellContext:
 
     transport: Transport
     target: Target
-    cwd: str = "/"
+    cwd: str = '/'
     env: dict[str, str] = field(default_factory=_default_env)
     last_exit: int = 0
 
     @property
     def home(self) -> str:
-        return self.env.get("HOME", "/root")
+        """The shell's ``$HOME``, falling back to ``/root``."""
+        return self.env.get('HOME', '/root')
 
     def chdir(self, path: str) -> None:
+        """Change the shell's working directory to *path*."""
         self.cwd = path
-        self.env["PWD"] = path
+        self.env['PWD'] = path

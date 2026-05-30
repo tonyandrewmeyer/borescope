@@ -1,3 +1,6 @@
+# Copyright 2026 Tony Meyer
+# SPDX-License-Identifier: Apache-2.0
+
 """Command base class, result type, and the auto-discovery registry."""
 
 from __future__ import annotations
@@ -13,12 +16,12 @@ if TYPE_CHECKING:
 class Result:
     """The outcome of running a command stage."""
 
-    output: str = ""
-    error: str = ""
+    output: str = ''
+    error: str = ''
     code: int = 0
 
     @classmethod
-    def ok(cls, output: str = "") -> Result:
+    def ok(cls, output: str = '') -> Result:
         return cls(output=output, code=0)
 
     @classmethod
@@ -42,17 +45,15 @@ class Command:
     command is just defining a subclass — no registration boilerplate.
     """
 
-    name: ClassVar[str] = ""
+    name: ClassVar[str] = ''
     aliases: ClassVar[tuple[str, ...]] = ()
-    summary: ClassVar[str] = ""
-    usage: ClassVar[str] = ""
+    summary: ClassVar[str] = ''
+    usage: ClassVar[str] = ''
     # Streaming commands write directly to the terminal and cannot appear in a
     # pipe (e.g. `logs --follow`, `tail -f`).
     streaming: ClassVar[bool] = False
 
-    def run(
-        self, ctx: ShellContext, args: list[str], stdin: str | None = None
-    ) -> Result:
+    def run(self, ctx: ShellContext, args: list[str], stdin: str | None = None) -> Result:
         raise NotImplementedError
 
 
@@ -60,7 +61,7 @@ def _iter_command_classes(root: type[Command]) -> list[type[Command]]:
     found: list[type[Command]] = []
     for sub in root.__subclasses__():
         found.extend(_iter_command_classes(sub))
-        if getattr(sub, "name", ""):
+        if getattr(sub, 'name', ''):
             found.append(sub)
     return found
 

@@ -1,3 +1,6 @@
+# Copyright 2026 Tony Meyer
+# SPDX-License-Identifier: Apache-2.0
+
 """Line parsing for the v1 shell.
 
 Deliberately tiny: one command at a time, with at most a single ``|`` between two
@@ -15,18 +18,18 @@ from collections.abc import Mapping
 from ..errors import BorescopeError
 
 _UNSUPPORTED = {
-    ";": "sequencing (;)",
-    "&": "background jobs (&)",
-    "&&": "'&&'",
-    "||": "'||'",
-    ">": "output redirection (>)",
-    ">>": "output redirection (>>)",
-    "<": "input redirection (<)",
-    "(": "subshells",
-    ")": "subshells",
+    ';': 'sequencing (;)',
+    '&': 'background jobs (&)',
+    '&&': "'&&'",
+    '||': "'||'",
+    '>': 'output redirection (>)',
+    '>>': 'output redirection (>>)',
+    '<': 'input redirection (<)',
+    '(': 'subshells',
+    ')': 'subshells',
 }
 
-_VAR = re.compile(r"\$(\w+)|\$\{(\w+)\}")
+_VAR = re.compile(r'\$(\w+)|\$\{(\w+)\}')
 
 
 class ParseError(BorescopeError):
@@ -56,14 +59,14 @@ def parse_pipeline(line: str) -> list[list[str]]:
     for tok in tokens:
         if tok in _UNSUPPORTED:
             raise ParseError(
-                f"{_UNSUPPORTED[tok]} is not supported in v1. "
+                f'{_UNSUPPORTED[tok]} is not supported in v1. '
                 "Use one command at a time (with at most a single '|')."
             )
 
     stages: list[list[str]] = []
     current: list[str] = []
     for tok in tokens:
-        if tok == "|":
+        if tok == '|':
             stages.append(current)
             current = []
         else:
@@ -79,13 +82,13 @@ def parse_pipeline(line: str) -> list[list[str]]:
 
 def expand(token: str, env: Mapping[str, str]) -> str:
     """Expand a leading ``~`` and ``$VAR`` / ``${VAR}`` references using *env*."""
-    if token == "~":
-        token = env.get("HOME", "/root")
-    elif token.startswith("~/"):
-        token = env.get("HOME", "/root") + token[1:]
+    if token == '~':  # noqa: S105 - shell token, not a credential
+        token = env.get('HOME', '/root')
+    elif token.startswith('~/'):
+        token = env.get('HOME', '/root') + token[1:]
 
     def _sub(match: re.Match[str]) -> str:
         name = match.group(1) or match.group(2)
-        return env.get(name, "")
+        return env.get(name, '')
 
     return _VAR.sub(_sub, token)

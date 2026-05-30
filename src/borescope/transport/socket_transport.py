@@ -1,3 +1,6 @@
+# Copyright 2026 Tony Meyer
+# SPDX-License-Identifier: Apache-2.0
+
 """SocketTransport — the secondary / opportunistic backend.
 
 Wraps the real ``ops.pebble.Client`` (HTTP API over the unix socket). It is the
@@ -26,4 +29,4 @@ def build_socket_transport(
     """Build a direct-socket transport against the Pebble at *socket_path*."""
     from ops import pebble  # lazy: keep ops off the cold-start path
 
-    return cast("Transport", pebble.Client(socket_path=socket_path, timeout=timeout))
+    return cast('Transport', pebble.Client(socket_path=socket_path, timeout=timeout))

@@ -1,3 +1,6 @@
+# Copyright 2026 Tony Meyer
+# SPDX-License-Identifier: Apache-2.0
+
 """Built-in commands and the registry that discovers them."""
 
 from __future__ import annotations
@@ -10,4 +13,4 @@ def import_all() -> None:
     from . import basic, execcmd, filesystem, pebble  # noqa: F401
 
 
-__all__ = ["Command", "ExitShell", "Result", "build_registry", "import_all"]
+__all__ = ['Command', 'ExitShell', 'Result', 'build_registry', 'import_all']

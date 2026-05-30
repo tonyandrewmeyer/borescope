@@ -1,3 +1,6 @@
+# Copyright 2026 Tony Meyer
+# SPDX-License-Identifier: Apache-2.0
+
 """A tiny getopt-ish argument splitter shared by the built-in commands.
 
 Not a full argparse — these are debug-shell commands, so we want forgiving,
@@ -23,17 +26,17 @@ def parse_args(
     i = 0
     while i < len(args):
         arg = args[i]
-        if arg == "--":
+        if arg == '--':
             positionals.extend(args[i + 1 :])
             break
-        if arg.startswith("--"):
+        if arg.startswith('--'):
             name = arg[2:]
             if name in valued:
                 i += 1
-                values[name] = args[i] if i < len(args) else ""
+                values[name] = args[i] if i < len(args) else ''
             else:
                 flags.add(name)
-        elif len(arg) > 1 and arg[0] == "-" and not arg[1].isdigit():
+        elif len(arg) > 1 and arg[0] == '-' and not arg[1].isdigit():
             body = arg[1:]
             j = 0
             while j < len(body):
@@ -44,7 +47,7 @@ def parse_args(
                         values[ch] = rest
                     else:
                         i += 1
-                        values[ch] = args[i] if i < len(args) else ""
+                        values[ch] = args[i] if i < len(args) else ''
                     break
                 flags.add(ch)
                 j += 1

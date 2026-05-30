@@ -1,3 +1,6 @@
+# Copyright 2026 Tony Meyer
+# SPDX-License-Identifier: Apache-2.0
+
 """Transport layer (A) — "talk to a Pebble".
 
 A narrow interface the shell layer talks to, with two thin backends over an
@@ -36,9 +39,7 @@ class Transport(Protocol):
     def get_system_info(self) -> ops.pebble.SystemInfo: ...
 
     # -- services ----------------------------------------------------------
-    def get_services(
-        self, names: Iterable[str] | None = None
-    ) -> list[ops.pebble.ServiceInfo]: ...
+    def get_services(self, names: Iterable[str] | None = None) -> list[ops.pebble.ServiceInfo]: ...
     def start_services(
         self, services: Iterable[str], timeout: float = 30.0, delay: float = 0.1
     ) -> ops.pebble.ChangeID: ...
@@ -89,15 +90,13 @@ class Transport(Protocol):
     ) -> str: ...
 
     # -- filesystem --------------------------------------------------------
-    def pull(
-        self, path: str, *, encoding: str | None = "utf-8"
-    ) -> BinaryIO | TextIO: ...
+    def pull(self, path: str, *, encoding: str | None = 'utf-8') -> BinaryIO | TextIO: ...
     def push(
         self,
         path: str,
         source: Any,
         *,
-        encoding: str = "utf-8",
+        encoding: str = 'utf-8',
         make_dirs: bool = False,
         permissions: int | None = None,
         user_id: int | None = None,
@@ -122,9 +121,7 @@ class Transport(Protocol):
     def remove_path(self, path: str, *, recursive: bool = False) -> None: ...
 
     # -- exec --------------------------------------------------------------
-    def exec(
-        self, command: list[str], **kwargs: Any
-    ) -> ops.pebble.ExecProcess[Any]: ...
+    def exec(self, command: list[str], **kwargs: Any) -> ops.pebble.ExecProcess[Any]: ...
 
 
 def open_transport(
@@ -132,9 +129,9 @@ def open_transport(
     unit: str,
     container: str | None,
     model: str | None = None,
-    juju_binary: str = "juju",
+    juju_binary: str = 'juju',
     socket_path: str | None = None,
-    via: str = "ssh",
+    via: str = 'ssh',
 ) -> Transport:
     """Open the appropriate transport.
 
@@ -159,4 +156,4 @@ def open_transport(
     )
 
 
-__all__ = ["Transport", "open_transport"]
+__all__ = ['Transport', 'open_transport']

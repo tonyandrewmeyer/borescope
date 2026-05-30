@@ -1,3 +1,6 @@
+# Copyright 2026 Tony Meyer
+# SPDX-License-Identifier: Apache-2.0
+
 """End-to-end against a real Pebble over the socket transport."""
 
 from __future__ import annotations
@@ -18,10 +21,10 @@ pytestmark = pytest.mark.integration
 
 @pytest.fixture
 def shell(pebble_socket):
-    transport = open_transport(unit="local", container=None, socket_path=pebble_socket)
+    transport = open_transport(unit='local', container=None, socket_path=pebble_socket)
     target = Target(
-        unit="local",
-        app="local",
+        unit='local',
+        app='local',
         container=None,
         model=None,
         socket_path=pebble_socket,
@@ -30,36 +33,36 @@ def shell(pebble_socket):
 
 
 def test_services_lists_hello(shell):
-    result = shell.run_line("services")
-    assert "hello" in result.output
+    result = shell.run_line('services')
+    assert 'hello' in result.output
     assert result.code == 0
 
 
 def test_start_then_status_active(shell):
-    shell.run_line("start hello")
-    result = shell.run_line("services")
-    assert "active" in result.output
+    shell.run_line('start hello')
+    result = shell.run_line('services')
+    assert 'active' in result.output
 
 
 def test_plan_is_yaml(shell):
-    result = shell.run_line("plan")
-    assert "services:" in result.output
-    assert "hello:" in result.output
+    result = shell.run_line('plan')
+    assert 'services:' in result.output
+    assert 'hello:' in result.output
 
 
 def test_checks(shell):
-    result = shell.run_line("checks")
-    assert "up" in result.output
+    result = shell.run_line('checks')
+    assert 'up' in result.output
 
 
 def test_filesystem_over_socket(shell):
-    result = shell.run_line("ls /")
-    assert "etc" in result.output.split("\n")
+    result = shell.run_line('ls /')
+    assert 'etc' in result.output.split('\n')
 
 
 def test_pipe_over_socket(shell):
-    result = shell.run_line("cat /etc/passwd | grep root")
-    assert "root" in result.output
+    result = shell.run_line('cat /etc/passwd | grep root')
+    assert 'root' in result.output
 
 
 # --------------------------------------------------------------------------- #
@@ -69,11 +72,9 @@ def test_pipe_over_socket(shell):
 # --------------------------------------------------------------------------- #
 
 
-def _run_borescope(
-    *args: str, timeout: float = 30.0
-) -> subprocess.CompletedProcess[str]:
+def _run_borescope(*args: str, timeout: float = 30.0) -> subprocess.CompletedProcess[str]:
     return subprocess.run(
-        [sys.executable, "-m", "borescope", *args],
+        [sys.executable, '-m', 'borescope', *args],
         capture_output=True,
         text=True,
         timeout=timeout,
@@ -82,27 +83,27 @@ def _run_borescope(
 
 
 def test_entrypoint_version():
-    result = _run_borescope("--version")
+    result = _run_borescope('--version')
     assert result.returncode == 0
-    assert "borescope" in result.stdout.lower()
+    assert 'borescope' in result.stdout.lower()
 
 
 def test_entrypoint_no_unit_or_socket_errors_clearly():
     result = _run_borescope()
     assert result.returncode == 2
-    assert "unit reference is required" in result.stderr
+    assert 'unit reference is required' in result.stderr
 
 
 def test_entrypoint_snapshot_against_real_pebble(pebble_socket):
-    result = _run_borescope("--socket", pebble_socket, "--snapshot")
+    result = _run_borescope('--socket', pebble_socket, '--snapshot')
     assert result.returncode == 0, result.stderr
     data = json.loads(result.stdout)
-    assert data["unit"] == "local"
-    assert data["system"]["version"]
-    assert any(s["name"] == "hello" for s in data["services"])
+    assert data['unit'] == 'local'
+    assert data['system']['version']
+    assert any(s['name'] == 'hello' for s in data['services'])
 
 
 def test_entrypoint_oneshot_command_against_real_pebble(pebble_socket):
-    result = _run_borescope("--socket", pebble_socket, "-c", "services")
+    result = _run_borescope('--socket', pebble_socket, '-c', 'services')
     assert result.returncode == 0, result.stderr
-    assert "hello" in result.stdout
+    assert 'hello' in result.stdout

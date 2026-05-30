@@ -1,3 +1,6 @@
+# Copyright 2026 Tony Meyer
+# SPDX-License-Identifier: Apache-2.0
+
 """CliTransport — the v1 primary backend.
 
 Wraps ``shimmer.PebbleCliClient`` (a drop-in ``ops.pebble.Client`` over the Pebble
@@ -17,13 +20,13 @@ if TYPE_CHECKING:
 
 # The charm container's pebble binary (juju-injected; not on $PATH). The per-workload
 # socket path is owned by the runner (``/charm/containers/<name>/pebble.socket``).
-REMOTE_PEBBLE_BINARY = "/charm/bin/pebble"
+REMOTE_PEBBLE_BINARY = '/charm/bin/pebble'
 
 # Default per-call timeout. Higher than shimmer's local default (5 s) because each
 # call pays a ``juju`` round-trip (~0.2 s measured, plus juju client startup).
 DEFAULT_TIMEOUT = 30.0
 
-_RUNNERS = {"ssh": JujuSshRunner, "exec": JujuExecRunner}
+_RUNNERS = {'ssh': JujuSshRunner, 'exec': JujuExecRunner}
 
 
 def build_cli_transport(
@@ -31,9 +34,9 @@ def build_cli_transport(
     unit: str,
     container: str | None,
     model: str | None = None,
-    juju_binary: str = "juju",
+    juju_binary: str = 'juju',
     timeout: float = DEFAULT_TIMEOUT,
-    via: str = "ssh",
+    via: str = 'ssh',
 ) -> Transport:
     """Build a CLI-relay transport for *unit*'s *container*.
 
@@ -53,9 +56,9 @@ def build_cli_transport(
     # shimmer's client conforms structurally; cast past the overloaded `exec`
     # signature the type checker can't match against the Transport protocol.
     return cast(
-        "Transport",
+        'Transport',
         PebbleCliClient(
-            socket_path=runner.pebble_socket or "",
+            socket_path=runner.pebble_socket or '',
             pebble_binary=REMOTE_PEBBLE_BINARY,
             runner=runner,
             timeout=timeout,

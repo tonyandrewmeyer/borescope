@@ -1,3 +1,6 @@
+# Copyright 2026 Tony Meyer
+# SPDX-License-Identifier: Apache-2.0
+
 """The REPL: one process, one session, one command (or single pipe) at a time."""
 
 from __future__ import annotations
@@ -28,7 +31,7 @@ class Shell:
         try:
             stages = parse_pipeline(line)
         except ParseError as exc:
-            return Result.fail(f"borescope: {exc}")
+            return Result.fail(f'borescope: {exc}')
         if not stages:
             return Result()
         return self._execute(stages)
@@ -44,9 +47,7 @@ class Shell:
 
         left = self._run_stage(stages[0], None)
         right = self._run_stage(stages[1], left.output)
-        return Result(
-            output=right.output, error=left.error + right.error, code=right.code
-        )
+        return Result(output=right.output, error=left.error + right.error, code=right.code)
 
     def _run_stage(self, tokens: list[str], stdin: str | None) -> Result:
         tokens = [expand(tok, self.ctx.env) for tok in tokens]
@@ -54,7 +55,7 @@ class Shell:
         cmd = self.registry.get(name)
         if cmd is None:
             return Result.fail(
-                f"borescope: command not found: {name}\n"
+                f'borescope: command not found: {name}\n'
                 f"  hint: 'exec {name} ...' runs it inside the container.",
                 code=127,
             )
@@ -63,9 +64,9 @@ class Shell:
         except ExitShell:
             raise
         except BorescopeError as exc:
-            return Result.fail(f"{name}: {exc}")
-        except Exception as exc:  # noqa: BLE001 - surface backend errors as output
-            return Result.fail(f"{name}: {exc}")
+            return Result.fail(f'{name}: {exc}')
+        except Exception as exc:
+            return Result.fail(f'{name}: {exc}')
 
     def execute_and_emit(self, line: str) -> int:
         """Run one line, print its output, and return the exit code (one-shot)."""
@@ -79,18 +80,19 @@ class Shell:
     def _emit(self, result: Result) -> None:
         if result.output:
             sys.stdout.write(result.output)
-            if not result.output.endswith("\n"):
-                sys.stdout.write("\n")
+            if not result.output.endswith('\n'):
+                sys.stdout.write('\n')
             sys.stdout.flush()
         if result.error:
             sys.stderr.write(result.error)
-            if not result.error.endswith("\n"):
-                sys.stderr.write("\n")
+            if not result.error.endswith('\n'):
+                sys.stderr.write('\n')
             sys.stderr.flush()
         self.ctx.last_exit = result.code
 
     # -- interactive loop --------------------------------------------------
     def loop(self) -> int:
+        """Run the interactive REPL until the user exits, returning the last exit code."""
         session = self._ensure_session()
         self._print_banner()
         style = theme.style()
@@ -127,7 +129,5 @@ class Shell:
 
     def _print_banner(self) -> None:
         target = self.ctx.target
-        where = target.unit + (f" ({target.container})" if target.container else "")
-        print(
-            f"borescope — connected to {where}. Type 'help' for commands, 'exit' to quit."
-        )
+        where = target.unit + (f' ({target.container})' if target.container else '')
+        print(f"borescope — connected to {where}. Type 'help' for commands, 'exit' to quit.")

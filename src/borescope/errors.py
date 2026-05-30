@@ -1,3 +1,6 @@
+# Copyright 2026 Tony Meyer
+# SPDX-License-Identifier: Apache-2.0
+
 """borescope's error hierarchy."""
 
 from __future__ import annotations
@@ -18,9 +21,7 @@ class TransportError(BorescopeError):
 class JujuError(BorescopeError):
     """Raised when an underlying ``juju`` invocation fails."""
 
-    def __init__(
-        self, message: str, *, returncode: int | None = None, stderr: str = ""
-    ):
+    def __init__(self, message: str, *, returncode: int | None = None, stderr: str = ''):
         super().__init__(message)
         self.returncode = returncode
         self.stderr = stderr

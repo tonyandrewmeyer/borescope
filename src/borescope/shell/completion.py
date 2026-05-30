@@ -1,3 +1,6 @@
+# Copyright 2026 Tony Meyer
+# SPDX-License-Identifier: Apache-2.0
+
 """Tab completion: built-in command names, and container-side filesystem paths."""
 
 from __future__ import annotations
@@ -33,6 +36,7 @@ class BorescopeCompleter(Completer):
     def get_completions(
         self, document: Document, complete_event: CompleteEvent
     ) -> Iterator[Completion]:
+        """Yield completions for the current cursor position."""
         text = document.text_before_cursor
         try:
             tokens = shlex.split(text)
@@ -41,10 +45,10 @@ class BorescopeCompleter(Completer):
 
         ends_with_space = text[-1:].isspace()
         if ends_with_space:
-            word = ""
+            word = ''
             tokens_before = len(tokens)
         else:
-            word = tokens[-1] if tokens else ""
+            word = tokens[-1] if tokens else ''
             tokens_before = len(tokens) - 1
 
         if tokens_before <= 0:
@@ -57,21 +61,19 @@ class BorescopeCompleter(Completer):
 
     def _complete_path(self, word: str) -> Iterator[Completion]:
         ctx = self.ctx
-        if "/" in word:
-            dir_part, _, prefix = word.rpartition("/")
-            base = pathutils.resolve(ctx.cwd, dir_part or "/", home=ctx.home)
+        if '/' in word:
+            dir_part, _, prefix = word.rpartition('/')
+            base = pathutils.resolve(ctx.cwd, dir_part or '/', home=ctx.home)
         else:
             prefix = word
             base = ctx.cwd
         try:
             entries = ctx.transport.list_files(base)
-        except Exception:  # noqa: BLE001 - completion must never raise
+        except Exception:
             return
         for info in entries:
             name = info.name
             if not name.startswith(prefix):
                 continue
-            is_dir = getattr(getattr(info, "type", None), "name", "") == "DIRECTORY"
-            yield Completion(
-                name + ("/" if is_dir else ""), start_position=-len(prefix)
-            )
+            is_dir = getattr(getattr(info, 'type', None), 'name', '') == 'DIRECTORY'
+            yield Completion(name + ('/' if is_dir else ''), start_position=-len(prefix))

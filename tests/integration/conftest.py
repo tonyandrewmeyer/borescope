@@ -1,3 +1,6 @@
+# Copyright 2026 Tony Meyer
+# SPDX-License-Identifier: Apache-2.0
+
 """Integration fixtures: a real, throwaway Pebble daemon."""
 
 from __future__ import annotations
@@ -26,20 +29,20 @@ checks:
 """
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope='session')
 def pebble_socket(tmp_path_factory):
-    pebble = shutil.which("pebble")
+    pebble = shutil.which('pebble')
     if pebble is None:
-        pytest.skip("pebble binary not on PATH")
+        pytest.skip('pebble binary not on PATH')
 
-    pebble_dir = tmp_path_factory.mktemp("pebble")
-    (pebble_dir / "layers").mkdir()
-    (pebble_dir / "layers" / "001-test.yaml").write_text(LAYER)
-    socket = pebble_dir / ".pebble.socket"
+    pebble_dir = tmp_path_factory.mktemp('pebble')
+    (pebble_dir / 'layers').mkdir()
+    (pebble_dir / 'layers' / '001-test.yaml').write_text(LAYER)
+    socket = pebble_dir / '.pebble.socket'
 
     proc = subprocess.Popen(
-        [pebble, "run", "--hold"],
-        env={"PEBBLE": str(pebble_dir), "PATH": "/usr/bin:/bin"},
+        [pebble, 'run', '--hold'],
+        env={'PEBBLE': str(pebble_dir), 'PATH': '/usr/bin:/bin'},
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
     )
@@ -49,7 +52,7 @@ def pebble_socket(tmp_path_factory):
                 break
             time.sleep(0.1)
         else:
-            pytest.fail("pebble socket did not appear")
+            pytest.fail('pebble socket did not appear')
         yield str(socket)
     finally:
         proc.terminate()

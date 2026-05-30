@@ -1,3 +1,6 @@
+# Copyright 2026 Tony Meyer
+# SPDX-License-Identifier: Apache-2.0
+
 """shimmer ``Runner``s that reach a workload Pebble *via the charm container*.
 
 The obvious approach — ``juju ssh --container=<workload> <unit> …`` — does **not**
@@ -40,7 +43,7 @@ class _JujuRunnerBase:
         container: str | None,
         *,
         model: str | None = None,
-        juju_binary: str = "juju",
+        juju_binary: str = 'juju',
     ):
         self.unit = unit
         self.container = container
@@ -52,7 +55,7 @@ class _JujuRunnerBase:
         """The workload's Pebble socket as mounted in the charm container."""
         if not self.container:
             return None
-        return f"/charm/containers/{self.container}/pebble.socket"
+        return f'/charm/containers/{self.container}/pebble.socket'
 
     def _prefix(self) -> list[str]:
         raise NotImplementedError
@@ -62,9 +65,9 @@ class _JujuRunnerBase:
         if not socket:
             return []
         return [
-            "env",
-            f"PEBBLE_SOCKET={socket}",
-            f"PEBBLE=/charm/containers/{self.container}",
+            'env',
+            f'PEBBLE_SOCKET={socket}',
+            f'PEBBLE=/charm/containers/{self.container}',
         ]
 
     def wrap(self, argv: list[str]) -> list[str]:
@@ -77,7 +80,7 @@ class _JujuRunnerBase:
         *,
         input: str | None = None,
         timeout: float | None = None,
-        env: Mapping[str, str] | None = None,  # noqa: ARG002 - socket comes from container
+        env: Mapping[str, str] | None = None,
         check: bool = True,
     ) -> subprocess.CompletedProcess[Any]:
         return subprocess.run(
@@ -100,7 +103,7 @@ class _JujuRunnerBase:
         stdout: int | IO[Any] | None,
         stderr: int | IO[Any] | None,
         text: bool,
-        env: Mapping[str, str] | None = None,  # noqa: ARG002 - socket comes from container
+        env: Mapping[str, str] | None = None,
     ) -> subprocess.Popen[Any]:
         return subprocess.Popen(
             self.wrap(argv),
@@ -120,9 +123,9 @@ class JujuSshRunner(_JujuRunnerBase):
     """
 
     def _prefix(self) -> list[str]:
-        cmd = [self.juju_binary, "ssh"]
+        cmd = [self.juju_binary, 'ssh']
         if self.model:
-            cmd += ["-m", self.model]
+            cmd += ['-m', self.model]
         # No --container: land in the charm container (which has a shell) and reach
         # the workload's Pebble through its mounted socket.
         cmd.append(self.unit)
@@ -142,8 +145,8 @@ class JujuExecRunner(_JujuRunnerBase):
     """
 
     def _prefix(self) -> list[str]:
-        cmd = [self.juju_binary, "exec"]
+        cmd = [self.juju_binary, 'exec']
         if self.model:
-            cmd += ["-m", self.model]
-        cmd += ["-u", self.unit, "--"]
+            cmd += ['-m', self.model]
+        cmd += ['-u', self.unit, '--']
         return cmd

@@ -1,3 +1,6 @@
+# Copyright 2026 Tony Meyer
+# SPDX-License-Identifier: Apache-2.0
+
 """Command-line entry point for borescope."""
 
 from __future__ import annotations
@@ -9,54 +12,47 @@ from . import __version__
 
 
 def build_parser() -> argparse.ArgumentParser:
+    """Build the top-level ``argparse`` parser."""
     parser = argparse.ArgumentParser(
-        prog="borescope",
-        description=(
-            "A natural shell for debugging Juju Kubernetes workload containers."
-        ),
+        prog='borescope',
+        description=('A natural shell for debugging Juju Kubernetes workload containers.'),
     )
-    parser.add_argument("unit", nargs="?", help="unit reference, e.g. 'myapp/0'")
+    parser.add_argument('unit', nargs='?', help="unit reference, e.g. 'myapp/0'")
+    parser.add_argument('--container', help='workload container name (default: first declared)')
+    parser.add_argument('-m', '--model', help='Juju model (default: current)')
     parser.add_argument(
-        "--container", help="workload container name (default: first declared)"
-    )
-    parser.add_argument("-m", "--model", help="Juju model (default: current)")
-    parser.add_argument(
-        "-c",
-        "--command",
-        help="run a single command and exit (no REPL)",
+        '-c',
+        '--command',
+        help='run a single command and exit (no REPL)',
     )
     parser.add_argument(
-        "--snapshot",
-        action="store_true",
-        help="dump container state as JSON and exit",
+        '--snapshot',
+        action='store_true',
+        help='dump container state as JSON and exit',
     )
     parser.add_argument(
-        "--socket",
-        help="talk directly to a Pebble unix socket (skip juju)",
+        '--socket',
+        help='talk directly to a Pebble unix socket (skip juju)',
     )
     parser.add_argument(
-        "--here",
-        action="store_true",
+        '--here',
+        action='store_true',
         help=(
             "run inside the charm container: auto-detect a workload's mounted "
-            "Pebble socket (use --container to pick when there are several)"
+            'Pebble socket (use --container to pick when there are several)'
         ),
     )
+    parser.add_argument('--juju', default='juju', help='juju binary to invoke (default: juju)')
     parser.add_argument(
-        "--juju", default="juju", help="juju binary to invoke (default: juju)"
-    )
-    parser.add_argument(
-        "--via",
-        choices=("ssh", "exec"),
-        default="ssh",
+        '--via',
+        choices=('ssh', 'exec'),
+        default='ssh',
         help=(
             "Juju relay for Mode B: 'ssh' (default, streaming) or 'exec' "
-            "(request/response — for sites where ssh is disabled)"
+            '(request/response — for sites where ssh is disabled)'
         ),
     )
-    parser.add_argument(
-        "--version", action="version", version=f"borescope {__version__}"
-    )
+    parser.add_argument('--version', action='version', version=f'borescope {__version__}')
     return parser
 
 
@@ -66,8 +62,8 @@ def _build_target(args: argparse.Namespace):
     if args.here:
         return resolve_local_target(container=args.container)
     if args.socket:
-        unit = args.unit or "local"
-        app = unit.split("/")[0]
+        unit = args.unit or 'local'
+        app = unit.split('/')[0]
         return Target(
             unit=unit,
             app=app,
@@ -86,11 +82,12 @@ def _build_target(args: argparse.Namespace):
 
 
 def main(argv: list[str] | None = None) -> int:
+    """Run borescope from the command line and return the exit code."""
     args = build_parser().parse_args(argv)
     if not args.unit and not args.socket and not args.here:
         print(
             "borescope: a unit reference is required (e.g. 'borescope myapp/0'), "
-            "or use --here when running inside a charm container.",
+            'or use --here when running inside a charm container.',
             file=sys.stderr,
         )
         return 2
@@ -120,7 +117,7 @@ def main(argv: list[str] | None = None) -> int:
 
         sanity_check(transport, target)
     except BorescopeError as exc:
-        print(f"borescope: {exc}", file=sys.stderr)
+        print(f'borescope: {exc}', file=sys.stderr)
         return 1
 
     from .shell import Shell
@@ -134,11 +131,11 @@ def main(argv: list[str] | None = None) -> int:
         code = 0
         for line in sys.stdin:
             if line.strip():
-                code = shell.execute_and_emit(line.rstrip("\n"))
+                code = shell.execute_and_emit(line.rstrip('\n'))
         return code
 
     return shell.loop()
 
 
-if __name__ == "__main__":  # pragma: no cover
+if __name__ == '__main__':  # pragma: no cover
     sys.exit(main())

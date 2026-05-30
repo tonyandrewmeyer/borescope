@@ -1,3 +1,6 @@
+# Copyright 2026 Tony Meyer
+# SPDX-License-Identifier: Apache-2.0
+
 """File-backed command history, keyed per controller/model/unit."""
 
 from __future__ import annotations
@@ -13,10 +16,9 @@ if TYPE_CHECKING:
 
 
 def history_path(target: Target) -> pathlib.Path:
-    base = os.environ.get("XDG_STATE_HOME") or os.path.join(
-        pathlib.Path.home(), ".local", "state"
-    )
-    return pathlib.Path(base, "borescope", "history", target.history_key)
+    """Return the on-disk history file path for *target*."""
+    base = os.environ.get('XDG_STATE_HOME') or os.path.join(pathlib.Path.home(), '.local', 'state')
+    return pathlib.Path(base, 'borescope', 'history', target.history_key)
 
 
 def history_for(target: Target) -> History:
