@@ -1,0 +1,42 @@
+name: Publish (Test PyPI)
+
+# Manually triggered so the dev version (0.1.0.devN) can be re-uploaded under
+# our control; Test PyPI rejects duplicate versions, so on-every-push would
+# fail after the first publish unless we encoded a build-number suffix.
+
+on:
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  # Gate the test publish on the same checks as the production one — Test PyPI
+  # is for validating the publish path, not for shipping broken artifacts.
+  ci:
+    name: CI
+    uses: ./.github/workflows/ci.yaml
+
+  testpypi:
+    name: Build and publish to Test PyPI
+    needs: ci
+    runs-on: ubuntu-latest
+    environment: publish-test-pypi
+    permissions:
+      id-token: write       # Trusted Publishing (OIDC) — no long-lived token.
+      contents: read
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+      - uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b  # v8.1.0
+        with:
+          enable-cache: false  # No build cache in the release job (cache-poisoning hardening).
+      - name: Build
+        run: uvx --with=build python -m build
+      - name: Publish to Test PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          repository-url: https://test.pypi.org/legacy/
