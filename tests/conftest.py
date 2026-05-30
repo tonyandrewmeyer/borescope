@@ -39,6 +39,7 @@ class FakeTransport:
     def __init__(self) -> None:
         self.files: dict[str, bytes] = {}
         self.dirs: set[str] = {'/'}
+        self.links: dict[str, str] = {}
 
     # -- test helpers ------------------------------------------------------
     def add_file(self, path: str, content: bytes | str = b'') -> None:
@@ -57,17 +58,31 @@ class FakeTransport:
             self.dirs.add(parent)
             parent = posixpath.dirname(parent)
 
+    def add_symlink(self, path: str, target: str) -> None:
+        self.links[path] = target
+        parent = posixpath.dirname(path)
+        while parent and parent != '/':
+            self.dirs.add(parent)
+            parent = posixpath.dirname(parent)
+
     # -- internal ----------------------------------------------------------
     def _exists(self, path: str) -> bool:
-        return path in self.files or path in self.dirs
+        return path in self.files or path in self.dirs or path in self.links
 
     def _info(self, path: str) -> pebble.FileInfo:
         is_dir = path in self.dirs
+        is_link = path in self.links
+        if is_link:
+            ftype = pebble.FileType.SYMLINK
+        elif is_dir:
+            ftype = pebble.FileType.DIRECTORY
+        else:
+            ftype = pebble.FileType.FILE
         return pebble.FileInfo(
             path=path,
             name=posixpath.basename(path) or '/',
-            type=pebble.FileType.DIRECTORY if is_dir else pebble.FileType.FILE,
-            size=None if is_dir else len(self.files[path]),
+            type=ftype,
+            size=None if is_dir or is_link else len(self.files[path]),
             permissions=0o755 if is_dir else 0o644,
             last_modified=datetime.datetime(2026, 1, 1, 12, 0, 0),
             user_id=0,

@@ -137,6 +137,14 @@ def test_cd_relative(registry, ctx):
     assert ctx.cwd == '/var/log/app'
 
 
+def test_cd_into_symlink_succeeds(registry, ctx, transport):
+    # A symlink may point at a directory; cd should not reject it outright.
+    transport.add_symlink('/data', '/var/log/app')
+    result = run(registry, ctx, 'cd', '/data')
+    assert result.code == 0
+    assert ctx.cwd == '/data'
+
+
 def test_echo(registry, ctx):
     assert run(registry, ctx, 'echo', 'hello', 'world').output == 'hello world'
 
