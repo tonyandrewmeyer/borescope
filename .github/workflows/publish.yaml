@@ -95,7 +95,7 @@ jobs:
       contents: write  # Create the release.
     steps:
       - name: Download artifacts
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           path: artifacts
       - name: Create GitHub release
