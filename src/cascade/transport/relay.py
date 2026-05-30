@@ -54,12 +54,13 @@ def pebble_relay(target: Target) -> tuple[list[str], dict[str, str] | None, Any]
         env = {**os.environ, "PEBBLE_SOCKET": target.socket_path}
         return [_local_pebble_binary()], env, LocalSubprocessRunner()
 
-    from .cli_transport import REMOTE_PEBBLE_BINARY
-    from .runner import JujuSshRunner
+    from .cli_transport import _RUNNERS, REMOTE_PEBBLE_BINARY
 
     # The runner injects the workload socket env itself (via the charm container),
-    # so no env is needed here.
-    runner = JujuSshRunner(
+    # so no env is needed here. Pick the runner that matches the target's
+    # --via setting so `logs` / `--snapshot` use the same relay as everything else.
+    runner_cls = _RUNNERS.get(target.via, _RUNNERS["ssh"])
+    runner = runner_cls(
         target.unit,
         target.container,
         model=target.model,

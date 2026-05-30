@@ -45,6 +45,9 @@ class Target:
     controller: str | None = None
     juju_binary: str = "juju"
     socket_path: str | None = None
+    # CLI-relay variant for Mode B: "ssh" (default) or "exec". Ignored when
+    # socket_path is set (Mode A uses the socket directly).
+    via: str = "ssh"
 
     @property
     def history_key(self) -> str:
@@ -108,6 +111,7 @@ def resolve_target(
     container: str | None = None,
     model: str | None = None,
     juju_binary: str = "juju",
+    via: str = "ssh",
 ) -> Target:
     """Resolve *unit_ref* to a :class:`Target`, confirming it exists and is on k8s."""
     app, num = parse_unit_ref(unit_ref)
@@ -157,6 +161,7 @@ def resolve_target(
         model=effective_model,
         controller=controller,
         juju_binary=juju_binary,
+        via=via,
     )
 
 

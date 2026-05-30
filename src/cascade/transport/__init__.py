@@ -134,12 +134,14 @@ def open_transport(
     model: str | None = None,
     juju_binary: str = "juju",
     socket_path: str | None = None,
+    via: str = "ssh",
 ) -> Transport:
     """Open the appropriate transport.
 
     If *socket_path* is given (a directly-reachable Pebble socket), use the fast
-    ``SocketTransport``; otherwise use the ``CliTransport`` relay over ``juju ssh``,
-    which is the v1 default for laptop-to-remote-cluster use.
+    ``SocketTransport``; otherwise use the ``CliTransport`` relay (via ``juju ssh``
+    by default; ``via="exec"`` switches to ``juju exec`` for sites where ssh is
+    disabled).
     """
     if socket_path:
         from .socket_transport import build_socket_transport
@@ -149,7 +151,11 @@ def open_transport(
     from .cli_transport import build_cli_transport
 
     return build_cli_transport(
-        unit=unit, container=container, model=model, juju_binary=juju_binary
+        unit=unit,
+        container=container,
+        model=model,
+        juju_binary=juju_binary,
+        via=via,
     )
 
 

@@ -2,6 +2,10 @@
 
 from __future__ import annotations
 
+import json
+import subprocess
+import sys
+
 import pytest
 
 from cascade.discovery import Target
@@ -63,9 +67,6 @@ def test_pipe_over_socket(shell):
 # These catch breakage in argparse, exit codes, JSON serialization, and the
 # Shell -> stdout glue that the Shell-class tests above don't see.
 # --------------------------------------------------------------------------- #
-import json
-import subprocess
-import sys
 
 
 def _run_cascade(*args: str, timeout: float = 30.0) -> subprocess.CompletedProcess[str]:

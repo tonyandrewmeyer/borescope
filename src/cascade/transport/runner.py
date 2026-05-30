@@ -1,14 +1,23 @@
-"""A shimmer ``Runner`` that reaches a workload Pebble *via the charm container*.
+"""shimmer ``Runner``s that reach a workload Pebble *via the charm container*.
 
 The obvious approach — ``juju ssh --container=<workload> <unit> …`` — does **not**
 work for cascade's headline case: Juju's k8s ssh ``exec``s ``sh`` inside the target
 container, so a shell-less rock fails with ``exec: "sh": not found`` (verified
 against a distroless workload). The charm/operator container, however, **always has
 a shell** and has every workload's Pebble socket mounted at
-``/charm/containers/<name>/pebble.socket``. So cascade ``juju ssh <unit>`` (no
-``--container`` — landing in the charm container) and points ``pebble`` at the
+``/charm/containers/<name>/pebble.socket``. So cascade lands in the *charm* container
+(via ``juju ssh <unit>`` or ``juju exec -u <unit>``) and points ``pebble`` at the
 workload's socket. This reaches shell-less rocks *and* stays entirely within the
 user's Juju authority (no ``kubectl`` / cluster-admin).
+
+Two runners share that pattern:
+
+- :class:`JujuSshRunner` (default) prefixes ``juju ssh [-m <model>] <unit>``. Best
+  for general use; streams stdin/pty so cascade's ``exec`` / ``push`` work.
+- :class:`JujuExecRunner` (``--via exec``) prefixes ``juju exec [-m <model>]
+  -u <unit> --``. For sites where interactive ssh is disabled but ``juju exec`` is
+  allowed. Request/response, so streaming commands (``logs -f``, ``exec`` with stdin)
+  may not behave the same.
 """
 
 from __future__ import annotations
@@ -18,19 +27,11 @@ from collections.abc import Mapping
 from typing import IO, Any
 
 
-class JujuSshRunner:
-    """Run a ``pebble`` argv against *container*'s Pebble, via the charm container.
+class _JujuRunnerBase:
+    """Shared wrap/run/popen plumbing for the two Juju-based runners.
 
-    Implements shimmer's ``Runner`` protocol (``run`` / ``popen``). Each argv —
-    which already starts with the charm container's ``pebble`` binary path, because
-    the ``PebbleCliClient`` is configured with ``pebble_binary=/charm/bin/pebble`` —
-    is prefixed with ``juju ssh [-m <model>] <unit>`` and an ``env
-    PEBBLE_SOCKET=… PEBBLE=…`` shim pointing at the workload container's socket as
-    mounted in the charm container.
-
-    No ``--`` separator is used: juju's k8s ssh leaks it into the remote shell. juju
-    passes everything after the unit to ``sh -c`` in the (charm) container and does
-    not flag-parse it, so the remote pebble's own flags pass through.
+    Subclasses just supply ``_prefix()`` — the leading ``juju ...`` argv that
+    reaches the charm container.
     """
 
     def __init__(
@@ -53,14 +54,8 @@ class JujuSshRunner:
             return None
         return f"/charm/containers/{self.container}/pebble.socket"
 
-    def _ssh_prefix(self) -> list[str]:
-        cmd = [self.juju_binary, "ssh"]
-        if self.model:
-            cmd += ["-m", self.model]
-        # No --container: land in the charm container (which has a shell) and reach
-        # the workload's Pebble through its mounted socket.
-        cmd.append(self.unit)
-        return cmd
+    def _prefix(self) -> list[str]:
+        raise NotImplementedError
 
     def _remote_env_shim(self) -> list[str]:
         socket = self.pebble_socket
@@ -73,8 +68,8 @@ class JujuSshRunner:
         ]
 
     def wrap(self, argv: list[str]) -> list[str]:
-        """Build the full local ``juju ssh …`` argv for a remote pebble *argv*."""
-        return [*self._ssh_prefix(), *self._remote_env_shim(), *argv]
+        """Build the full local argv (juju prefix + env shim + pebble argv)."""
+        return [*self._prefix(), *self._remote_env_shim(), *argv]
 
     def run(
         self,
@@ -114,3 +109,41 @@ class JujuSshRunner:
             stderr=stderr,
             text=text,
         )
+
+
+class JujuSshRunner(_JujuRunnerBase):
+    """Run a ``pebble`` argv against *container*'s Pebble, via ``juju ssh``.
+
+    No ``--`` separator is used: juju's k8s ssh leaks it into the remote shell. juju
+    passes everything after the unit to ``sh -c`` in the (charm) container and does
+    not flag-parse it, so the remote pebble's own flags pass through.
+    """
+
+    def _prefix(self) -> list[str]:
+        cmd = [self.juju_binary, "ssh"]
+        if self.model:
+            cmd += ["-m", self.model]
+        # No --container: land in the charm container (which has a shell) and reach
+        # the workload's Pebble through its mounted socket.
+        cmd.append(self.unit)
+        return cmd
+
+
+class JujuExecRunner(_JujuRunnerBase):
+    """Run a ``pebble`` argv against *container*'s Pebble, via ``juju exec``.
+
+    Useful when interactive ``juju ssh`` is disabled by site policy but ``juju
+    exec`` is allowed. Caveat: ``juju exec`` is request/response, not a streaming
+    channel — so streaming commands (``logs -f``, ``exec`` with interactive stdin,
+    ``push`` from a non-EOF source) may not work the same as over ssh.
+
+    Uses the ``--`` separator (which ``juju exec`` accepts, unlike k8s ssh) so the
+    command's own flags don't get parsed by ``juju exec`` itself.
+    """
+
+    def _prefix(self) -> list[str]:
+        cmd = [self.juju_binary, "exec"]
+        if self.model:
+            cmd += ["-m", self.model]
+        cmd += ["-u", self.unit, "--"]
+        return cmd

@@ -7,7 +7,7 @@ a shell and mounts the workload's socket), not via ``juju ssh --container=<workl
 
 from __future__ import annotations
 
-from cascade.transport.runner import JujuSshRunner
+from cascade.transport.runner import JujuExecRunner, JujuSshRunner
 
 
 def test_wrap_targets_charm_container_with_workload_socket():
@@ -48,6 +48,45 @@ def test_wrap_includes_model_and_juju_binary():
 
 def test_wrap_no_socket_shim_without_container():
     runner = JujuSshRunner("a/0", None)
+    argv = runner.wrap(["/charm/bin/pebble", "ls"])
+    assert "env" not in argv
+    assert runner.pebble_socket is None
+
+
+# --------------------------------------------------------------------------- #
+# JujuExecRunner: the --via exec relay alternative.
+# --------------------------------------------------------------------------- #
+
+
+def test_exec_wrap_uses_juju_exec_with_unit_flag_and_dashdash():
+    runner = JujuExecRunner("myapp/0", "workload")
+    argv = runner.wrap(["/charm/bin/pebble", "services"])
+    # `juju exec` (unlike k8s ssh) accepts -- as a normal arg separator, and
+    # takes the unit via -u rather than as a positional after a subcommand.
+    assert argv == [
+        "juju",
+        "exec",
+        "-u",
+        "myapp/0",
+        "--",
+        "env",
+        "PEBBLE_SOCKET=/charm/containers/workload/pebble.socket",
+        "PEBBLE=/charm/containers/workload",
+        "/charm/bin/pebble",
+        "services",
+    ]
+
+
+def test_exec_wrap_includes_model_before_unit():
+    runner = JujuExecRunner("a/1", "c", model="foo", juju_binary="/snap/bin/juju")
+    argv = runner.wrap(["/charm/bin/pebble", "plan"])
+    assert argv[:6] == ["/snap/bin/juju", "exec", "-m", "foo", "-u", "a/1"]
+    assert "--" in argv
+    assert argv[-2:] == ["/charm/bin/pebble", "plan"]
+
+
+def test_exec_wrap_no_socket_shim_without_container():
+    runner = JujuExecRunner("a/0", None)
     argv = runner.wrap(["/charm/bin/pebble", "ls"])
     assert "env" not in argv
     assert runner.pebble_socket is None

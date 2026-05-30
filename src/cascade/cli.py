@@ -45,6 +45,15 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--juju", default="juju", help="juju binary to invoke (default: juju)"
     )
+    parser.add_argument(
+        "--via",
+        choices=("ssh", "exec"),
+        default="ssh",
+        help=(
+            "Juju relay for Mode B: 'ssh' (default, streaming) or 'exec' "
+            "(request/response — for sites where ssh is disabled)"
+        ),
+    )
     parser.add_argument("--version", action="version", version=f"cascade {__version__}")
     return parser
 
@@ -66,7 +75,11 @@ def _build_target(args: argparse.Namespace):
             socket_path=args.socket,
         )
     return resolve_target(
-        args.unit, container=args.container, model=args.model, juju_binary=args.juju
+        args.unit,
+        container=args.container,
+        model=args.model,
+        juju_binary=args.juju,
+        via=args.via,
     )
 
 
@@ -93,6 +106,7 @@ def main(argv: list[str] | None = None) -> int:
             model=target.model,
             juju_binary=target.juju_binary,
             socket_path=target.socket_path,
+            via=target.via,
         )
         if args.snapshot:
             from .snapshot import snapshot_json
