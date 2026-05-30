@@ -20,10 +20,6 @@ determine whether the issue qualifies as a security issue and, if so, in which
 component. We will then figure out a fix, get a CVE assigned, and coordinate the
 release of the fix.
 
-If you have a deadline for public disclosure, please let us know. Our vulnerability
-management team intends to respond within 3 working days of your report. This
-project aims to resolve all vulnerabilities within 90 days.
-
-The Ubuntu Security disclosure and embargo policy contains more information about
-what you can expect when you contact us, and what we expect from you:
-<https://ubuntu.com/security/disclosure-policy>.
+If you have a deadline for public disclosure, please let us know. We aim to
+respond within 3 working days of your report, and to resolve all vulnerabilities
+within 90 days.
