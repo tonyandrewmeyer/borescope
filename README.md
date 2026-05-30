@@ -67,7 +67,3 @@ borescope is three thin, independently-testable layers:
 borescope is for **Kubernetes** charms (which run Pebble). Machine charms already have
 a real shell and are out of scope. It deliberately ships a *minimal* command set and
 grows on request — if a tool exists in the container, reach it with `exec`.
-
-## License
-
-Apache-2.0. See [LICENSE](LICENSE).
