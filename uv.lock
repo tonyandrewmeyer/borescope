@@ -13,7 +13,7 @@ dependencies = [
     { name = "pyyaml" },
 ]
 
-[package.optional-dependencies]
+[package.dev-dependencies]
 dev = [
     { name = "pre-commit" },
     { name = "pytest" },
@@ -28,17 +28,20 @@ dev = [
 requires-dist = [
     { name = "ops", specifier = ">=2.0.0,<4" },
     { name = "pebble-shimmer", specifier = ">=1.0.0b2" },
-    { name = "pre-commit", marker = "extra == 'dev'", specifier = ">=3.0.0" },
     { name = "prompt-toolkit", specifier = ">=3.0" },
-    { name = "pytest", marker = "extra == 'dev'", specifier = ">=7.0.0" },
-    { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=4.0.0" },
-    { name = "pytest-mock", marker = "extra == 'dev'", specifier = ">=3.10.0" },
     { name = "pyyaml", specifier = ">=6.0" },
-    { name = "ruff", marker = "extra == 'dev'", specifier = "==0.15.14" },
-    { name = "tox", marker = "extra == 'dev'", specifier = ">=4.0.0" },
-    { name = "ty", marker = "extra == 'dev'", specifier = "==0.0.38" },
 ]
-provides-extras = ["dev"]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "pre-commit", specifier = ">=3.0.0" },
+    { name = "pytest", specifier = ">=7.0.0" },
+    { name = "pytest-cov", specifier = ">=4.0.0" },
+    { name = "pytest-mock", specifier = ">=3.10.0" },
+    { name = "ruff", specifier = "==0.15.14" },
+    { name = "tox", specifier = ">=4.0.0" },
+    { name = "ty", specifier = "==0.0.38" },
+]
 
 [[package]]
 name = "cachetools"

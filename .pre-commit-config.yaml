@@ -16,27 +16,27 @@ repos:
       - id: detect-private-key
 
   # Local hooks run the tools through `uv run`, so the versions come from
-  # pyproject.toml's `dev` extra rather than from pinned `rev:`s here. This
+  # pyproject.toml's `dev` dependency group rather than from pinned `rev:`s here. This
   # keeps pre-commit, tox and CI on exactly the same tool versions.
   - repo: local
     hooks:
       - id: ruff-check
         name: ruff check
-        entry: uv run --extra dev -- ruff check --fix --exit-non-zero-on-fix
+        entry: uv run --group dev -- ruff check --fix --exit-non-zero-on-fix
         language: system
         types: [python]
         require_serial: true
 
       - id: ruff-format
         name: ruff format
-        entry: uv run --extra dev -- ruff format
+        entry: uv run --group dev -- ruff format
         language: system
         types: [python]
         require_serial: true
 
       - id: ty
         name: ty
-        entry: uv run --extra dev -- ty check src tests
+        entry: uv run --group dev -- ty check src tests
         language: system
         types: [python]
         pass_filenames: false
@@ -44,7 +44,7 @@ repos:
 
       - id: pytest-unit
         name: pytest unit tests
-        entry: uv run --extra dev -- pytest -m "not integration and not requires_juju" --maxfail=1 -q
+        entry: uv run --group dev -- pytest -m "not integration and not requires_juju" --maxfail=1 -q
         language: system
         types: [python]
         pass_filenames: false

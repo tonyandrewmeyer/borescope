@@ -9,7 +9,7 @@ request** rather than reimplement every shell utility.
 borescope uses [`uv`](https://docs.astral.sh/uv/):
 
 ```console
-uv sync --extra dev
+uv sync --group dev
 pre-commit install
 ```
 
