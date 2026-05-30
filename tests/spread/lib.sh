@@ -49,9 +49,14 @@ pebble_down() {
 # sourced. Make sure uv (and the pebble binary) are reachable from PATH.
 export PATH="/root/.local/bin:/usr/local/bin:${PATH}"
 
+# Path to the borescope entry point inside the synced venv. Invoking the binary
+# directly (rather than `uv run borescope`) avoids uv's stderr chatter
+# polluting per-task "stderr should be empty" assertions.
+BORESCOPE="${SPREAD_PATH}/.venv/bin/borescope"
+
 # Run borescope against the per-task Pebble socket. Forwards all args.
 borescope_run() {
-    uv --project "${SPREAD_PATH}" run borescope --socket "${PEBBLE_SOCK}" "$@"
+    "${BORESCOPE}" --socket "${PEBBLE_SOCK}" "$@"
 }
 
 # Drive multiple commands through a single REPL session by piping them on
@@ -62,7 +67,7 @@ borescope_run() {
 #
 #   printf 'cd /etc\npwd\n' | borescope_script
 borescope_script() {
-    uv --project "${SPREAD_PATH}" run borescope --socket "${PEBBLE_SOCK}"
+    "${BORESCOPE}" --socket "${PEBBLE_SOCK}"
 }
 
 # Seed a file inside the Pebble-visible filesystem. Pebble's pull/push talks to
