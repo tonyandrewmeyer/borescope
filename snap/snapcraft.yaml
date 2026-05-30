@@ -24,10 +24,19 @@ parts:
   borescope:
     plugin: python
     source: .
+    # Classic snaps don't inherit the base's Python; the interpreter and
+    # stdlib have to be bundled in the snap explicitly, with both the
+    # versioned (python3.12-minimal) and unversioned (python3-minimal)
+    # packages so the venv pyvenv.cfg lands in the right place.
     stage-packages:
+      - python3-minimal
+      - python3.12-minimal
+      - libpython3-stdlib
+      - libpython3.12-minimal
+      - libpython3.12-stdlib
       - python3-venv
     build-environment:
-      - PARTS_PYTHON_INTERPRETER: python3
+      - PARTS_PYTHON_INTERPRETER: python3.12
   wrappers:
     plugin: dump
     source: .
