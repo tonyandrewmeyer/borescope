@@ -1,4 +1,4 @@
-"""``python -m cascade`` entry point."""
+"""``python -m borescope`` entry point."""
 
 from __future__ import annotations
 

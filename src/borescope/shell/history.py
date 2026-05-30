@@ -16,7 +16,7 @@ def history_path(target: Target) -> pathlib.Path:
     base = os.environ.get("XDG_STATE_HOME") or os.path.join(
         pathlib.Path.home(), ".local", "state"
     )
-    return pathlib.Path(base, "cascade", "history", target.history_key)
+    return pathlib.Path(base, "borescope", "history", target.history_key)
 
 
 def history_for(target: Target) -> History:

@@ -9,12 +9,12 @@ import posixpath
 import pytest
 from ops import pebble
 
-from cascade.discovery import Target
-from cascade.shell.context import ShellContext
+from borescope.discovery import Target
+from borescope.shell.context import ShellContext
 
 
 class FakeProc:
-    """Stand-in for ops.pebble.ExecProcess covering the bits cascade uses."""
+    """Stand-in for ops.pebble.ExecProcess covering the bits borescope uses."""
 
     def __init__(self, command: list[str], stdin: str | None):
         self.command = command
@@ -138,7 +138,7 @@ class FakeTransport:
 @pytest.fixture
 def transport() -> FakeTransport:
     fake = FakeTransport()
-    fake.add_file("/etc/hostname", "cascade\n")
+    fake.add_file("/etc/hostname", "borescope\n")
     fake.add_file(
         "/etc/passwd",
         "root:x:0:0:root:/root:/bin/bash\ndaemon:x:1:1::/usr/sbin:/usr/sbin/nologin\n",

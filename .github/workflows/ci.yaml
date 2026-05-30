@@ -42,7 +42,7 @@ jobs:
         run: >
           uv run --extra dev pytest
           -m "not integration and not requires_juju"
-          --cov=cascade --cov-report=term-missing
+          --cov=borescope --cov-report=term-missing
 
   integration:
     runs-on: ubuntu-latest

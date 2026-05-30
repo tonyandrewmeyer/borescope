@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import pytest
 
-from cascade import discovery
-from cascade.errors import DiscoveryError
+from borescope import discovery
+from borescope.errors import DiscoveryError
 
 CAAS_STATUS = {
     "model": {"name": "testmodel", "type": "caas"},

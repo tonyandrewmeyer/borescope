@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from cascade.shell.parser import ParseError, expand, parse_pipeline
+from borescope.shell.parser import ParseError, expand, parse_pipeline
 
 
 def test_blank_line():

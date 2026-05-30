@@ -1,4 +1,4 @@
-"""Command-line entry point for cascade."""
+"""Command-line entry point for borescope."""
 
 from __future__ import annotations
 
@@ -10,7 +10,7 @@ from . import __version__
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        prog="cascade",
+        prog="borescope",
         description=(
             "A natural shell for debugging Juju Kubernetes workload containers."
         ),
@@ -54,7 +54,7 @@ def build_parser() -> argparse.ArgumentParser:
             "(request/response — for sites where ssh is disabled)"
         ),
     )
-    parser.add_argument("--version", action="version", version=f"cascade {__version__}")
+    parser.add_argument("--version", action="version", version=f"borescope {__version__}")
     return parser
 
 
@@ -87,14 +87,14 @@ def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     if not args.unit and not args.socket and not args.here:
         print(
-            "cascade: a unit reference is required (e.g. 'cascade myapp/0'), "
+            "borescope: a unit reference is required (e.g. 'borescope myapp/0'), "
             "or use --here when running inside a charm container.",
             file=sys.stderr,
         )
         return 2
 
     # Heavy imports happen only past argument parsing, keeping --help/--version fast.
-    from .errors import CascadeError
+    from .errors import BorescopeError
     from .shell import ShellContext
     from .transport import open_transport
 
@@ -117,8 +117,8 @@ def main(argv: list[str] | None = None) -> int:
         from .discovery import sanity_check
 
         sanity_check(transport, target)
-    except CascadeError as exc:
-        print(f"cascade: {exc}", file=sys.stderr)
+    except BorescopeError as exc:
+        print(f"borescope: {exc}", file=sys.stderr)
         return 1
 
     from .shell import Shell

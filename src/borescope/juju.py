@@ -1,8 +1,8 @@
 """Thin wrappers around the ``juju`` CLI.
 
-cascade never links Juju's Go/Python API libraries; it shells out to the user's
-``juju`` client. That keeps cascade inside the user's existing Juju authority — if
-they can run ``juju ssh`` to a unit, cascade works; if they can't, it fails the
+borescope never links Juju's Go/Python API libraries; it shells out to the user's
+``juju`` client. That keeps borescope inside the user's existing Juju authority — if
+they can run ``juju ssh`` to a unit, borescope works; if they can't, it fails the
 same way — and needs no ``kubectl`` / cluster-admin access.
 """
 
@@ -39,7 +39,7 @@ def run_juju(
             cmd,
             input=input,
             # Detach stdin unless we're sending input: `juju ssh` forwards our stdin
-            # to the remote and would otherwise drain cascade's own piped-batch
+            # to the remote and would otherwise drain borescope's own piped-batch
             # command stream during discovery, leaving the REPL loop nothing to read.
             stdin=subprocess.DEVNULL if input is None else None,
             capture_output=True,

@@ -8,10 +8,10 @@ import sys
 
 import pytest
 
-from cascade.discovery import Target
-from cascade.shell import ShellContext
-from cascade.shell.repl import Shell
-from cascade.transport import open_transport
+from borescope.discovery import Target
+from borescope.shell import ShellContext
+from borescope.shell.repl import Shell
+from borescope.transport import open_transport
 
 pytestmark = pytest.mark.integration
 
@@ -63,15 +63,15 @@ def test_pipe_over_socket(shell):
 
 
 # --------------------------------------------------------------------------- #
-# Entrypoint smoke: exercise the actual `cascade` CLI subprocess.
+# Entrypoint smoke: exercise the actual `borescope` CLI subprocess.
 # These catch breakage in argparse, exit codes, JSON serialization, and the
 # Shell -> stdout glue that the Shell-class tests above don't see.
 # --------------------------------------------------------------------------- #
 
 
-def _run_cascade(*args: str, timeout: float = 30.0) -> subprocess.CompletedProcess[str]:
+def _run_borescope(*args: str, timeout: float = 30.0) -> subprocess.CompletedProcess[str]:
     return subprocess.run(
-        [sys.executable, "-m", "cascade", *args],
+        [sys.executable, "-m", "borescope", *args],
         capture_output=True,
         text=True,
         timeout=timeout,
@@ -80,19 +80,19 @@ def _run_cascade(*args: str, timeout: float = 30.0) -> subprocess.CompletedProce
 
 
 def test_entrypoint_version():
-    result = _run_cascade("--version")
+    result = _run_borescope("--version")
     assert result.returncode == 0
-    assert "cascade" in result.stdout.lower()
+    assert "borescope" in result.stdout.lower()
 
 
 def test_entrypoint_no_unit_or_socket_errors_clearly():
-    result = _run_cascade()
+    result = _run_borescope()
     assert result.returncode == 2
     assert "unit reference is required" in result.stderr
 
 
 def test_entrypoint_snapshot_against_real_pebble(pebble_socket):
-    result = _run_cascade("--socket", pebble_socket, "--snapshot")
+    result = _run_borescope("--socket", pebble_socket, "--snapshot")
     assert result.returncode == 0, result.stderr
     data = json.loads(result.stdout)
     assert data["unit"] == "local"
@@ -101,6 +101,6 @@ def test_entrypoint_snapshot_against_real_pebble(pebble_socket):
 
 
 def test_entrypoint_oneshot_command_against_real_pebble(pebble_socket):
-    result = _run_cascade("--socket", pebble_socket, "-c", "services")
+    result = _run_borescope("--socket", pebble_socket, "-c", "services")
     assert result.returncode == 0, result.stderr
     assert "hello" in result.stdout

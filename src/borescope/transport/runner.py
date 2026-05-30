@@ -1,11 +1,11 @@
 """shimmer ``Runner``s that reach a workload Pebble *via the charm container*.
 
 The obvious approach — ``juju ssh --container=<workload> <unit> …`` — does **not**
-work for cascade's headline case: Juju's k8s ssh ``exec``s ``sh`` inside the target
+work for borescope's headline case: Juju's k8s ssh ``exec``s ``sh`` inside the target
 container, so a shell-less rock fails with ``exec: "sh": not found`` (verified
 against a distroless workload). The charm/operator container, however, **always has
 a shell** and has every workload's Pebble socket mounted at
-``/charm/containers/<name>/pebble.socket``. So cascade lands in the *charm* container
+``/charm/containers/<name>/pebble.socket``. So borescope lands in the *charm* container
 (via ``juju ssh <unit>`` or ``juju exec -u <unit>``) and points ``pebble`` at the
 workload's socket. This reaches shell-less rocks *and* stays entirely within the
 user's Juju authority (no ``kubectl`` / cluster-admin).
@@ -13,7 +13,7 @@ user's Juju authority (no ``kubectl`` / cluster-admin).
 Two runners share that pattern:
 
 - :class:`JujuSshRunner` (default) prefixes ``juju ssh [-m <model>] <unit>``. Best
-  for general use; streams stdin/pty so cascade's ``exec`` / ``push`` work.
+  for general use; streams stdin/pty so borescope's ``exec`` / ``push`` work.
 - :class:`JujuExecRunner` (``--via exec``) prefixes ``juju exec [-m <model>]
   -u <unit> --``. For sites where interactive ssh is disabled but ``juju exec`` is
   allowed. Request/response, so streaming commands (``logs -f``, ``exec`` with stdin)
@@ -84,7 +84,7 @@ class _JujuRunnerBase:
             self.wrap(argv),
             input=input,
             # Detach stdin unless we're sending input: otherwise `juju ssh` drains
-            # cascade's piped-batch command stream (see juju.run_juju).
+            # borescope's piped-batch command stream (see juju.run_juju).
             stdin=subprocess.DEVNULL if input is None else None,
             capture_output=True,
             text=True,

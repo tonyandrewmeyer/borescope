@@ -5,7 +5,7 @@ from __future__ import annotations
 import sys
 from typing import TYPE_CHECKING
 
-from ..errors import CascadeError
+from ..errors import BorescopeError
 from . import theme
 from .commands.base import ExitShell, Result, build_registry
 from .parser import ParseError, expand, parse_pipeline
@@ -28,7 +28,7 @@ class Shell:
         try:
             stages = parse_pipeline(line)
         except ParseError as exc:
-            return Result.fail(f"cascade: {exc}")
+            return Result.fail(f"borescope: {exc}")
         if not stages:
             return Result()
         return self._execute(stages)
@@ -40,7 +40,7 @@ class Shell:
         for stage in stages:
             cmd = self.registry.get(stage[0])
             if cmd is not None and cmd.streaming:
-                return Result.fail(f"cascade: '{stage[0]}' cannot be used in a pipe.")
+                return Result.fail(f"borescope: '{stage[0]}' cannot be used in a pipe.")
 
         left = self._run_stage(stages[0], None)
         right = self._run_stage(stages[1], left.output)
@@ -54,7 +54,7 @@ class Shell:
         cmd = self.registry.get(name)
         if cmd is None:
             return Result.fail(
-                f"cascade: command not found: {name}\n"
+                f"borescope: command not found: {name}\n"
                 f"  hint: 'exec {name} ...' runs it inside the container.",
                 code=127,
             )
@@ -62,7 +62,7 @@ class Shell:
             return cmd.run(self.ctx, args, stdin)
         except ExitShell:
             raise
-        except CascadeError as exc:
+        except BorescopeError as exc:
             return Result.fail(f"{name}: {exc}")
         except Exception as exc:  # noqa: BLE001 - surface backend errors as output
             return Result.fail(f"{name}: {exc}")
@@ -115,12 +115,12 @@ class Shell:
         if self._session is None:
             from prompt_toolkit import PromptSession
 
-            from .completion import CascadeCompleter
+            from .completion import BorescopeCompleter
             from .history import history_for
 
             self._session = PromptSession(
                 history=history_for(self.ctx.target),
-                completer=CascadeCompleter(self.registry.keys(), self.ctx),
+                completer=BorescopeCompleter(self.registry.keys(), self.ctx),
                 complete_while_typing=False,
             )
         return self._session
@@ -129,5 +129,5 @@ class Shell:
         target = self.ctx.target
         where = target.unit + (f" ({target.container})" if target.container else "")
         print(
-            f"cascade — connected to {where}. Type 'help' for commands, 'exit' to quit."
+            f"borescope — connected to {where}. Type 'help' for commands, 'exit' to quit."
         )

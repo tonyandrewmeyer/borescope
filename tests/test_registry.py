@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from cascade.shell.commands.base import build_registry
+from borescope.shell.commands.base import build_registry
 
 EXPECTED = {
     # shell-state / trivial

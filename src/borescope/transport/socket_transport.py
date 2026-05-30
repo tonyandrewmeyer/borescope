@@ -2,10 +2,10 @@
 
 Wraps the real ``ops.pebble.Client`` (HTTP API over the unix socket). It is the
 fast, structured path, used only when the Pebble socket is *directly* reachable —
-cascade running inside the charm, a local Pebble, or once a pushed socket relay
+borescope running inside the charm, a local Pebble, or once a pushed socket relay
 exists. The discovery spike showed the socket is not reachable from a laptop
 against a remote cluster without extra plumbing, so for remote use the CLI relay
-(:mod:`cascade.transport.cli_transport`) is the default.
+(:mod:`borescope.transport.cli_transport`) is the default.
 """
 
 from __future__ import annotations

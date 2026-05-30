@@ -12,7 +12,7 @@ import re
 import shlex
 from collections.abc import Mapping
 
-from ..errors import CascadeError
+from ..errors import BorescopeError
 
 _UNSUPPORTED = {
     ";": "sequencing (;)",
@@ -29,7 +29,7 @@ _UNSUPPORTED = {
 _VAR = re.compile(r"\$(\w+)|\$\{(\w+)\}")
 
 
-class ParseError(CascadeError):
+class ParseError(BorescopeError):
     """Raised when a line cannot be parsed under the v1 grammar."""
 
 

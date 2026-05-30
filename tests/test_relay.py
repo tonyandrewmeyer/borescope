@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from cascade.transport import relay
+from borescope.transport import relay
 
 
 def test_local_pebble_binary_prefers_path(monkeypatch, tmp_path):

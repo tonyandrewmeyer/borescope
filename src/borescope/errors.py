@@ -1,21 +1,21 @@
-"""cascade's error hierarchy."""
+"""borescope's error hierarchy."""
 
 from __future__ import annotations
 
 
-class CascadeError(Exception):
-    """Base class for all cascade errors."""
+class BorescopeError(Exception):
+    """Base class for all borescope errors."""
 
 
-class DiscoveryError(CascadeError):
+class DiscoveryError(BorescopeError):
     """Raised when a unit/model/container cannot be resolved or reached."""
 
 
-class TransportError(CascadeError):
+class TransportError(BorescopeError):
     """Raised when the chosen transport cannot talk to a Pebble."""
 
 
-class JujuError(CascadeError):
+class JujuError(BorescopeError):
     """Raised when an underlying ``juju`` invocation fails."""
 
     def __init__(

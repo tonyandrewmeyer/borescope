@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from cascade.shell.commands._args import parse_args
+from borescope.shell.commands._args import parse_args
 
 
 def test_positionals_only():

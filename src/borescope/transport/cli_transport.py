@@ -1,7 +1,7 @@
 """CliTransport — the v1 primary backend.
 
 Wraps ``shimmer.PebbleCliClient`` (a drop-in ``ops.pebble.Client`` over the Pebble
-CLI) with a :class:`~cascade.transport.runner.JujuSshRunner`. The runner reaches the
+CLI) with a :class:`~borescope.transport.runner.JujuSshRunner`. The runner reaches the
 workload's Pebble *through the charm container* (which always has a shell and has the
 workload's socket mounted), so this works even against shell-less rocks.
 """

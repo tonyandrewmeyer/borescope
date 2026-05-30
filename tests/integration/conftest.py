@@ -9,7 +9,7 @@ import time
 import pytest
 
 LAYER = """\
-summary: cascade integration layer
+summary: borescope integration layer
 services:
   hello:
     override: replace

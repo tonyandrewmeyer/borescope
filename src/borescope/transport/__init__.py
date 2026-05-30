@@ -3,9 +3,9 @@
 A narrow interface the shell layer talks to, with two thin backends over an
 ``ops.pebble.Client``-shaped object:
 
-- :func:`~cascade.transport.cli_transport.build_cli_transport` (v1 primary) — runs
+- :func:`~borescope.transport.cli_transport.build_cli_transport` (v1 primary) — runs
   the workload container's ``pebble`` via ``juju ssh``.
-- :func:`~cascade.transport.socket_transport.build_socket_transport` (secondary) —
+- :func:`~borescope.transport.socket_transport.build_socket_transport` (secondary) —
   the real ``ops.pebble.Client`` on a directly-reachable socket.
 
 The shell layer only ever sees :class:`Transport`, so the backend choice — and a
@@ -25,7 +25,7 @@ if TYPE_CHECKING:
 
 
 class Transport(Protocol):
-    """The subset of ``ops.pebble.Client`` cascade uses.
+    """The subset of ``ops.pebble.Client`` borescope uses.
 
     Both backends (``shimmer.PebbleCliClient`` and ``ops.pebble.Client``) satisfy
     this structurally; it exists to document and contain the only surface that ever

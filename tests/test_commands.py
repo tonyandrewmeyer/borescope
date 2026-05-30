@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from cascade.shell.commands.base import build_registry
+from borescope.shell.commands.base import build_registry
 
 
 @pytest.fixture
@@ -36,7 +36,7 @@ def test_ls_missing_path_errors(registry, ctx):
 
 
 def test_cat(registry, ctx):
-    assert run(registry, ctx, "cat", "/etc/hostname").output == "cascade\n"
+    assert run(registry, ctx, "cat", "/etc/hostname").output == "borescope\n"
 
 
 def test_cat_stdin_passthrough(registry, ctx):
@@ -95,11 +95,11 @@ def test_mkdir_touch_cp_mv_rm(registry, ctx, transport):
     assert "/work/a.txt" in transport.files
 
     assert run(registry, ctx, "cp", "/etc/hostname", "/work/h.txt").code == 0
-    assert transport.files["/work/h.txt"] == b"cascade\n"
+    assert transport.files["/work/h.txt"] == b"borescope\n"
 
     assert run(registry, ctx, "mv", "/work/h.txt", "/work/sub/h2.txt").code == 0
     assert "/work/h.txt" not in transport.files
-    assert transport.files["/work/sub/h2.txt"] == b"cascade\n"
+    assert transport.files["/work/sub/h2.txt"] == b"borescope\n"
 
     assert run(registry, ctx, "rm", "-r", "/work").code == 0
     assert "/work" not in transport.dirs
@@ -145,7 +145,7 @@ def test_exec_echo(registry, ctx):
 def test_service_action_past_tense_strings():
     # Naive "verb + 'ed'" produced "Stoped" (one p); each subclass now declares
     # its past-tense form explicitly. Lock that in.
-    from cascade.shell.commands.pebble import Restart, Start, Stop
+    from borescope.shell.commands.pebble import Restart, Start, Stop
 
     assert Start.past == "Started"
     assert Stop.past == "Stopped"

@@ -66,7 +66,7 @@ class Env(Command):
 class Exit(Command):
     name = "exit"
     aliases = ("quit",)
-    summary = "Leave cascade"
+    summary = "Leave borescope"
     usage = "exit [code]"
 
     def run(

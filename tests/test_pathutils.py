@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from cascade.shell import pathutils
+from borescope.shell import pathutils
 
 
 def test_absolute_passthrough():

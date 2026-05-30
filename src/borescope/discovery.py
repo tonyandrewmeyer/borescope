@@ -4,7 +4,7 @@ Turns a unit reference (``myapp/0``) plus optional ``--container`` / ``--model``
 into a :class:`Target` describing exactly which workload container's Pebble to talk
 to. Everything here uses only the user's Juju model access (``juju status``,
 ``juju ssh`` to read the charm's ``metadata.yaml``) — never ``kubectl`` or
-cluster-admin — so cascade inherits Juju's authority for free.
+cluster-admin — so borescope inherits Juju's authority for free.
 """
 
 from __future__ import annotations
@@ -123,7 +123,7 @@ def resolve_target(
     model_type = (status.get("model") or {}).get("type")
     if model_type == "iaas":
         raise DiscoveryError(
-            f"{unit_ref} is on a machine (IAAS) model. cascade only supports "
+            f"{unit_ref} is on a machine (IAAS) model. borescope only supports "
             "Kubernetes charms, which run Pebble; machine charms already have a "
             "real shell. See the project scope."
         )
@@ -187,7 +187,7 @@ def discover_local_sockets(base: str = _LOCAL_SOCKET_DIR) -> dict[str, str]:
 def resolve_local_target(
     *, container: str | None = None, base: str = _LOCAL_SOCKET_DIR
 ) -> Target:
-    """Resolve a :class:`Target` for cascade running *inside the charm container*.
+    """Resolve a :class:`Target` for borescope running *inside the charm container*.
 
     Talks directly to a workload's mounted Pebble socket (Mode A) — no Juju, no
     unit reference. Picks the socket named by *container*, or the sole one if the
@@ -198,7 +198,7 @@ def resolve_local_target(
         raise DiscoveryError(
             f"no Pebble sockets found under {base}. '--here' only works from inside "
             "a Juju Kubernetes charm container, which mounts each workload's socket "
-            "there. From your workstation, run 'cascade <unit>' instead."
+            "there. From your workstation, run 'borescope <unit>' instead."
         )
     if container is not None:
         socket = sockets.get(container)
@@ -236,7 +236,7 @@ def sanity_check(transport: Transport, target: Target) -> None:
             f"container '{target.container}': {exc}"
         ) from exc
 
-    # cascade v1 relies on Pebble's `--format json` output (via shimmer). Older
+    # borescope v1 relies on Pebble's `--format json` output (via shimmer). Older
     # Pebbles (e.g. v1.26, still shipped by current stable charms) lack it. Probe
     # one structured read so we fail fast with a clear message rather than letting
     # every read command die with a cryptic "unknown flag `format'".
@@ -248,8 +248,8 @@ def sanity_check(transport: Transport, target: Target) -> None:
             version = getattr(info, "version", "unknown")
             raise DiscoveryError(
                 f"the Pebble in {target.unit} container '{target.container}' "
-                f"(version {version}) is too old for cascade: it lacks the "
-                "`--format json` output cascade relies on. cascade v1 needs a "
+                f"(version {version}) is too old for borescope: it lacks the "
+                "`--format json` output borescope relies on. borescope v1 needs a "
                 "newer Pebble (support for older Pebble may come later)."
             ) from exc
         # Any other failure here isn't necessarily fatal; reachability is already

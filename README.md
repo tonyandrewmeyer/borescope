@@ -1,14 +1,14 @@
-# cascade
+# borescope
 
 A natural shell for debugging Juju Kubernetes **workload** containers.
 
 Kubernetes charm workload containers usually run a [rock](https://documentation.ubuntu.com/rockcraft/)
 with no shell — so when something breaks, `juju ssh --container=workload …` drops
-you nowhere useful. cascade gives you a prompt that *feels* like `bash` but talks to
+you nowhere useful. borescope gives you a prompt that *feels* like `bash` but talks to
 the container's [Pebble](https://github.com/canonical/pebble) instead of a real shell:
 
 ```console
-$ cascade myapp/0
+$ borescope myapp/0
 pebble:/# ls /var/log/myapp
 pebble:/# tail -f /var/log/myapp/error.log
 pebble:/# services
@@ -17,8 +17,8 @@ pebble:/# plan
 pebble:/# exit
 ```
 
-No setup ceremony: cascade picks up your current Juju controller/model and uses your
-existing `juju` authority — if you can `juju ssh` to the unit, cascade works; if you
+No setup ceremony: borescope picks up your current Juju controller/model and uses your
+existing `juju` authority — if you can `juju ssh` to the unit, borescope works; if you
 can't, it fails the same way.
 
 ## Install
@@ -32,16 +32,16 @@ uv tool install .        # or: pipx install .
 ## Usage
 
 ```console
-cascade <unit>                       # default (first) workload container
-cascade <unit> --container=<name>    # a specific workload container
-cascade --model <model> <unit>
-cascade <unit> --command "services"  # one-shot, no REPL (for scripts)
-cascade <unit> --snapshot            # dump container state as JSON
+borescope <unit>                       # default (first) workload container
+borescope <unit> --container=<name>    # a specific workload container
+borescope --model <model> <unit>
+borescope <unit> --command "services"  # one-shot, no REPL (for scripts)
+borescope <unit> --snapshot            # dump container state as JSON
 ```
 
 ## How it works
 
-cascade is three thin, independently-testable layers:
+borescope is three thin, independently-testable layers:
 
 - **Transport** — talks to a Pebble. The primary backend (`CliTransport`) reaches the
   workload's Pebble *through the charm container* — `juju ssh <unit>` (the charm
@@ -49,7 +49,7 @@ cascade is three thin, independently-testable layers:
   there at `/charm/containers/<name>/pebble.socket`. This works even against rocks
   with **no shell** (the shell lives in the charm container, not the rock) and stays
   entirely within your Juju authority — no `kubectl` or cluster-admin. It drives
-  `pebble` via [shimmer](https://github.com/canonical/shimmer) (a drop-in
+  `pebble` via [shimmer](https://github.com/tonyandrewmeyer/shimmer) (a drop-in
   `ops.pebble.Client` over the Pebble CLI). When the Pebble socket is directly
   reachable (running inside the charm, or a local Pebble), `SocketTransport` uses the
   real `ops.pebble.Client` HTTP API instead.
@@ -64,7 +64,7 @@ cascade is three thin, independently-testable layers:
 
 ## Scope
 
-cascade is for **Kubernetes** charms (which run Pebble). Machine charms already have
+borescope is for **Kubernetes** charms (which run Pebble). Machine charms already have
 a real shell and are out of scope. It deliberately ships a *minimal* command set and
 grows on request — if a tool exists in the container, reach it with `exec`.
 

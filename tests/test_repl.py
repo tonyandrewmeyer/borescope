@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import pytest
 
-from cascade.shell.commands.base import ExitShell
-from cascade.shell.repl import Shell
+from borescope.shell.commands.base import ExitShell
+from borescope.shell.repl import Shell
 
 
 def test_single_pipe_filters(ctx):

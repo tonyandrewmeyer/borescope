@@ -1,13 +1,13 @@
 """JujuSshRunner argv construction — the charm-container relay (no juju needed).
 
-cascade reaches a workload's Pebble *through the charm container* (which always has
+borescope reaches a workload's Pebble *through the charm container* (which always has
 a shell and mounts the workload's socket), not via ``juju ssh --container=<workload>``
 (which execs ``sh`` in the workload and so fails on shell-less rocks).
 """
 
 from __future__ import annotations
 
-from cascade.transport.runner import JujuExecRunner, JujuSshRunner
+from borescope.transport.runner import JujuExecRunner, JujuSshRunner
 
 
 def test_wrap_targets_charm_container_with_workload_socket():

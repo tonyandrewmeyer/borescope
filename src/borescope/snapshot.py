@@ -1,4 +1,4 @@
-"""``cascade --snapshot`` — dump container state as JSON.
+"""``borescope --snapshot`` — dump container state as JSON.
 
 Cheap to produce, useful for filing bugs and for feeding tools like
 ``explain-my-model``. The shape is intended to be stable and consumable.
@@ -27,7 +27,7 @@ def build_snapshot(
     transport: Transport, target: Target, *, log_lines: int = 20
 ) -> dict[str, Any]:
     data: dict[str, Any] = {
-        "cascade_version": __version__,
+        "borescope_version": __version__,
         "captured_at": datetime.now(UTC).isoformat(),
         "unit": target.unit,
         "container": target.container,

@@ -17,7 +17,7 @@ if TYPE_CHECKING:
     from .context import ShellContext
 
 
-class CascadeCompleter(Completer):
+class BorescopeCompleter(Completer):
     """Complete the first token as a command name, later tokens as paths.
 
     Path completion lists files inside the container via the transport. It only
