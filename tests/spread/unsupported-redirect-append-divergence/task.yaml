@@ -1,0 +1,23 @@
+summary: |
+  KNOWN DIVERGENCE from POSIX XCU §2.7.3 — borescope v1 rejects `>>`
+  instead of appending standard output to a file.
+systems:
+  - ubuntu-24.04
+
+execute: |
+  # https://pubs.opengroup.org/onlinepubs/9699919799/utilities/V3_chap02.html#tag_18_07_03
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_up
+
+  set +e
+  out="$(borescope_run -c 'echo a >> /tmp/borescope-spread-append' 2>&1)"
+  rc=$?
+  set -e
+
+  test "$rc" -ne 0
+  echo "$out" | MATCH "not supported"
+  test ! -e /tmp/borescope-spread-append
+
+restore: |
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_down

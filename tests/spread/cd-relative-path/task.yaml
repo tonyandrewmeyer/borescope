@@ -1,0 +1,18 @@
+summary: |
+  POSIX XCU §cd — a relative path operand is resolved against the current
+  working directory.
+systems:
+  - ubuntu-24.04
+
+execute: |
+  # https://pubs.opengroup.org/onlinepubs/9699919799/utilities/cd.html
+  # "Otherwise [absolute, $CDPATH cases], directory shall be used as given."
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_up
+
+  out="$(printf 'cd /var\ncd log\npwd\n' | borescope_script)"
+  echo "$out" | MATCH '^/var/log$'
+
+restore: |
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_down

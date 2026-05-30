@@ -1,0 +1,18 @@
+summary: |
+  POSIX XCU §cat — with no operands, read from standard input.
+systems:
+  - ubuntu-24.04
+
+execute: |
+  # https://pubs.opengroup.org/onlinepubs/9699919799/utilities/cat.html
+  # "If no file operands are specified, the standard input shall be used."
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_up
+
+  # Use the v1 pipe so the cat stage receives a non-empty stdin.
+  out="$(borescope_run -c 'echo passthrough | cat')"
+  echo "$out" | MATCH '^passthrough$'
+
+restore: |
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_down

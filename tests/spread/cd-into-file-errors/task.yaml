@@ -1,0 +1,25 @@
+summary: |
+  POSIX XCU §cd — exit non-zero and write a diagnostic if the operand
+  names a file that is not a directory.
+systems:
+  - ubuntu-24.04
+
+execute: |
+  # https://pubs.opengroup.org/onlinepubs/9699919799/utilities/cd.html
+  # "EXIT STATUS: >0  An error occurred."
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_up
+
+  set +e
+  out="$(printf 'cd /etc/hostname\npwd\n' | borescope_script 2>&1)"
+  rc=$?
+  set -e
+
+  # cwd should not have changed.
+  echo "$out" | MATCH '^/$'
+  # A diagnostic should mention the offending path.
+  echo "$out" | MATCH 'cd:'
+
+restore: |
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_down

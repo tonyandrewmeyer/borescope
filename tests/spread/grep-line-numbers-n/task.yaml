@@ -1,0 +1,24 @@
+summary: |
+  POSIX XCU §grep — `-n` prefixes each output line with its line number.
+systems:
+  - ubuntu-24.04
+
+execute: |
+  # https://pubs.opengroup.org/onlinepubs/9699919799/utilities/grep.html
+  # "-n  Precede each output line by its relative line number in the file,
+  #      each file starting at line 1."
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_up
+
+  workdir="$(mktemp -d)"
+  printf 'alpha\nbeta\nbb\n' > "${workdir}/f"
+
+  out="$(borescope_run -c "grep -n b ${workdir}/f")"
+  echo "$out" | MATCH '^2:beta$'
+  echo "$out" | MATCH '^3:bb$'
+
+  rm -rf "${workdir}"
+
+restore: |
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_down

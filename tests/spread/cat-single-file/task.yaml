@@ -1,0 +1,25 @@
+summary: |
+  POSIX XCU §cat — write the contents of a single file operand to stdout.
+systems:
+  - ubuntu-24.04
+
+execute: |
+  # https://pubs.opengroup.org/onlinepubs/9699919799/utilities/cat.html
+  # "The cat utility shall read files in sequence and shall write their
+  #  contents to the standard output in the same sequence."
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_up
+
+  workdir="$(mktemp -d)"
+  printf 'one\ntwo\nthree\n' > "${workdir}/f"
+
+  out="$(borescope_run -c "cat ${workdir}/f")"
+  echo "$out" | MATCH '^one$'
+  echo "$out" | MATCH '^two$'
+  echo "$out" | MATCH '^three$'
+
+  rm -rf "${workdir}"
+
+restore: |
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_down

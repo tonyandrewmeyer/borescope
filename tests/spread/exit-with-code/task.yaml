@@ -1,0 +1,21 @@
+summary: |
+  POSIX XCU §exit — with an integer operand, exit with that status.
+systems:
+  - ubuntu-24.04
+
+execute: |
+  # https://pubs.opengroup.org/onlinepubs/9699919799/utilities/V3_chap02.html#tag_18_25
+  # "If n is specified, the exit status shall be n, modulo 256."
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_up
+
+  set +e
+  printf 'exit 42\n' | borescope_script
+  rc=$?
+  set -e
+
+  test "$rc" -eq 42
+
+restore: |
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_down

@@ -1,0 +1,23 @@
+summary: |
+  POSIX XCU §env — with no operands, writes the names and values of the
+  environment that would be passed on to a utility.
+systems:
+  - ubuntu-24.04
+
+execute: |
+  # https://pubs.opengroup.org/onlinepubs/9699919799/utilities/env.html
+  # "If no utility operand is specified, the resulting environment shall
+  #  be written to the standard output, with one environment variable per
+  #  line in the form: name=value"
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_up
+
+  # Borescope tracks HOME and PWD by default; both must appear in `name=value`
+  # form.
+  out="$(borescope_run -c 'env')"
+  echo "$out" | MATCH '^HOME=/root$'
+  echo "$out" | MATCH '^PWD=/$'
+
+restore: |
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_down

@@ -1,0 +1,24 @@
+summary: |
+  POSIX XCU §2.9.2 — a two-stage pipeline connects stage 1's stdout to
+  stage 2's stdin.
+systems:
+  - ubuntu-24.04
+
+execute: |
+  # https://pubs.opengroup.org/onlinepubs/9699919799/utilities/V3_chap02.html#tag_18_09_02
+  # "The standard output of all but the last command shall be connected to
+  #  the standard input of the next command."
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_up
+
+  workdir="$(mktemp -d)"
+  printf 'alpha\nbeta\ngamma\n' > "${workdir}/lines"
+
+  out="$(borescope_run -c "cat ${workdir}/lines | grep beta")"
+  echo "$out" | MATCH '^beta$'
+
+  rm -rf "${workdir}"
+
+restore: |
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_down

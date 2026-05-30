@@ -14,10 +14,6 @@ class DiscoveryError(BorescopeError):
     """Raised when a unit/model/container cannot be resolved or reached."""
 
 
-class TransportError(BorescopeError):
-    """Raised when the chosen transport cannot talk to a Pebble."""
-
-
 class JujuError(BorescopeError):
     """Raised when an underlying ``juju`` invocation fails."""
 

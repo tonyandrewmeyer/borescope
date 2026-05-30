@@ -1,0 +1,24 @@
+summary: |
+  POSIX XCU §mkdir — with -p, an existing path is not an error.
+systems:
+  - ubuntu-24.04
+
+execute: |
+  # https://pubs.opengroup.org/onlinepubs/9699919799/utilities/mkdir.html
+  # "Use of the -p option shall not be considered an error if the directory
+  #  named by the dir operand exists."
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_up
+
+  workdir="$(mktemp -d)"
+  mkdir "${workdir}/already"
+
+  borescope_run -c "mkdir -p ${workdir}/already"
+  # Still exists, still a directory; no error.
+  test -d "${workdir}/already"
+
+  rm -rf "${workdir}"
+
+restore: |
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_down

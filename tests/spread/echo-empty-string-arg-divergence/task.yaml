@@ -1,0 +1,22 @@
+summary: |
+  KNOWN DIVERGENCE from POSIX XCU §echo — borescope's REPL emitter
+  short-circuits on empty output, so `echo ''` writes zero bytes instead
+  of the spec-mandated single <newline>.
+systems:
+  - ubuntu-24.04
+
+# Same root cause as echo-no-args-divergence: ' '.join(['']) is the empty
+# string, and repl._emit gates on a truthy output. Pinned to current
+# behaviour; flips green by reversal once the emitter is fixed.
+execute: |
+  # https://pubs.opengroup.org/onlinepubs/9699919799/utilities/echo.html
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_up
+
+  # Current behaviour: 0 bytes. POSIX would require 1.
+  raw="$(borescope_run -c "echo ''" | wc -c)"
+  test "$raw" -eq 0
+
+restore: |
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_down

@@ -1,0 +1,21 @@
+summary: |
+  POSIX XCU §head — exit non-zero on a non-existent file operand.
+systems:
+  - ubuntu-24.04
+
+execute: |
+  # https://pubs.opengroup.org/onlinepubs/9699919799/utilities/head.html
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_up
+
+  set +e
+  out="$(borescope_run -c 'head /no/such/file' 2>&1)"
+  rc=$?
+  set -e
+
+  test "$rc" -ne 0
+  echo "$out" | MATCH 'head:.*/no/such/file'
+
+restore: |
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_down

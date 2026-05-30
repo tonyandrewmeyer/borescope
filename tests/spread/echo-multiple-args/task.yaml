@@ -1,0 +1,24 @@
+summary: |
+  POSIX XCU §echo — multiple arguments are written separated by a single
+  <blank> and the line ends with a <newline>.
+systems:
+  - ubuntu-24.04
+
+execute: |
+  # https://pubs.opengroup.org/onlinepubs/9699919799/utilities/echo.html
+  # "The echo utility shall write its arguments to standard output, followed
+  #  by a <newline>." and "Arguments shall be separated by single <blank>
+  #  characters."
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_up
+
+  out="$(borescope_run -c 'echo hello world')"
+  echo "$out" | MATCH '^hello world$'
+  # Trailing newline is captured by the $() trim; assert the raw byte length
+  # equals the spec-mandated "args + sep + NL".
+  raw="$(borescope_run -c 'echo hello world' | wc -c)"
+  test "$raw" -eq 12  # "hello world\n"
+
+restore: |
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_down

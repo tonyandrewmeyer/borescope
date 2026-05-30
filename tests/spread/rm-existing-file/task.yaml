@@ -1,0 +1,23 @@
+summary: |
+  POSIX XCU §rm — remove a single existing file.
+systems:
+  - ubuntu-24.04
+
+execute: |
+  # https://pubs.opengroup.org/onlinepubs/9699919799/utilities/rm.html
+  # "The rm utility shall remove the directory entry specified by each file
+  #  argument."
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_up
+
+  workdir="$(mktemp -d)"
+  touch "${workdir}/doomed"
+
+  borescope_run -c "rm ${workdir}/doomed"
+  test ! -e "${workdir}/doomed"
+
+  rm -rf "${workdir}"
+
+restore: |
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_down

@@ -1,0 +1,24 @@
+summary: |
+  KNOWN DIVERGENCE from POSIX XCU §2.9.2 — borescope v1 rejects pipelines
+  with more than two stages; POSIX permits an unbounded sequence.
+systems:
+  - ubuntu-24.04
+
+# parser.py raises ParseError with "only a single pipe ('cmd1 | cmd2') is
+# supported in v1." for `a | b | c`. POSIX permits arbitrary N stages.
+execute: |
+  # https://pubs.opengroup.org/onlinepubs/9699919799/utilities/V3_chap02.html#tag_18_09_02
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_up
+
+  set +e
+  out="$(borescope_run -c 'echo a | cat | grep a' 2>&1)"
+  rc=$?
+  set -e
+
+  test "$rc" -ne 0
+  echo "$out" | MATCH 'single pipe'
+
+restore: |
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_down

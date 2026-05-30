@@ -1,0 +1,95 @@
+name: Spread
+
+# POSIX-conformance and shell-language spread tasks for borescope. Each task
+# in tests/spread/ runs in its own GitHub-hosted runner so a single divergent
+# task doesn't poison the rest of the matrix.
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["**"]
+
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  define-matrix:
+    name: Discover spread tasks
+    runs-on: ubuntu-latest
+    outputs:
+      tasks: ${{ steps.tasks.outputs.tasks }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version: "1.23"
+          cache: false
+
+      - name: Install spread
+        # Pinned to the same commit concierge uses (2026-03-26). Bump
+        # deliberately, alongside concierge, rather than tracking @latest.
+        run: |
+          go install github.com/canonical/spread/cmd/spread@a3a44a96b6d00a72b0476756c70e3fb6610e7b48
+
+      - name: Enumerate tasks
+        id: tasks
+        run: |
+          list="$(spread -list github-ci \
+            | sed 's|github-ci:ubuntu-24.04:tests/spread/||g' \
+            | jq -r -ncR '[inputs | select(length>0)]')"
+          echo "tasks=$list"
+          echo "tasks=$list" >> "$GITHUB_OUTPUT"
+
+  spread:
+    name: ${{ matrix.task }}
+    needs: define-matrix
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        task: ${{ fromJSON(needs.define-matrix.outputs.tasks) }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version: "1.23"
+          cache: false
+
+      - name: Install spread
+        run: |
+          go install github.com/canonical/spread/cmd/spread@a3a44a96b6d00a72b0476756c70e3fb6610e7b48
+
+      - name: Run task
+        env:
+          TASK: ${{ matrix.task }}
+        run: |
+          spread -v "github-ci:ubuntu-24.04:tests/spread/${TASK}"
+
+  # Single rollup of the matrix so the branch-protection ruleset can require
+  # one stable check name instead of every task name. `needs.spread.result`
+  # is "success" only when every matrix expansion succeeded; otherwise this
+  # job fails and surfaces which result triggered it.
+  all:
+    name: All spread tasks
+    needs: spread
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check matrix result
+        env:
+          RESULT: ${{ needs.spread.result }}
+        run: |
+          if [ "${RESULT}" != "success" ]; then
+            echo "Spread matrix did not succeed (result: ${RESULT})."
+            exit 1
+          fi

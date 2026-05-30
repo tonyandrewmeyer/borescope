@@ -1,0 +1,30 @@
+summary: |
+  POSIX XCU §ls — when more than one directory operand is given, each
+  listing is preceded by a header naming the operand.
+systems:
+  - ubuntu-24.04
+
+execute: |
+  # https://pubs.opengroup.org/onlinepubs/9699919799/utilities/ls.html
+  # "When more than one directory operand is processed, ls shall write the
+  #  pathname of the operand, followed by a <colon> and a <newline>, before
+  #  writing the entries..."
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_up
+
+  d1="$(mktemp -d)"
+  d2="$(mktemp -d)"
+  touch "${d1}/in-one" "${d2}/in-two"
+
+  out="$(borescope_run -c "ls ${d1} ${d2}")"
+  # Each operand gets a header line that ends with a colon.
+  echo "$out" | MATCH "^${d1}:$"
+  echo "$out" | MATCH "^${d2}:$"
+  echo "$out" | MATCH '^in-one$'
+  echo "$out" | MATCH '^in-two$'
+
+  rm -rf "${d1}" "${d2}"
+
+restore: |
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_down

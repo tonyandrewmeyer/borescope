@@ -1,0 +1,20 @@
+summary: |
+  POSIX XCU §cd — with no operand, cd shall change to $HOME.
+systems:
+  - ubuntu-24.04
+
+execute: |
+  # https://pubs.opengroup.org/onlinepubs/9699919799/utilities/cd.html
+  # "If no directory operand is given and the HOME environment variable
+  #  is set to a non-empty value, the cd utility shall behave as if the
+  #  directory named in the HOME environment variable was the operand."
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_up
+
+  # /root is borescope's default HOME and exists in the VM.
+  out="$(printf 'cd\npwd\n' | borescope_script)"
+  echo "$out" | MATCH '^/root$'
+
+restore: |
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_down

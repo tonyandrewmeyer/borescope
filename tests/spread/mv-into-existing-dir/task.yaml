@@ -1,0 +1,27 @@
+summary: |
+  POSIX XCU §mv — when the target is an existing directory, move the
+  source under its basename inside that directory.
+systems:
+  - ubuntu-24.04
+
+execute: |
+  # https://pubs.opengroup.org/onlinepubs/9699919799/utilities/mv.html
+  # "In the second synopsis form, mv shall move each file named by a
+  #  source_file operand to a destination file in the existing directory
+  #  named by the target_dir operand ..."
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_up
+
+  workdir="$(mktemp -d)"
+  printf 'payload\n' > "${workdir}/file"
+  mkdir "${workdir}/dir"
+
+  borescope_run -c "mv ${workdir}/file ${workdir}/dir"
+  test ! -e "${workdir}/file"
+  cat "${workdir}/dir/file" | MATCH '^payload$'
+
+  rm -rf "${workdir}"
+
+restore: |
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_down

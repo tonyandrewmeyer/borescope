@@ -1,0 +1,22 @@
+summary: |
+  POSIX XCU §grep — `-c` writes only the count of matching lines per file.
+systems:
+  - ubuntu-24.04
+
+execute: |
+  # https://pubs.opengroup.org/onlinepubs/9699919799/utilities/grep.html
+  # "-c  Write only a count of selected lines to standard output."
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_up
+
+  workdir="$(mktemp -d)"
+  printf 'x\nxy\nz\nxxxxx\n' > "${workdir}/f"
+
+  out="$(borescope_run -c "grep -c x ${workdir}/f")"
+  echo "$out" | MATCH '^3$'
+
+  rm -rf "${workdir}"
+
+restore: |
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_down

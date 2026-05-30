@@ -1,0 +1,30 @@
+summary: |
+  POSIX XCU §ls — without -a, entries whose names begin with '.' are not
+  written; remaining entries are sorted in collation order.
+systems:
+  - ubuntu-24.04
+
+execute: |
+  # https://pubs.opengroup.org/onlinepubs/9699919799/utilities/ls.html
+  # "By default, ls shall not write out entries whose names begin with a
+  #  <period> ('.')."
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_up
+
+  workdir="$(mktemp -d)"
+  touch "${workdir}/alpha" "${workdir}/beta" "${workdir}/.hidden"
+
+  out="$(borescope_run -c "ls ${workdir}")"
+  echo "$out" | MATCH '^alpha$'
+  echo "$out" | MATCH '^beta$'
+  echo "$out" | NOMATCH '^\.hidden$'
+  # Sorted: alpha before beta.
+  test "$(echo "$out" | grep -n '^alpha$' | cut -d: -f1)" \
+       -lt \
+       "$(echo "$out" | grep -n '^beta$' | cut -d: -f1)"
+
+  rm -rf "${workdir}"
+
+restore: |
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_down

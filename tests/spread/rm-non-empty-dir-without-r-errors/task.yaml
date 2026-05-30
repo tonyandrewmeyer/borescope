@@ -1,0 +1,34 @@
+summary: |
+  POSIX XCU §rm — without -r, rm shall not remove a directory; a non-zero
+  exit status results.
+systems:
+  - ubuntu-24.04
+
+execute: |
+  # https://pubs.opengroup.org/onlinepubs/9699919799/utilities/rm.html
+  # "If file is of type directory and neither the -r nor the -R option
+  #  is specified, rm shall write a diagnostic message to standard error,
+  #  shall not perform any more actions with that operand, and shall
+  #  continue with any remaining operands."
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_up
+
+  workdir="$(mktemp -d)"
+  mkdir "${workdir}/dir"
+  touch "${workdir}/dir/keep"
+
+  set +e
+  out="$(borescope_run -c "rm ${workdir}/dir" 2>&1)"
+  rc=$?
+  set -e
+
+  test "$rc" -ne 0
+  test -d "${workdir}/dir"
+  test -e "${workdir}/dir/keep"
+  echo "$out" | MATCH 'rm:'
+
+  rm -rf "${workdir}"
+
+restore: |
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_down

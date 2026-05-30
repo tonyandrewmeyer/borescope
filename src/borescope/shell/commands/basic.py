@@ -26,7 +26,11 @@ class Cd(Command):
             infos = ctx.transport.list_files(path, itself=True)
         except Exception as exc:
             return Result.fail(f'cd: {target}: {exc}')
-        if infos and getattr(infos[0].type, 'name', '') != 'DIRECTORY':
+        ftype = getattr(infos[0].type, 'name', '') if infos else ''
+        # A symlink may point at a directory, and Pebble's metadata can't tell us
+        # the target's type, so follow optimistically; only a definitively
+        # non-directory entry (a regular file, device, …) is rejected outright.
+        if ftype not in ('DIRECTORY', 'SYMLINK', ''):
             return Result.fail(f'cd: not a directory: {target}')
         ctx.chdir(path)
         return Result()

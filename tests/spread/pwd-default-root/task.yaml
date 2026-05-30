@@ -1,0 +1,20 @@
+summary: |
+  POSIX XCU §pwd — writes an absolute pathname of the current working
+  directory.
+systems:
+  - ubuntu-24.04
+
+execute: |
+  # https://pubs.opengroup.org/onlinepubs/9699919799/utilities/pwd.html
+  # "The pwd utility shall write to standard output an absolute pathname
+  #  of the current working directory."
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_up
+
+  # borescope starts in /, so a bare `pwd` should report `/`.
+  out="$(borescope_run -c 'pwd')"
+  echo "$out" | MATCH '^/$'
+
+restore: |
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_down

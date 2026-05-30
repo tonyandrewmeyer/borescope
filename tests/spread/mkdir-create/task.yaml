@@ -1,0 +1,22 @@
+summary: |
+  POSIX XCU §mkdir — create a directory at the given path.
+systems:
+  - ubuntu-24.04
+
+execute: |
+  # https://pubs.opengroup.org/onlinepubs/9699919799/utilities/mkdir.html
+  # "The mkdir utility shall create the directories specified by the
+  #  operands ..."
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_up
+
+  workdir="$(mktemp -d)"
+
+  borescope_run -c "mkdir ${workdir}/new"
+  test -d "${workdir}/new"
+
+  rm -rf "${workdir}"
+
+restore: |
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_down

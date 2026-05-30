@@ -1,0 +1,27 @@
+summary: |
+  POSIX XCU §grep — when no line matches, exit 1 with no output on stdout.
+systems:
+  - ubuntu-24.04
+
+execute: |
+  # https://pubs.opengroup.org/onlinepubs/9699919799/utilities/grep.html
+  # "EXIT STATUS:  1  No lines were selected."
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_up
+
+  workdir="$(mktemp -d)"
+  printf 'alpha\nbeta\n' > "${workdir}/f"
+
+  set +e
+  out="$(borescope_run -c "grep zeta ${workdir}/f")"
+  rc=$?
+  set -e
+
+  test "$rc" -eq 1
+  test -z "$out"
+
+  rm -rf "${workdir}"
+
+restore: |
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_down
