@@ -38,6 +38,13 @@ def test_ls_missing_path_errors(registry, ctx):
     assert 'ls:' in result.error
 
 
+def test_ls_defangs_hostile_filename(registry, ctx, transport):
+    transport.add_file('/etc/\x1b[2Jevil', 'x')
+    result = run(registry, ctx, 'ls', '/etc')
+    assert '\x1b' not in result.output
+    assert '\\x1b[2Jevil' in result.output.split('\n')
+
+
 def test_cat(registry, ctx):
     assert run(registry, ctx, 'cat', '/etc/hostname').output == 'borescope\n'
 
@@ -48,12 +55,45 @@ def test_cat_stdin_passthrough(registry, ctx):
 
 def test_head(registry, ctx):
     out = run(registry, ctx, 'head', '-n', '2', '/var/log/app/error.log').output
-    assert out == 'line1\nline2'
+    assert out == 'line1\nline2\n'
 
 
 def test_tail(registry, ctx):
     out = run(registry, ctx, 'tail', '-n', '2', '/var/log/app/error.log').output
-    assert out == 'ERROR boom\nline4'
+    assert out == 'ERROR boom\nline4\n'
+
+
+def test_head_preserves_crlf_and_no_trailing_newline(registry, ctx, transport):
+    transport.add_file('/crlf.txt', 'a\r\nb\r\nc')  # no trailing newline on last line
+    assert run(registry, ctx, 'head', '-n', '2', '/crlf.txt').output == 'a\r\nb\r\n'
+    # Taking the final, unterminated line keeps it unterminated.
+    assert run(registry, ctx, 'tail', '-n', '1', '/crlf.txt').output == 'c'
+
+
+def test_head_invalid_count_errors(registry, ctx):
+    result = run(registry, ctx, 'head', '-n', 'abc', '/etc/hostname')
+    assert result.code == 1
+    assert 'invalid line count' in result.error
+
+
+def test_tail_follow_delta_appends():
+    from borescope.shell.commands.filesystem import Tail
+
+    assert Tail._delta(3, b'abcdef') == ('def', 6)
+
+
+def test_tail_follow_delta_no_change():
+    from borescope.shell.commands.filesystem import Tail
+
+    assert Tail._delta(6, b'abcdef') == ('', 6)
+
+
+def test_tail_follow_delta_resets_on_truncation():
+    from borescope.shell.commands.filesystem import Tail
+
+    # File shrank (rotated/truncated): re-emit from the start, don't wait for it
+    # to grow past the old offset.
+    assert Tail._delta(10, b'new') == ('new', 3)
 
 
 def test_grep_file(registry, ctx):
@@ -82,6 +122,19 @@ def test_find_by_type_dir(registry, ctx):
     result = run(registry, ctx, 'find', '/var', '-type', 'd')
     assert '/var/log' in result.output
     assert '/var/log/app' in result.output
+
+
+def test_find_maxdepth_limits_descent(registry, ctx):
+    result = run(registry, ctx, 'find', '/var', '-type', 'd', '-maxdepth', '1')
+    lines = result.output.split('\n')
+    assert '/var/log' in lines
+    assert '/var/log/app' not in lines
+
+
+def test_find_invalid_maxdepth_errors(registry, ctx):
+    result = run(registry, ctx, 'find', '/var', '-maxdepth', 'deep')
+    assert result.code == 1
+    assert 'invalid -maxdepth' in result.error
 
 
 def test_stat(registry, ctx):
@@ -118,6 +171,28 @@ def test_rm_missing_with_force_ok(registry, ctx):
     assert result.code == 0
 
 
+# -- pull / push (cross the local filesystem) --------------------------------
+def test_pull_writes_local_file(registry, ctx, tmp_path):
+    dest = tmp_path / 'hostname'
+    result = run(registry, ctx, 'pull', '/etc/hostname', str(dest))
+    assert result.code == 0
+    assert dest.read_bytes() == b'borescope\n'
+
+
+def test_pull_missing_remote_errors(registry, ctx, tmp_path):
+    result = run(registry, ctx, 'pull', '/nope', str(tmp_path / 'x'))
+    assert result.code == 1
+    assert 'pull:' in result.error
+
+
+def test_push_reads_local_file(registry, ctx, transport, tmp_path):
+    src = tmp_path / 'local.txt'
+    src.write_bytes(b'hello\n')
+    result = run(registry, ctx, 'push', str(src), '/work/pushed.txt')
+    assert result.code == 0
+    assert transport.files['/work/pushed.txt'] == b'hello\n'
+
+
 # -- shell state -------------------------------------------------------------
 def test_cd_changes_cwd(registry, ctx):
     run(registry, ctx, 'cd', '/var/log/app')
@@ -135,6 +210,14 @@ def test_cd_relative(registry, ctx):
     run(registry, ctx, 'cd', '/var')
     run(registry, ctx, 'cd', 'log/app')
     assert ctx.cwd == '/var/log/app'
+
+
+def test_cd_into_symlink_succeeds(registry, ctx, transport):
+    # A symlink may point at a directory; cd should not reject it outright.
+    transport.add_symlink('/data', '/var/log/app')
+    result = run(registry, ctx, 'cd', '/data')
+    assert result.code == 0
+    assert ctx.cwd == '/data'
 
 
 def test_echo(registry, ctx):

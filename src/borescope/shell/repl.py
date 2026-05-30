@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING
 from ..errors import BorescopeError
 from . import theme
 from .commands.base import ExitShell, Result, build_registry
-from .parser import ParseError, expand, parse_pipeline
+from .parser import ParseError, parse_and_expand
 
 if TYPE_CHECKING:
     from .context import ShellContext
@@ -29,7 +29,7 @@ class Shell:
     def run_line(self, line: str) -> Result:
         """Parse and run a single input line (may raise :class:`ExitShell`)."""
         try:
-            stages = parse_pipeline(line)
+            stages = parse_and_expand(line, self.ctx.env)
         except ParseError as exc:
             return Result.fail(f'borescope: {exc}')
         if not stages:
@@ -50,7 +50,6 @@ class Shell:
         return Result(output=right.output, error=left.error + right.error, code=right.code)
 
     def _run_stage(self, tokens: list[str], stdin: str | None) -> Result:
-        tokens = [expand(tok, self.ctx.env) for tok in tokens]
         name, *args = tokens
         cmd = self.registry.get(name)
         if cmd is None:

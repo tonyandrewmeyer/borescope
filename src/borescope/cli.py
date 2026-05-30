@@ -57,8 +57,10 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def _build_target(args: argparse.Namespace):
-    from .discovery import Target, resolve_local_target, resolve_target
+    from .discovery import Target, resolve_local_target, resolve_target, validate_container_name
 
+    if args.container is not None:
+        validate_container_name(args.container)
     if args.here:
         return resolve_local_target(container=args.container)
     if args.socket:
