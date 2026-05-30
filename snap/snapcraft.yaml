@@ -7,7 +7,7 @@ description: |
   rock has no shell at all. It uses your existing Juju authority (juju ssh),
   needs no kubectl/cluster-admin, and puts Pebble's vocabulary (services, logs,
   plan, ...) front and centre alongside familiar commands (ls, cat, grep, ...).
-version: '0.1.0-dev'
+version: '0.1.0-dev1'
 grade: devel
 # Classic confinement: borescope shells out to the `juju` snap and reads the
 # user's Juju config in $HOME, neither of which is possible under strict
