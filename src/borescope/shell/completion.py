@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING
 from prompt_toolkit.completion import Completer, Completion
 
 from . import pathutils
+from .sanitize import safe_name
 
 if TYPE_CHECKING:
     from prompt_toolkit.completion import CompleteEvent
@@ -76,4 +77,7 @@ class BorescopeCompleter(Completer):
             if not name.startswith(prefix):
                 continue
             is_dir = getattr(getattr(info, 'type', None), 'name', '') == 'DIRECTORY'
-            yield Completion(name + ('/' if is_dir else ''), start_position=-len(prefix))
+            # Defang control characters so a hostile filename can't drive the
+            # terminal when rendered in the completion menu.
+            display = safe_name(name) + ('/' if is_dir else '')
+            yield Completion(display, start_position=-len(prefix))

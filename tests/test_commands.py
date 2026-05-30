@@ -38,6 +38,13 @@ def test_ls_missing_path_errors(registry, ctx):
     assert 'ls:' in result.error
 
 
+def test_ls_defangs_hostile_filename(registry, ctx, transport):
+    transport.add_file('/etc/\x1b[2Jevil', 'x')
+    result = run(registry, ctx, 'ls', '/etc')
+    assert '\x1b' not in result.output
+    assert '\\x1b[2Jevil' in result.output.split('\n')
+
+
 def test_cat(registry, ctx):
     assert run(registry, ctx, 'cat', '/etc/hostname').output == 'borescope\n'
 

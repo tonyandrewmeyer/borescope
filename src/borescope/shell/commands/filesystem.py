@@ -19,6 +19,7 @@ import time
 from typing import TYPE_CHECKING, Any
 
 from .. import pathutils
+from ..sanitize import safe_name
 from ._args import parse_args
 from .base import Command, Result
 
@@ -74,7 +75,7 @@ def _long_format(info: Any) -> str:
     mtime = getattr(info, 'last_modified', None)
     when = mtime.strftime('%Y-%m-%d %H:%M') if mtime else ''
     perms = _mode_str(getattr(info, 'permissions', None))
-    return f'{_type_char(info)}{perms} {str(size).rjust(8)} {when:>16} {info.name}'
+    return f'{_type_char(info)}{perms} {str(size).rjust(8)} {when:>16} {safe_name(info.name)}'
 
 
 def _resolve(ctx: ShellContext, path: str) -> str:
@@ -121,7 +122,7 @@ class Ls(Command):
             entries = sorted(infos, key=lambda i: i.name)
             if not show_all:
                 entries = [i for i in entries if not i.name.startswith('.')]
-            rendered = '\n'.join(_long_format(i) if long else i.name for i in entries)
+            rendered = '\n'.join(_long_format(i) if long else safe_name(i.name) for i in entries)
             blocks.append(f'{path}:\n{rendered}' if len(paths) > 1 else rendered)
         return Result(
             output='\n\n'.join(b for b in blocks if b),
@@ -269,7 +270,8 @@ class Find(Command):
                 full = posixpath.join(path, info.name)
                 is_dir = _is_dir(info)
                 if self._matches(info.name, is_dir, name_pat, type_filter):
-                    results.append(full)
+                    # Display the path defanged; recurse on the raw path.
+                    results.append(safe_name(full))
                 if is_dir:
                     walk(full)
 
