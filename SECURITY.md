@@ -15,9 +15,6 @@ The easiest way to report a security issue is through
 See [Privately reporting a security vulnerability](https://docs.github.com/en/code-security/security-advisories/guidance-on-reporting-and-writing/privately-reporting-a-security-vulnerability)
 for instructions on reporting using GitHub's security advisory feature.
 
-Alternatively, you can report a vulnerability to the Canonical Security team at
-[security@ubuntu.com](mailto:security@ubuntu.com).
-
 The borescope GitHub admins will be notified of the issue and will work with you to
 determine whether the issue qualifies as a security issue and, if so, in which
 component. We will then figure out a fix, get a CVE assigned, and coordinate the
