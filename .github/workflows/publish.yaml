@@ -72,6 +72,8 @@ jobs:
     runs-on: ubuntu-latest
     environment: publish-snap
     permissions:
+      id-token: write       # OIDC for Sigstore build-provenance attestation.
+      attestations: write   # Write the attestation via GitHub's API.
       contents: read
     steps:
       - uses: actions/checkout@v6
@@ -80,6 +82,13 @@ jobs:
       - name: Build snap
         id: build
         uses: snapcore/action-build@3bdaa03e1ba6bf59a65f84a751d943d549a54e79  # v1.3.0
+      - name: Attest snap build provenance
+        # SLSA v1.0 Build L2 provenance signed by Sigstore, verifiable with
+        # `gh attestation verify <snap-file> --owner tonyandrewmeyer`.
+        # Run before publish so what's attested == what's uploaded.
+        uses: actions/attest-build-provenance@v4
+        with:
+          subject-path: ${{ steps.build.outputs.snap }}
       - name: Upload snap artifact
         uses: actions/upload-artifact@v7
         with:
