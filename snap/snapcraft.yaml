@@ -17,8 +17,6 @@ confinement: classic
 apps:
   borescope:
     command: bin/borescope
-  juju-borescope:
-    command: bin/juju-borescope
 
 parts:
   borescope:
@@ -37,10 +35,3 @@ parts:
       - python3-venv
     build-environment:
       - PARTS_PYTHON_INTERPRETER: python3.12
-  wrappers:
-    plugin: dump
-    source: .
-    organize:
-      juju-borescope: bin/juju-borescope
-    stage:
-      - bin/juju-borescope
