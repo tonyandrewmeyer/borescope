@@ -240,7 +240,7 @@ class Tail(Command):
 class Find(Command):
     name = 'find'
     summary = 'Walk the tree, filtering by name/type'
-    usage = 'find [path] [-name PATTERN] [-type f|d]'
+    usage = 'find [path] [-name PATTERN] [-type f|d] [-maxdepth N]'
 
     def run(self, ctx: ShellContext, args: list[str], stdin: str | None = None) -> Result:
         # find uses single-dash long options (-name, -type), so it parses its own
@@ -248,6 +248,7 @@ class Find(Command):
         start_arg: str | None = None
         name_pat: str | None = None
         type_filter: str | None = None
+        max_depth: int | None = None
         i = 0
         while i < len(args):
             arg = args[i]
@@ -257,6 +258,12 @@ class Find(Command):
             elif arg == '-type':
                 i += 1
                 type_filter = args[i] if i < len(args) else None
+            elif arg == '-maxdepth':
+                i += 1
+                try:
+                    max_depth = int(args[i]) if i < len(args) else None
+                except ValueError:
+                    return Result.fail(f'find: invalid -maxdepth: {args[i]!r}')
             elif not arg.startswith('-') and start_arg is None:
                 start_arg = arg
             i += 1
@@ -264,22 +271,30 @@ class Find(Command):
         results: list[str] = []
         errors: list[str] = []
 
-        def walk(path: str) -> None:
+        # Iterative walk (each level is a juju round-trip, and a deep tree would
+        # otherwise blow the Python recursion limit). Entries directly under the
+        # start are depth 1; -maxdepth bounds both listing and descent.
+        stack: list[tuple[str, int]] = [(start, 1)]
+        while stack:
+            path, depth = stack.pop()
             try:
                 infos = ctx.transport.list_files(path)
             except Exception as exc:
                 errors.append(f'find: {path}: {exc}')
-                return
+                continue
+            subdirs: list[tuple[str, int]] = []
             for info in sorted(infos, key=lambda i: i.name):
                 full = posixpath.join(path, info.name)
                 is_dir = _is_dir(info)
-                if self._matches(info.name, is_dir, name_pat, type_filter):
-                    # Display the path defanged; recurse on the raw path.
+                within = max_depth is None or depth <= max_depth
+                if within and self._matches(info.name, is_dir, name_pat, type_filter):
+                    # Display the path defanged; walk the raw path.
                     results.append(safe_name(full))
-                if is_dir:
-                    walk(full)
+                if is_dir and (max_depth is None or depth < max_depth):
+                    subdirs.append((full, depth + 1))
+            # Push reversed so siblings pop back in sorted (depth-first) order.
+            stack.extend(reversed(subdirs))
 
-        walk(start)
         return Result(
             output='\n'.join(results),
             error='\n'.join(errors),

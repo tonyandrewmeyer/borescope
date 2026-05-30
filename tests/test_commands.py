@@ -124,6 +124,19 @@ def test_find_by_type_dir(registry, ctx):
     assert '/var/log/app' in result.output
 
 
+def test_find_maxdepth_limits_descent(registry, ctx):
+    result = run(registry, ctx, 'find', '/var', '-type', 'd', '-maxdepth', '1')
+    lines = result.output.split('\n')
+    assert '/var/log' in lines
+    assert '/var/log/app' not in lines
+
+
+def test_find_invalid_maxdepth_errors(registry, ctx):
+    result = run(registry, ctx, 'find', '/var', '-maxdepth', 'deep')
+    assert result.code == 1
+    assert 'invalid -maxdepth' in result.error
+
+
 def test_stat(registry, ctx):
     result = run(registry, ctx, 'stat', '/etc/hostname')
     assert 'File: /etc/hostname' in result.output
