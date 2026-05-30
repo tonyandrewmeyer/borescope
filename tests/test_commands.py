@@ -171,6 +171,28 @@ def test_rm_missing_with_force_ok(registry, ctx):
     assert result.code == 0
 
 
+# -- pull / push (cross the local filesystem) --------------------------------
+def test_pull_writes_local_file(registry, ctx, tmp_path):
+    dest = tmp_path / 'hostname'
+    result = run(registry, ctx, 'pull', '/etc/hostname', str(dest))
+    assert result.code == 0
+    assert dest.read_bytes() == b'borescope\n'
+
+
+def test_pull_missing_remote_errors(registry, ctx, tmp_path):
+    result = run(registry, ctx, 'pull', '/nope', str(tmp_path / 'x'))
+    assert result.code == 1
+    assert 'pull:' in result.error
+
+
+def test_push_reads_local_file(registry, ctx, transport, tmp_path):
+    src = tmp_path / 'local.txt'
+    src.write_bytes(b'hello\n')
+    result = run(registry, ctx, 'push', str(src), '/work/pushed.txt')
+    assert result.code == 0
+    assert transport.files['/work/pushed.txt'] == b'hello\n'
+
+
 # -- shell state -------------------------------------------------------------
 def test_cd_changes_cwd(registry, ctx):
     run(registry, ctx, 'cd', '/var/log/app')

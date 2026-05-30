@@ -8,6 +8,7 @@ from __future__ import annotations
 import datetime
 import io
 import posixpath
+from types import SimpleNamespace
 from typing import cast
 
 import pytest
@@ -149,6 +150,142 @@ class FakeTransport:
 
     def exec(self, command, *, working_dir=None, stdin=None, **kwargs):
         return FakeProc(command, stdin)
+
+
+class _Plan:
+    """Minimal stand-in for ops.pebble.Plan (only the bits the shell uses)."""
+
+    def __init__(self, data: dict) -> None:
+        self._data = data
+
+    def to_yaml(self) -> str:
+        import yaml
+
+        return yaml.safe_dump(self._data)
+
+    def to_dict(self) -> dict:
+        return self._data
+
+
+class FakePebble:
+    """In-memory Pebble surface for the service/plan/check/notice/change commands.
+
+    Read methods return lightweight ``SimpleNamespace`` objects shaped like the
+    ops.pebble types (only the attributes the commands touch); action methods
+    record their calls so tests can assert on them. ``CheckStatus`` uses the real
+    enum because ``health`` compares against it by identity.
+    """
+
+    def __init__(self) -> None:
+        self.calls: list[tuple[str, tuple]] = []
+        self._services = [
+            SimpleNamespace(name='web', startup=_ns('enabled'), current=_ns('active')),
+            SimpleNamespace(name='worker', startup=_ns('disabled'), current=_ns('inactive')),
+        ]
+        self._checks = [
+            SimpleNamespace(
+                name='ready',
+                level=_ns('ready'),
+                status=pebble.CheckStatus.UP,
+                failures=0,
+                threshold=3,
+            ),
+        ]
+
+    # -- system ------------------------------------------------------------
+    def get_system_info(self):
+        return SimpleNamespace(version='1.99')
+
+    # -- services ----------------------------------------------------------
+    def get_services(self, names=None):
+        if not names:
+            return list(self._services)
+        return [s for s in self._services if s.name in names]
+
+    def _action(self, verb, *args):
+        self.calls.append((verb, args))
+        return 'change-1'
+
+    def start_services(self, names, **kw):
+        return self._action('start', tuple(names))
+
+    def stop_services(self, names, **kw):
+        return self._action('stop', tuple(names))
+
+    def restart_services(self, names, **kw):
+        return self._action('restart', tuple(names))
+
+    def replan_services(self, **kw):
+        return self._action('replan')
+
+    # -- plan --------------------------------------------------------------
+    def get_plan(self):
+        return _Plan({'services': {'web': {'command': '/web', 'override': 'replace'}}})
+
+    # -- checks ------------------------------------------------------------
+    def get_checks(self, level=None, names=None):
+        if not names:
+            return list(self._checks)
+        return [c for c in self._checks if c.name in names]
+
+    def set_check_status(self, status) -> None:
+        """Test helper: flip the single check's status."""
+        self._checks[0].status = status
+
+    # -- notices -----------------------------------------------------------
+    def get_notices(self, **kw):
+        return [
+            SimpleNamespace(
+                id='1',
+                type=_ns('custom'),
+                key='example.com/thing',
+                occurrences=3,
+                last_repeated=datetime.datetime(2026, 1, 2, 3, 4, 5),
+            ),
+        ]
+
+    def get_notice(self, notice_id):
+        return SimpleNamespace(
+            id=notice_id,
+            type=_ns('custom'),
+            key='example.com/thing',
+            occurrences=3,
+            first_occurred=datetime.datetime(2026, 1, 1),
+            last_occurred=datetime.datetime(2026, 1, 2),
+            last_data={'k': 'v'},
+        )
+
+    def notify(self, type, key, *, data=None):
+        self.calls.append(('notify', (key, data)))
+        return '7'
+
+    # -- changes -----------------------------------------------------------
+    def get_changes(self, select=None, service=None):
+        task = SimpleNamespace(status=_ns('Done'), summary='Do the thing')
+        return [
+            SimpleNamespace(
+                id='1', status=_ns('Done'), ready=True, summary='Start web', tasks=[task]
+            ),
+        ]
+
+    def get_change(self, change_id):
+        task = SimpleNamespace(status=_ns('Done'), summary='Do the thing')
+        return SimpleNamespace(id=str(change_id), summary='Start web', tasks=[task])
+
+
+def _ns(value: str) -> SimpleNamespace:
+    """An enum-ish object exposing ``.value`` (what ``_enum_value`` reads)."""
+    return SimpleNamespace(value=value)
+
+
+@pytest.fixture
+def pebble_transport() -> FakePebble:
+    return FakePebble()
+
+
+@pytest.fixture
+def pebble_ctx(pebble_transport: FakePebble, target: Target) -> ShellContext:
+    return ShellContext(transport=cast('Transport', pebble_transport), target=target)
 
 
 @pytest.fixture
