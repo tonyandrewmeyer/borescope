@@ -5,7 +5,7 @@ A natural shell for debugging Juju Kubernetes **workload** containers.
 Kubernetes charm workload containers usually run a [rock](https://documentation.ubuntu.com/rockcraft/)
 with no shell — so when something breaks, `juju ssh --container=workload …` drops
 you nowhere useful. borescope gives you a prompt that *feels* like `bash` but talks to
-the container's [Pebble](https://github.com/canonical/pebble) instead of a real shell:
+the container's [Pebble](https://documentation.ubuntu.com/pebble/) instead of a real shell:
 
 ```console
 $ borescope myapp/0
