@@ -69,7 +69,9 @@ def test_pipe_over_socket(shell):
 # --------------------------------------------------------------------------- #
 
 
-def _run_borescope(*args: str, timeout: float = 30.0) -> subprocess.CompletedProcess[str]:
+def _run_borescope(
+    *args: str, timeout: float = 30.0
+) -> subprocess.CompletedProcess[str]:
     return subprocess.run(
         [sys.executable, "-m", "borescope", *args],
         capture_output=True,

@@ -10,7 +10,10 @@ from borescope.shell.completion import BorescopeCompleter
 
 def _completions(completer: BorescopeCompleter, text: str) -> list[tuple[str, int]]:
     doc = Document(text=text, cursor_position=len(text))
-    return [(c.text, c.start_position) for c in completer.get_completions(doc, CompleteEvent())]
+    return [
+        (c.text, c.start_position)
+        for c in completer.get_completions(doc, CompleteEvent())
+    ]
 
 
 def test_complete_command_names_empty(ctx):

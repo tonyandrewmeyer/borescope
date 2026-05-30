@@ -48,9 +48,7 @@ def build_cli_transport(
     try:
         runner_cls = _RUNNERS[via]
     except KeyError as exc:
-        raise ValueError(
-            f"unknown --via {via!r}; choose 'ssh' or 'exec'"
-        ) from exc
+        raise ValueError(f"unknown --via {via!r}; choose 'ssh' or 'exec'") from exc
     runner = runner_cls(unit, container, model=model, juju_binary=juju_binary)
     # shimmer's client conforms structurally; cast past the overloaded `exec`
     # signature the type checker can't match against the Transport protocol.

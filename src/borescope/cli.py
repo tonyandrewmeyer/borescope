@@ -54,7 +54,9 @@ def build_parser() -> argparse.ArgumentParser:
             "(request/response — for sites where ssh is disabled)"
         ),
     )
-    parser.add_argument("--version", action="version", version=f"borescope {__version__}")
+    parser.add_argument(
+        "--version", action="version", version=f"borescope {__version__}"
+    )
     return parser
 
 
