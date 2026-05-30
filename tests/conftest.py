@@ -5,12 +5,14 @@ from __future__ import annotations
 import datetime
 import io
 import posixpath
+from typing import cast
 
 import pytest
 from ops import pebble
 
 from borescope.discovery import Target
 from borescope.shell.context import ShellContext
+from borescope.transport import Transport
 
 
 class FakeProc:
@@ -161,4 +163,4 @@ def target() -> Target:
 
 @pytest.fixture
 def ctx(transport: FakeTransport, target: Target) -> ShellContext:
-    return ShellContext(transport=transport, target=target)
+    return ShellContext(transport=cast(Transport, transport), target=target)

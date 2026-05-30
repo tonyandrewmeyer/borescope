@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
+from typing import cast
+
 import pytest
 
 from borescope import discovery
 from borescope.errors import DiscoveryError
+from borescope.transport import Transport
 
 CAAS_STATUS = {
     "model": {"name": "testmodel", "type": "caas"},
@@ -113,11 +116,11 @@ def _target():
 
 def test_sanity_check_rejects_old_pebble_without_format_json():
     with pytest.raises(DiscoveryError, match="too old"):
-        discovery.sanity_check(_OldPebble(), _target())
+        discovery.sanity_check(cast(Transport, _OldPebble()), _target())
 
 
 def test_sanity_check_passes_on_new_pebble():
-    discovery.sanity_check(_NewPebble(), _target())  # must not raise
+    discovery.sanity_check(cast(Transport, _NewPebble()), _target())  # must not raise
 
 
 def test_history_key():
