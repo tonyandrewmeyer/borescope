@@ -63,7 +63,7 @@ def parse_unit_ref(ref: str) -> tuple[str, str]:
     """Split ``app/n`` into ``(app, n)``; raise :class:`DiscoveryError` if malformed."""
     match = _UNIT_RE.match(ref.strip())
     if not match:
-        raise DiscoveryError(f"'{ref}' is not a valid unit reference (expected e.g. 'myapp/0').")
+        raise DiscoveryError(f"'{ref}' is not a valid unit reference (for example 'myapp/0').")
     return match.group('app'), match.group('num')
 
 
@@ -166,7 +166,7 @@ def discover_local_sockets(base: str = _LOCAL_SOCKET_DIR) -> dict[str, str]:
 
     As seen from *inside the charm container*, where Juju mounts every workload's
     socket at ``/charm/containers/<name>/pebble.socket``. Returns an empty mapping
-    if *base* isn't present (i.e. we're not in a charm container).
+    if *base* isn't present (that is, we're not in a charm container).
     """
     sockets: dict[str, str] = {}
     try:
@@ -230,7 +230,7 @@ def sanity_check(transport: Transport, target: Target) -> None:
         ) from exc
 
     # borescope v1 relies on Pebble's `--format json` output (via shimmer). Older
-    # Pebbles (e.g. v1.26, still shipped by current stable charms) lack it. Probe
+    # Pebbles (for example, v1.26, still shipped by current stable charms) lack it. Probe
     # one structured read so we fail fast with a clear message rather than letting
     # every read command die with a cryptic "unknown flag `format'".
     try:

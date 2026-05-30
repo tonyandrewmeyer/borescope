@@ -42,7 +42,7 @@ def tokenize(line: str) -> list[str]:
     lexer.whitespace_split = True
     try:
         return list(lexer)
-    except ValueError as exc:  # e.g. unbalanced quotes
+    except ValueError as exc:  # for example, unbalanced quotes
         raise ParseError(str(exc)) from exc
 
 

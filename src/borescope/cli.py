@@ -17,7 +17,7 @@ def build_parser() -> argparse.ArgumentParser:
         prog='borescope',
         description=('A natural shell for debugging Juju Kubernetes workload containers.'),
     )
-    parser.add_argument('unit', nargs='?', help="unit reference, e.g. 'myapp/0'")
+    parser.add_argument('unit', nargs='?', help="unit reference, for example 'myapp/0'")
     parser.add_argument('--container', help='workload container name (default: first declared)')
     parser.add_argument('-m', '--model', help='Juju model (default: current)')
     parser.add_argument(
@@ -86,7 +86,7 @@ def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     if not args.unit and not args.socket and not args.here:
         print(
-            "borescope: a unit reference is required (e.g. 'borescope myapp/0'), "
+            "borescope: a unit reference is required (for example 'borescope myapp/0'), "
             'or use --here when running inside a charm container.',
             file=sys.stderr,
         )

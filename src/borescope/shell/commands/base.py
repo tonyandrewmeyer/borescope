@@ -50,7 +50,7 @@ class Command:
     summary: ClassVar[str] = ''
     usage: ClassVar[str] = ''
     # Streaming commands write directly to the terminal and cannot appear in a
-    # pipe (e.g. `logs --follow`, `tail -f`).
+    # pipe (for example, `logs --follow`, `tail -f`).
     streaming: ClassVar[bool] = False
 
     def run(self, ctx: ShellContext, args: list[str], stdin: str | None = None) -> Result:

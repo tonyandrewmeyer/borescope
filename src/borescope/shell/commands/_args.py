@@ -16,7 +16,7 @@ def parse_args(
 ) -> tuple[set[str], dict[str, str], list[str]]:
     """Split *args* into ``(flags, values, positionals)``.
 
-    *valued* names flags that take a value (e.g. ``("n",)`` for ``-n N`` /
+    *valued* names flags that take a value (for example, ``("n",)`` for ``-n N`` /
     ``("name",)`` for ``--name X``). Everything after ``--`` is positional.
     """
     flags: set[str] = set()
