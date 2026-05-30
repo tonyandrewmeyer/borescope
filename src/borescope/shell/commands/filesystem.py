@@ -161,7 +161,8 @@ class Head(Command):
             text = _input_text(ctx, paths, stdin)
         except Exception as exc:
             return Result.fail(f'head: {paths[0]}: {exc}')
-        return Result.ok('\n'.join(text.splitlines()[:count]))
+        # keepends so original line terminators (and a trailing newline) survive.
+        return Result.ok(''.join(text.splitlines(keepends=True)[:count]))
 
 
 class Tail(Command):
@@ -177,7 +178,7 @@ class Tail(Command):
         if not paths:
             if follow:
                 return Result.fail('tail: -f requires a file')
-            return Result.ok('\n'.join((stdin or '').splitlines()[-count:]))
+            return Result.ok(''.join((stdin or '').splitlines(keepends=True)[-count:]))
 
         path = _resolve(ctx, paths[0])
         if follow:
@@ -186,7 +187,8 @@ class Tail(Command):
             text = _read_text(ctx.transport, path)
         except Exception as exc:
             return Result.fail(f'tail: {paths[0]}: {exc}')
-        return Result.ok('\n'.join(text.splitlines()[-count:]))
+        # keepends so original line terminators (and a trailing newline) survive.
+        return Result.ok(''.join(text.splitlines(keepends=True)[-count:]))
 
     @staticmethod
     def _delta(seen: int, data: bytes) -> tuple[str, int]:

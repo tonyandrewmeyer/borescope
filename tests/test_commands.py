@@ -48,12 +48,19 @@ def test_cat_stdin_passthrough(registry, ctx):
 
 def test_head(registry, ctx):
     out = run(registry, ctx, 'head', '-n', '2', '/var/log/app/error.log').output
-    assert out == 'line1\nline2'
+    assert out == 'line1\nline2\n'
 
 
 def test_tail(registry, ctx):
     out = run(registry, ctx, 'tail', '-n', '2', '/var/log/app/error.log').output
-    assert out == 'ERROR boom\nline4'
+    assert out == 'ERROR boom\nline4\n'
+
+
+def test_head_preserves_crlf_and_no_trailing_newline(registry, ctx, transport):
+    transport.add_file('/crlf.txt', 'a\r\nb\r\nc')  # no trailing newline on last line
+    assert run(registry, ctx, 'head', '-n', '2', '/crlf.txt').output == 'a\r\nb\r\n'
+    # Taking the final, unterminated line keeps it unterminated.
+    assert run(registry, ctx, 'tail', '-n', '1', '/crlf.txt').output == 'c'
 
 
 def test_tail_follow_delta_appends():
