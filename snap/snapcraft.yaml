@@ -1,5 +1,5 @@
 name: borescope
-base: core22
+base: core24
 summary: A natural shell for debugging Juju Kubernetes workload containers
 description: |
   borescope gives you a prompt that feels like bash but talks to a Kubernetes
