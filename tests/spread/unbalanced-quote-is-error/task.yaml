@@ -1,0 +1,25 @@
+summary: |
+  POSIX XCU §2.2 — an unterminated quoted string is a syntax error;
+  borescope must exit non-zero with a diagnostic.
+systems:
+  - ubuntu-24.04
+
+execute: |
+  # https://pubs.opengroup.org/onlinepubs/9699919799/utilities/V3_chap02.html#tag_18_02
+  # The POSIX grammar requires every opening quote to have a matching
+  # closing quote. A shell that encounters end-of-input inside a quoted
+  # string must treat it as a syntax error.
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_up
+
+  set +e
+  out="$(borescope_run -c "echo 'unterminated" 2>&1)"
+  rc=$?
+  set -e
+
+  test "$rc" -ne 0
+  echo "$out" | MATCH 'no closing quotation'
+
+restore: |
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_down

@@ -1,0 +1,22 @@
+summary: |
+  POSIX XCU §2.2.2 — quoting an operator character strips its special
+  meaning; a single-quoted `;` is a literal argument, not a command
+  separator.
+systems:
+  - ubuntu-24.04
+
+execute: |
+  # https://pubs.opengroup.org/onlinepubs/9699919799/utilities/V3_chap02.html#tag_18_02_02
+  # "Enclosing characters in single-quotes ('') shall preserve the literal
+  #  value of each character within the single-quotes."
+  # The ';' separator is an operator in unquoted context; inside '...' it
+  # must be passed to the command as the literal character ';'.
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_up
+
+  out="$(borescope_run -c "echo ';'")"
+  echo "$out" | MATCH '^;$'
+
+restore: |
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_down
