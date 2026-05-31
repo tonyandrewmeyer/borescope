@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+# Copyright 2026 Tony Meyer
+# SPDX-License-Identifier: Apache-2.0
+
 """Sidecar charm with a shell-less workload, set up so cascade has things to look at.
 
 The workload container is distroless (no shell, no binaries) at start. On
