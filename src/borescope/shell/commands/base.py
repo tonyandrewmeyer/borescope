@@ -62,6 +62,10 @@ class Command:
     # pipe (for example, `logs --follow`, `tail -f`).
     streaming: ClassVar[bool] = False
 
+    def would_stream(self, args: list[str]) -> bool:
+        """Return True if this invocation would stream to the terminal (pipe-unsafe)."""
+        return self.streaming
+
     def run(self, ctx: ShellContext, args: list[str], stdin: str | None = None) -> Result:
         raise NotImplementedError
 
