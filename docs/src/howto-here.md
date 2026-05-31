@@ -1,8 +1,8 @@
 ---
-title: "How to run inside the charm container — borescope"
+title: "How to run inside the charm container: borescope"
 description: "Use borescope from inside a Juju Kubernetes charm container, or against a Pebble socket directly, with --here and --socket."
 h1: "Run inside the charm container"
-subtitle: "Skip Juju entirely and talk to a mounted Pebble socket directly — from a charm hook, a debug-hooks session, or against any socket path."
+subtitle: "Skip Juju entirely and talk to a mounted Pebble socket directly, from a charm hook, a debug-hooks session, or against any socket path."
 section: howto
 breadcrumb_label: "Run inside the charm container"
 on_this_page:
@@ -29,7 +29,7 @@ run:
 <pre><code><span class="prompt">$</span> borescope --here</code></pre>
 
 borescope scans `/charm/containers/` for mounted Pebble sockets. If the charm
-declares exactly one workload container, it connects to that one — no unit
+declares exactly one workload container, it connects to that one. No unit
 reference, no model, no Juju round-trip.
 
 {#multiple}
@@ -46,8 +46,8 @@ available names and asks you to choose one.
 {#socket}
 ## Point at a socket
 
-To talk to a Pebble over a specific Unix socket — a workload socket at a
-non-standard path, or a local Pebble you're running yourself — pass `--socket`:
+To talk to a Pebble over a specific Unix socket (a workload socket at a
+non-standard path, or a local Pebble you're running yourself), pass `--socket`:
 
 <pre><code><span class="prompt">$</span> borescope --socket /charm/containers/workload/pebble.socket
 <span class="prompt">$</span> borescope --socket /var/run/pebble.socket</code></pre>
@@ -67,7 +67,7 @@ labelling (it's used for the history key and the prompt), but it isn't required.
 | Pointing at a specific or local socket | `borescope --socket <path>` |
 
 `--here` and `--socket` both use the direct socket transport, which is faster
-than going through `juju ssh` and works without any Juju access — but only
+than going through `juju ssh` and works without any Juju access, but only
 from somewhere that can see the socket. From your workstation, use a unit
 reference instead. See [How it reaches Pebble](explanation-transport.html) for
 how the two transports differ.

@@ -20,6 +20,7 @@ from __future__ import annotations
 import argparse
 import difflib
 import html.parser
+import json
 import pathlib
 import re
 import sys
@@ -108,8 +109,26 @@ def _mark_external_links(html_text: str) -> str:
     )
 
 
+def _build_all_pages_index(site: dict) -> list[dict]:
+    """Flat list of every doc page, used to power the Cmd+K palette."""
+    entries: list[dict] = [{'slug': 'index', 'label': 'Documentation home', 'section': ''}]
+    for section_key, cfg in site['sections'].items():
+        label = site['section_breadcrumb_label'].get(section_key, '')
+        for page in cfg.get('pages', []):
+            entries.append({
+                'slug': page['slug'],
+                'label': page['label'],
+                'section': label,
+            })
+    return entries
+
+
 def _render_page(
-    src: pathlib.Path, site: dict, env: jinja2.Environment, md: markdown_it.MarkdownIt
+    src: pathlib.Path,
+    site: dict,
+    env: jinja2.Environment,
+    md: markdown_it.MarkdownIt,
+    all_pages: list[dict],
 ) -> str:
     raw = src.read_text(encoding='utf-8')
     meta, body_md = _split_frontmatter(raw)
@@ -142,6 +161,7 @@ def _render_page(
         primary_list=meta.get('primary_list', 'section'),
         layout=layout,
         body=body_html,
+        all_pages_json=json.dumps(all_pages, separators=(',', ':')),
     )
     return _apply_entity_rewrites(rendered)
 
@@ -159,10 +179,11 @@ def _build_all(out_dir: pathlib.Path) -> list[tuple[pathlib.Path, str]]:
     )
     md = _make_md()
 
+    all_pages = _build_all_pages_index(site)
     out_dir.mkdir(parents=True, exist_ok=True)
     built: list[tuple[pathlib.Path, str]] = []
     for src in _iter_sources():
-        rendered = _render_page(src, site, env, md)
+        rendered = _render_page(src, site, env, md, all_pages)
         dest = out_dir / f'{src.stem}.html'
         built.append((dest, rendered))
     return built

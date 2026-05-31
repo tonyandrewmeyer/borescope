@@ -1,8 +1,8 @@
 ---
-title: "How it reaches Pebble — borescope"
+title: "How it reaches Pebble: borescope"
 description: "Why borescope can debug a shell-less rock: how it reaches the workload's Pebble through the charm container, and the two transport backends."
 h1: "How it reaches Pebble"
-subtitle: "The trick that makes borescope work against a rock with no shell — and the two ways it connects."
+subtitle: "The trick that makes borescope work against a rock with no shell, and the two ways it connects."
 section: explanation
 breadcrumb_label: "How it reaches Pebble"
 on_this_page:
@@ -20,8 +20,8 @@ see_also:
 {#problem}
 ## The problem
 
-A Kubernetes charm runs its workload in a separate container — a
-[rock](https://documentation.ubuntu.com/rockcraft/) — that typically contains
+A Kubernetes charm runs its workload in a separate container called a
+[rock](https://documentation.ubuntu.com/rockcraft/). The rock typically contains
 *only* the workload: no shell, no `ls`, no `cat`, sometimes a single static
 binary and nothing else. So when something breaks,
 `juju ssh --container=workload myapp/0` either fails outright or drops you into
@@ -34,8 +34,8 @@ for to debug isn't there.
 Every Kubernetes charm workload is supervised by
 [Pebble](https://documentation.ubuntu.com/pebble/), and Pebble exposes a
 complete API: list and control services, read the plan, follow logs, run health
-checks, and — importantly — **read and write files** and **execute processes**
-in the container. Anything you'd want a shell for, Pebble can already do.
+checks, and, importantly, **read and write files** and **execute processes**
+in the container. Anything you'd want a shell for, Pebble can already do for you.
 
 So borescope doesn't need a shell in the rock. It maps familiar commands onto
 Pebble's API: `ls` becomes a files-list call, `cat` a files-pull, `exec` a
@@ -47,7 +47,7 @@ transports for it.
 {#mode-b}
 ## Through the charm container (the default)
 
-The Pebble you care about is the workload's — but the workload container has no
+The Pebble you care about is the workload's, but the workload container has no
 shell to run a client from. The **charm container**, however, always has a
 normal filesystem and shell, and Juju mounts the workload's Pebble socket into
 it at `/charm/containers/<name>/pebble.socket`.
@@ -56,8 +56,8 @@ So borescope's default `CliTransport` does this: `juju ssh` into the *charm*
 container (which works, because that container has a shell), and there run the
 `pebble` CLI pointed at the workload's mounted socket. It drives that CLI with
 [shimmer](https://github.com/tonyandrewmeyer/shimmer), a drop-in
-`ops.pebble.Client` that speaks to the Pebble binary instead of an HTTP socket
-— so the rest of borescope sees an ordinary `Client`.
+`ops.pebble.Client` that speaks to the Pebble binary instead of an HTTP socket,
+so the rest of borescope sees an ordinary `Client`.
 
 This is what lets borescope debug a shell-less rock from your workstation: the
 shell it borrows lives in the charm container, not the workload, and the only
@@ -70,9 +70,9 @@ When the Pebble socket is *directly* reachable, there's no need to go through
 Juju at all. `SocketTransport` uses the real `ops.pebble.Client` HTTP API over
 the Unix socket. This is the faster path, and borescope uses it when you run:
 
-- `--here` — inside the charm container, against a workload socket mounted at
+- `--here`, inside the charm container, against a workload socket mounted at
   `/charm/containers/<name>/pebble.socket`; or
-- `--socket PATH` — against any Pebble socket you name (a workload socket, or a
+- `--socket PATH`, against any Pebble socket you name (a workload socket, or a
   local Pebble you're running yourself).
 
 See [Run inside the charm container](howto-here.html) for how to pick this path.
@@ -98,7 +98,7 @@ only in the Juju mechanism used to get there.
 
 Notice what borescope never does: it doesn't touch `kubectl`, doesn't read a
 kubeconfig, and doesn't need cluster-admin. Every path to the container goes
-through Juju — `juju status`, `juju ssh`, `juju exec` — so borescope operates
+through Juju (`juju status`, `juju ssh`, `juju exec`), so borescope operates
 strictly within the authority Juju already grants you for that model. It can't
 reach anything you couldn't reach by hand, and it fails at exactly the same
 boundaries. That's a deliberate design choice, not a limitation to work around;

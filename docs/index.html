@@ -3,11 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>borescope — A natural shell for Juju Kubernetes workload containers</title>
-<meta name="description" content="borescope gives you a bash-like prompt for debugging Juju Kubernetes workload containers. It talks to the container's Pebble through your existing Juju authority — no shell in the rock, no kubectl, no cluster-admin.">
+<title>borescope: a natural shell for Juju Kubernetes workload containers</title>
+<meta name="description" content="borescope gives you a bash-like prompt for debugging Juju Kubernetes workload containers. It talks to the container's Pebble through your existing Juju authority. No shell in the rock, no kubectl, no cluster-admin.">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.bunny.net">
-<link rel="stylesheet" href="https://fonts.bunny.net/css?family=inter:400,500,600,700,800|jetbrains-mono:400&display=swap">
+<link rel="stylesheet" href="https://fonts.bunny.net/css?family=inter:400,500,600,700,800|jetbrains-mono:400,500&display=swap">
 <link rel="stylesheet" href="style.css">
 <script>
 // Apply stored theme before first paint to prevent flash.
@@ -21,7 +21,6 @@
 
 <a href="#main" class="skip-link">Skip to content</a>
 
-<!-- ── Navigation ──────────────────────────────────────────────── -->
 <nav aria-label="Main">
   <div class="nav-inner">
     <a href="#" class="nav-logo">
@@ -34,8 +33,8 @@
     <div class="nav-links" id="nav-menu">
       <a href="docs/index.html">Docs</a>
       <a href="#features">Features</a>
-      <a href="#how-it-works">How It Works</a>
-      <a href="#quickstart">Get Started</a>
+      <a href="#how-it-works">How it works</a>
+      <a href="#quickstart">Get started</a>
       <a href="https://github.com/tonyandrewmeyer/borescope" target="_blank" rel="noopener" class="btn btn-sm">GitHub</a>
       <div class="theme-switcher" role="group" aria-label="Colour theme">
         <button type="button" data-theme="light" aria-pressed="false">Light</button>
@@ -46,100 +45,123 @@
   </div>
 </nav>
 
-<!-- ── Hero ────────────────────────────────────────────────────── -->
 <main id="main">
+
+<!-- Hero: split layout, terminal as the visual anchor. -->
 <section class="hero">
-  <div class="container">
-    <img src="logo.svg" alt="borescope logo" class="hero-logo" width="200" height="200">
-    <h1>A shell for containers<br><em>that have no shell</em></h1>
-    <p class="hero-subtitle">
-      Kubernetes charm workloads run a rock with no shell, so when something
-      breaks <code>juju ssh --container=workload</code> drops you nowhere
-      useful. borescope gives you a prompt that <em>feels</em> like bash but
-      talks to the container's Pebble instead &mdash; through the Juju
-      authority you already have.
-    </p>
-    <div class="hero-actions">
-      <a href="#quickstart" class="btn btn-primary">Get Started</a>
-      <a href="https://github.com/tonyandrewmeyer/borescope" target="_blank" rel="noopener" class="btn btn-outline">View on GitHub</a>
+  <div class="container hero-grid">
+    <div class="hero-copy">
+      <span class="hero-eyebrow">borescope v1 &middot; under active development</span>
+      <h1>A shell for the containers <em>that have no shell.</em></h1>
+      <p class="hero-subtitle">
+        Kubernetes charm workloads run a rock with no shell. When something
+        breaks, <code>juju ssh --container=workload</code> drops you nowhere
+        useful. borescope gives you a prompt that feels like bash, talking
+        to the container's Pebble through the Juju authority you already have.
+      </p>
+      <div class="hero-actions">
+        <a href="#quickstart" class="btn btn-primary">Get started</a>
+        <a href="https://github.com/tonyandrewmeyer/borescope" target="_blank" rel="noopener" class="btn btn-outline">View on GitHub</a>
+      </div>
+      <div class="hero-badge">Apache&nbsp;2.0 &middot; free &amp; open source</div>
     </div>
-    <div class="hero-badge">Free &amp; open source &middot; Apache 2.0</div>
+
+    <div class="hero-term" role="img" aria-label="Terminal showing a borescope session: connecting to myapp/0, listing services, and tailing logs.">
+      <div class="hero-term-bar" aria-hidden="true">
+        <i></i><i></i><i></i>
+        <span>borescope &middot; myapp/0</span>
+      </div>
+      <div class="hero-term-body" aria-hidden="true">
+<span class="ln"><span class="prompt">$</span> <span class="cmd">borescope myapp/0</span></span>
+<span class="ln"><span class="out">connected to myapp/0 (workload)</span></span>
+<span class="ln"><span class="pebble">pebble:/#</span> <span class="cmd">services</span></span>
+<span class="ln"><span class="out">Service   Startup   Current</span></span>
+<span class="ln"><span class="out-em">myapp</span>     <span class="out">enabled   </span><span class="out-ok">active</span></span>
+<span class="ln"><span class="out-em">sidecar</span>   <span class="out">enabled   </span><span class="out-ok">active</span></span>
+<span class="ln"><span class="pebble">pebble:/#</span> <span class="cmd">logs --follow myapp</span></span>
+<span class="ln"><span class="out">2026-05-31T08:14:02Z myapp INFO  started worker pool</span></span>
+<span class="ln"><span class="out">2026-05-31T08:14:03Z myapp WARN  retrying upstream in 2s</span></span>
+<span class="ln"><span class="pebble">pebble:/#</span> <span class="cursor"></span></span>
+      </div>
+    </div>
   </div>
 </section>
 
-<!-- ── Features ────────────────────────────────────────────────── -->
+<!-- Features: mixed-weight grid, two lead cards with sample code, four
+     compact tiles. No emoji icons. -->
 <section id="features" class="features">
   <div class="container">
-    <h2>A debug shell that meets the rock where it is</h2>
-    <p class="section-subtitle">
-      No shell in the image, no <code>kubectl</code>, no cluster-admin &mdash;
-      just the prompt you wish <code>juju ssh</code> gave you.
-    </p>
+    <div class="section-head">
+      <h2>A debug shell that meets the rock where it is</h2>
+      <p class="section-subtitle">
+        No shell in the image, no <code>kubectl</code>, no cluster-admin. Just the
+        prompt you wish <code>juju ssh</code> gave you.
+      </p>
+    </div>
+
     <div class="feature-grid">
 
-      <div class="feature-card">
-        <div class="feature-icon" aria-hidden="true">&#x1F41A;</div>
-        <h3>Works against shell-less rocks</h3>
+      <div class="feature-card lead">
+        <h3>Works on rocks with no shell at all</h3>
         <p>
           The workload rock has no <code>bash</code>, no coreutils, often
-          nothing at all. borescope drives the workload's Pebble <em>through
-          the charm container</em> &mdash; which always has a shell &mdash; so
-          <code>ls</code>, <code>cat</code>, and <code>grep</code> work even
-          when the image is empty.
+          nothing. borescope drives the workload's Pebble through the charm
+          container, which always has a shell, so the familiar file commands
+          work even when the image is empty.
         </p>
+<pre><code><span class="prompt">pebble:/#</span> ls /var/log/myapp
+<span class="comment">app.log  errors.log  audit/</span>
+<span class="prompt">pebble:/#</span> grep -c ERROR errors.log
+<span class="comment">42</span></code></pre>
+      </div>
+
+      <div class="feature-card lead">
+        <h3>Pebble's vocabulary, first-class</h3>
+        <p>
+          <code>services</code>, <code>logs</code>, <code>plan</code>,
+          <code>checks</code>, <code>changes</code>, <code>notices</code>:
+          Pebble's own commands are built in, not hidden behind a
+          <code>pebble</code> prefix. Start and stop services, follow logs,
+          read the merged plan.
+        </p>
+<pre><code><span class="prompt">pebble:/#</span> services
+<span class="prompt">pebble:/#</span> logs --follow myapp
+<span class="prompt">pebble:/#</span> plan</code></pre>
       </div>
 
       <div class="feature-card">
-        <div class="feature-icon" aria-hidden="true">&#x1F511;</div>
         <h3>Your Juju authority, nothing more</h3>
         <p>
           borescope reaches the container with <code>juju ssh</code>, exactly
           as you would by hand. If you can <code>juju ssh</code> to the unit,
-          borescope works; if you can&rsquo;t, it fails the same way. No
-          <code>kubectl</code>, no kubeconfig, no cluster-admin.
+          borescope works. If you can't, it fails the same way. No kubeconfig.
         </p>
       </div>
 
       <div class="feature-card">
-        <div class="feature-icon" aria-hidden="true">&#x1F427;</div>
-        <h3>Pebble&rsquo;s vocabulary, first-class</h3>
-        <p>
-          <code>services</code>, <code>logs</code>, <code>plan</code>,
-          <code>checks</code>, <code>changes</code>, <code>notices</code>
-          &mdash; Pebble&rsquo;s own commands are built in, not hidden behind a
-          <code>pebble</code> prefix. Start and stop services, follow logs,
-          read the merged plan.
-        </p>
-      </div>
-
-      <div class="feature-card">
-        <div class="feature-icon" aria-hidden="true">&#x2328;</div>
         <h3>Feels like bash</h3>
         <p>
-          A real REPL: <code>cd</code>/<code>pwd</code> with path-aware
-          Tab-completion, history scoped per unit, single pipes
+          A real REPL with <code>cd</code> and <code>pwd</code>, path-aware
+          tab-completion, history scoped per unit, single pipes
           (<code>logs | grep error</code>), and the familiar file commands.
           Muscle memory mostly just works.
         </p>
       </div>
 
       <div class="feature-card">
-        <div class="feature-icon" aria-hidden="true">&#x1F6AA;</div>
         <h3>An <code>exec</code> escape hatch</h3>
         <p>
           borescope ships a deliberately small command set. Anything it
-          doesn&rsquo;t cover, <code>exec &lt;tool&gt;</code> runs directly in
-          the container &mdash; any binary that&rsquo;s already there, with
-          your current working directory.
+          doesn't cover, <code>exec &lt;tool&gt;</code> runs directly in the
+          container with your current working directory.
         </p>
       </div>
 
       <div class="feature-card">
-        <div class="feature-icon" aria-hidden="true">&#x1F4F8;</div>
         <h3>One-shot and snapshot modes</h3>
         <p>
-          Script it: <code>--command "services"</code> runs once and exits.
-          File a bug: <code>--snapshot</code> dumps services, plan, checks,
+          Script it with <code>--command "services"</code>: runs once and exits.
+          File a bug with <code>--snapshot</code>: services, plan, checks,
           notices, and recent logs as a single stable JSON document.
         </p>
       </div>
@@ -148,59 +170,84 @@
   </div>
 </section>
 
-<!-- ── How It Works ────────────────────────────────────────────── -->
+<!-- How it works. -->
 <section id="how-it-works" class="how-it-works">
   <div class="container">
-    <h2>How it works</h2>
-    <p class="section-subtitle">Three thin, independently-testable layers.</p>
+    <div class="section-head">
+      <h2>How it works</h2>
+      <p class="section-subtitle">Three thin, independently-testable layers.</p>
+    </div>
 
     <ol class="steps">
       <li class="step">
         <div class="step-content">
           <h3>Discover the right Pebble</h3>
-          <p>borescope turns <code>myapp/0</code> into a target: it confirms the unit, reads the charm&rsquo;s <code>metadata.yaml</code> for workload container names, and checks the container is alive &mdash; all over your Juju model access.</p>
+          <p>
+            borescope turns <code>myapp/0</code> into a target: it confirms
+            the unit, reads the charm's <code>metadata.yaml</code> for
+            workload container names, and checks the container is alive,
+            all over your Juju model access.
+          </p>
         </div>
       </li>
       <li class="step">
         <div class="step-content">
           <h3>Open a transport</h3>
-          <p>The default backend reaches the workload&rsquo;s Pebble socket <em>through the charm container</em> via <code>juju ssh</code>. When the socket is directly reachable &mdash; inside a charm, or a local Pebble &mdash; it uses the real <code>ops.pebble.Client</code> HTTP API instead.</p>
+          <p>
+            The default backend reaches the workload's Pebble socket through
+            the charm container via <code>juju ssh</code>. When the socket is
+            directly reachable, inside a charm or a local Pebble, it uses the
+            real <code>ops.pebble.Client</code> HTTP API instead.
+          </p>
         </div>
       </li>
       <li class="step">
         <div class="step-content">
           <h3>Drop you at a prompt</h3>
-          <p>A small REPL maps familiar commands onto Pebble&rsquo;s files and exec APIs. Pebble&rsquo;s own vocabulary is first-class; <code>exec</code> covers the rest.</p>
+          <p>
+            A small REPL maps familiar commands onto Pebble's files and exec
+            APIs. Pebble's own vocabulary is first-class. <code>exec</code>
+            covers the rest.
+          </p>
         </div>
       </li>
     </ol>
   </div>
 </section>
 
-<!-- ── Ecosystem ───────────────────────────────────────────────── -->
+<!-- Ecosystem: inline list, not a card grid. -->
 <section class="ecosystem">
   <div class="container">
-    <h2>Built on the Canonical ecosystem</h2>
-    <p class="section-subtitle">
-      borescope is a thin layer over tools you already run.
-    </p>
-    <div class="ecosystem-grid">
-      <div class="eco-item"><strong>Juju</strong><span>Orchestration &amp; authority</span></div>
-      <div class="eco-item"><strong>Pebble</strong><span>Process supervisor</span></div>
-      <div class="eco-item"><strong>Ops</strong><span>Pebble API</span></div>
-      <div class="eco-item"><strong>Rockcraft</strong><span>OCI images</span></div>
-      <div class="eco-item"><strong>Canonical K8s</strong><span>Kubernetes</span></div>
+    <div class="section-head">
+      <h2>Built on the Canonical ecosystem</h2>
+      <p class="section-subtitle">
+        borescope is a thin layer over tools you already run.
+      </p>
     </div>
+    <ul class="eco-list">
+      <li><strong>Juju</strong><span>orchestration &amp; authority</span></li>
+      <li><strong>Pebble</strong><span>process supervisor</span></li>
+      <li><strong>Ops</strong><span>Pebble API</span></li>
+      <li><strong>Rockcraft</strong><span>OCI images</span></li>
+      <li><strong>Canonical K8s</strong><span>Kubernetes</span></li>
+    </ul>
   </div>
 </section>
 
-<!-- ── Quick Start ─────────────────────────────────────────────── -->
+<!-- Quick start. -->
 <section id="quickstart" class="quickstart">
   <div class="container">
-    <h2>Get started in seconds</h2>
+    <div class="section-head">
+      <h2>Get started in seconds</h2>
+      <p class="section-subtitle">
+        Install from a checkout while v1 is under active development. Stable
+        snap and PyPI releases are coming.
+      </p>
+    </div>
+
     <div class="code-block">
-      <div class="code-header">Terminal</div>
-      <pre><code><span class="comment"># Install from a checkout (v1 is under active development)</span>
+      <div class="code-header"><i></i> Terminal</div>
+      <pre><code><span class="comment"># Install from a checkout</span>
 <span class="prompt">$</span> uv tool install .          <span class="comment"># or: pipx install .</span>
 
 <span class="comment"># Open a prompt on a unit's workload container</span>
@@ -217,28 +264,31 @@
 <span class="comment"># Dump container state as JSON</span>
 <span class="prompt">$</span> borescope myapp/0 --snapshot</code></pre>
     </div>
+
     <p class="quickstart-note">
-      borescope picks up your current Juju controller and model, just like the
-      <code>juju</code> CLI. Point it at a different model with
-      <code>--model</code>, choose a workload with <code>--container</code>, or
-      run it <em>inside</em> a charm container with <code>--here</code>.
+      borescope picks up your current Juju controller and model, just like
+      the <code>juju</code> CLI. Point it at a different model with
+      <code>--model</code>, choose a workload with <code>--container</code>,
+      or run it <em>inside</em> a charm container with <code>--here</code>.
     </p>
   </div>
 </section>
 
-<!-- ── Interfaces ──────────────────────────────────────────────── -->
+<!-- Interfaces. -->
 <section class="interfaces">
   <div class="container">
-    <h2>Several ways to drive it</h2>
+    <div class="section-head">
+      <h2>Several ways to drive it</h2>
+    </div>
     <div class="interface-grid">
       <div class="interface-card">
         <h3>Interactive REPL</h3>
-        <p>The default: a bash-like prompt with history, Tab-completion, and pipes against a single unit.</p>
+        <p>A bash-like prompt with history, tab-completion, and pipes against a single unit.</p>
         <code>borescope myapp/0</code>
       </div>
       <div class="interface-card">
         <h3>One-shot</h3>
-        <p>Run a single command and exit &mdash; for scripts, aliases, and CI.</p>
+        <p>Run a single command and exit, for scripts, aliases, and CI.</p>
         <code>borescope myapp/0 -c "plan"</code>
       </div>
       <div class="interface-card">
@@ -252,14 +302,13 @@
 
 </main>
 
-<!-- ── Footer ──────────────────────────────────────────────────── -->
 <footer>
   <div class="container footer-inner">
     <div class="footer-left">
       <img src="logo.svg" alt="borescope" width="24" height="24">
       <span>borescope</span>
       <span class="footer-sep">&middot;</span>
-      <span>Free &amp; open source</span>
+      <span>free &amp; open source</span>
     </div>
     <div class="footer-links">
       <a href="https://github.com/tonyandrewmeyer/borescope" target="_blank" rel="noopener">GitHub</a>
@@ -329,7 +378,7 @@ var observer = new IntersectionObserver(function(entries) {
   });
 }, { threshold: 0.1 });
 
-document.querySelectorAll(".feature-card, .step, .interface-card, .eco-item").forEach(function(el) {
+document.querySelectorAll(".feature-card, .step, .interface-card, .eco-list li").forEach(function(el) {
   el.classList.add("fade-in");
   observer.observe(el);
 });

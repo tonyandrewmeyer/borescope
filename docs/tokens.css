@@ -1,6 +1,6 @@
-/* ── borescope Design Tokens ───────────────────────────────────── */
-/* Shared across the marketing site and documentation pages.        */
-/* Import this file first, then override page-specific tokens.      */
+/* borescope design tokens.
+   Shared across the marketing site and documentation pages.
+   Import this file first, then override page-specific tokens. */
 
 :root {
   --font: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -8,67 +8,96 @@
   --radius: 10px;
   --radius-sm: 6px;
 
-  /* Light mode (default) */
-  --bg: #fbfcfd;
-  --bg-subtle: #f1f5f7;
-  --bg-card: #ffffff;
-  --border: #dce4e8;
-  --text: #1b2329;
-  --text-muted: #5c6b75;
-  --accent: #0d7d8a;
-  --accent-hover: #0a626d;
-  --accent-bg: #e4f3f4;
-  --code-bg: #eef3f5;
-  --code-border: #dce4e8;
-  --shadow: 0 1px 3px rgba(15,30,40,0.06), 0 1px 2px rgba(15,30,40,0.04);
-  --shadow-lg: 0 8px 24px rgba(15,30,40,0.1);
-  --warn: #b45309;
-  --warn-bg: rgba(251,191,36,0.1);
+  /* Z-index scale. Keep arbitrary stacking out of the codebase. */
+  --z-backdrop: -1;     /* hero glow, anything behind the page */
+  --z-sticky:   100;    /* nav, sticky headers */
+  --z-skip:     200;    /* skip-link, must beat sticky */
+  /* Dialogs sit in the browser's :top-layer above everything else;
+     no explicit z-index is required. */
+
+  /* Terminal mock. Deliberately locked to a dark-terminal identity
+     regardless of site theme: a terminal is a terminal. */
+  --term-bg:        oklch(0.16 0.025 230);
+  --term-bar-bg:    oklch(0.21 0.025 230);
+  --term-border:    oklch(0.30 0.025 230);
+  --term-fg:        oklch(0.95 0.012 220);
+  --term-muted:     oklch(0.73 0.020 220);
+  --term-dim:       oklch(0.65 0.020 230);
+  --term-prompt:    oklch(0.80 0.13  205);
+  --term-accent:    oklch(0.78 0.16  55);
+  --term-ok:        oklch(0.78 0.14  145);
+  --term-dot-red:   oklch(0.65 0.16  30);
+  --term-dot-amber: oklch(0.78 0.16  80);
+  --term-dot-green: oklch(0.72 0.16  145);
+
+  /* Light mode. A cool near-white tinted toward the brand hue, ink with
+     real weight, accent saturated enough to carry brand on its own. */
+  --bg:           oklch(0.985 0.005 220);
+  --bg-subtle:    oklch(0.955 0.012 220);
+  --bg-card:      oklch(1    0     0);
+  --border:       oklch(0.88 0.012 220);
+  --text:         oklch(0.22 0.025 240);
+  --text-muted:   oklch(0.45 0.025 240);
+  --accent:       oklch(0.52 0.13  215);
+  --accent-hover: oklch(0.42 0.14  215);
+  --accent-bg:    oklch(0.94 0.04  215);
+  --accent-warm:  oklch(0.66 0.18  55);
+  --accent-warm-bg: oklch(0.96 0.04 70);
+  --code-bg:      oklch(0.95 0.013 220);
+  --code-border:  oklch(0.88 0.012 220);
+  --shadow:       0 1px 3px oklch(0.2 0.02 240 / 0.08), 0 1px 2px oklch(0.2 0.02 240 / 0.05);
+  --shadow-lg:    0 12px 32px oklch(0.2 0.02 240 / 0.14);
+  --warn:         oklch(0.52 0.16 50);
+  --warn-bg:      oklch(0.96 0.06 75);
 }
 
-/* Dark mode: auto (system preference) */
+/* Dark mode is the committed identity surface: deep petrol, bright cyan
+   accent, real saturation, not a desaturated near-black. */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --bg: #0f1417;
-    --bg-subtle: #151c20;
-    --bg-card: #1a2227;
-    --border: #2a343a;
-    --text: #e3e9ed;
-    --text-muted: #8595a0;
-    --accent: #38bdc9;
-    --accent-hover: #5ed0da;
-    --accent-bg: rgba(56,189,201,0.1);
-    --code-bg: #151c20;
-    --code-border: #2a343a;
-    --shadow: 0 1px 3px rgba(0,0,0,0.3);
-    --shadow-lg: 0 8px 24px rgba(0,0,0,0.4);
-    --warn: #f59e0b;
-    --warn-bg: rgba(251,191,36,0.08);
+    --bg:           oklch(0.19 0.025 230);
+    --bg-subtle:    oklch(0.22 0.030 230);
+    --bg-card:      oklch(0.25 0.035 230);
+    --border:       oklch(0.34 0.030 230);
+    --text:         oklch(0.95 0.012 220);
+    --text-muted:   oklch(0.73 0.020 220);
+    --accent:       oklch(0.80 0.13  205);
+    --accent-hover: oklch(0.88 0.12  205);
+    --accent-bg:    oklch(0.32 0.060 220);
+    --accent-warm:  oklch(0.78 0.16  55);
+    --accent-warm-bg: oklch(0.30 0.060 60);
+    --code-bg:      oklch(0.16 0.025 230);
+    --code-border:  oklch(0.30 0.025 230);
+    --shadow:       0 1px 3px oklch(0 0 0 / 0.35);
+    --shadow-lg:    0 14px 36px oklch(0 0 0 / 0.5);
+    --warn:         oklch(0.78 0.16 55);
+    --warn-bg:      oklch(0.32 0.06 60);
   }
 }
 
-/* Dark mode: forced via switcher */
 :root[data-theme="dark"] {
-  --bg: #0f1417;
-  --bg-subtle: #151c20;
-  --bg-card: #1a2227;
-  --border: #2a343a;
-  --text: #e3e9ed;
-  --text-muted: #8595a0;
-  --accent: #38bdc9;
-  --accent-hover: #5ed0da;
-  --accent-bg: rgba(56,189,201,0.1);
-  --code-bg: #151c20;
-  --code-border: #2a343a;
-  --shadow: 0 1px 3px rgba(0,0,0,0.3);
-  --shadow-lg: 0 8px 24px rgba(0,0,0,0.4);
-  --warn: #f59e0b;
-  --warn-bg: rgba(251,191,36,0.08);
+  --bg:           oklch(0.19 0.025 230);
+  --bg-subtle:    oklch(0.22 0.030 230);
+  --bg-card:      oklch(0.25 0.035 230);
+  --border:       oklch(0.34 0.030 230);
+  --text:         oklch(0.95 0.012 220);
+  --text-muted:   oklch(0.73 0.020 220);
+  --accent:       oklch(0.80 0.13  205);
+  --accent-hover: oklch(0.88 0.12  205);
+  --accent-bg:    oklch(0.32 0.060 220);
+  --accent-warm:  oklch(0.78 0.16  55);
+  --accent-warm-bg: oklch(0.30 0.060 60);
+  --code-bg:      oklch(0.16 0.025 230);
+  --code-border:  oklch(0.30 0.025 230);
+  --shadow:       0 1px 3px oklch(0 0 0 / 0.35);
+  --shadow-lg:    0 14px 36px oklch(0 0 0 / 0.5);
+  --warn:         oklch(0.78 0.16 55);
+  --warn-bg:      oklch(0.32 0.06 60);
 }
 
-/* Logo switching — auto mode uses media queries, manual overrides use data-theme */
-:root       { --logo-light: inline; --logo-dark: none; }
-:root[data-theme="dark"] { --logo-light: none; --logo-dark: inline; }
+/* Logo switching. Auto mode follows the media query; manual override wins. */
+:root                     { --logo-light: inline; --logo-dark: none; }
+:root[data-theme="dark"]  { --logo-light: none;   --logo-dark: inline; }
 :root[data-theme="light"] { --logo-light: inline; --logo-dark: none; }
 
 @media (prefers-color-scheme: dark) {
