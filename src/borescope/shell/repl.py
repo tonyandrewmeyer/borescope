@@ -42,7 +42,7 @@ class Shell:
 
         for stage in stages:
             cmd = self.registry.get(stage[0])
-            if cmd is not None and cmd.streaming:
+            if cmd is not None and cmd.would_stream(stage[1:]):
                 return Result.fail(f"borescope: '{stage[0]}' cannot be used in a pipe.")
 
         left = self._run_stage(stages[0], None)
