@@ -33,6 +33,7 @@ dependencies = [
 
 [dependency-groups]
 dev = [
+    "atheris>=2.3.0",
     "pytest>=7.0.0",
     "pytest-cov>=4.0.0",
     "pytest-mock>=3.10.0",
@@ -160,6 +161,11 @@ notice-rgx = "(?i)Copyright \\d{4} Tony Meyer"
     # Docstrings aren't required in tests.
     "D",
     # Hard-coded "secrets" are fine in tests.
+    "S105",
+    "S106",
+]
+"tests/**/*" = [
+    "D",
     "S105",
     "S106",
 ]
