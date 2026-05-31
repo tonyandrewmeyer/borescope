@@ -32,6 +32,7 @@ them).
 from __future__ import annotations
 
 import base64
+import shlex
 import subprocess
 import uuid
 from collections.abc import Mapping
@@ -209,6 +210,19 @@ class JujuSshRunner(_JujuRunnerBase):
         # the workload's Pebble through its mounted socket.
         cmd.append(self.unit)
         return cmd
+
+    def wrap(self, argv: list[str]) -> list[str]:
+        """Build the juju ssh argv with each tail token shell-quoted.
+
+        juju's k8s ssh joins everything after the unit with spaces and runs
+        the result through ``sh -c``, so shell metacharacters in argv get
+        reinterpreted by the *outer* shell (e.g. ``pebble exec -- sh -c 'echo
+        a; echo b'`` would have its ``;`` split before reaching the inner
+        ``sh``). shlex-quote each piece so it survives the join; tokens with
+        no metacharacters are returned unchanged.
+        """
+        full = [*self._remote_env_shim(), *argv]
+        return [*self._prefix(), *(shlex.quote(a) for a in full)]
 
 
 class JujuExecRunner(_JujuRunnerBase):

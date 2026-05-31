@@ -61,6 +61,24 @@ def test_wrap_no_socket_shim_without_container():
     assert runner.pebble_socket is None
 
 
+def test_wrap_shlex_quotes_argv_with_shell_metacharacters():
+    # juju ssh joins argv with spaces and `sh -c`s the result, so any shell
+    # metachar in the user's argv (here, a `;` inside `pebble exec -- sh -c
+    # '...'`) would split the command before reaching the inner sh. wrap must
+    # shlex-quote each piece so the outer sh-c sees one literal token.
+    runner = JujuSshRunner('a/0', 'c')
+    argv = runner.wrap(
+        ['/charm/bin/pebble', 'exec', '--', 'sh', '-c', 'echo a; echo b']
+    )
+    # The dangerous arg is quoted; safe tokens (paths, plain words) are not.
+    assert "'echo a; echo b'" in argv
+    assert '/charm/bin/pebble' in argv
+    assert 'exec' in argv
+    # The env shim's KEY=/path has no metachars, so it survives unchanged
+    # (still parseable as a single env-var assignment by the outer sh).
+    assert 'PEBBLE_SOCKET=/charm/containers/c/pebble.socket' in argv
+
+
 # --------------------------------------------------------------------------- #
 # JujuExecRunner: the --via exec relay alternative.
 # --------------------------------------------------------------------------- #
