@@ -1,3 +1,5 @@
 module workload-app
 
-go 1.21
+go 1.26
+
+toolchain go1.26.3
