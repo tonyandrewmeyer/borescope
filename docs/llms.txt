@@ -1,0 +1,28 @@
+# borescope documentation
+
+> A natural shell for debugging Juju Kubernetes workload containers, through Pebble, with your existing Juju authority.
+
+This file is an [llms.txt](https://llmstxt.org) index of the borescope documentation. Each link points at the Markdown source of a page on the deployed docs site.
+
+## Tutorial
+
+- [Debug your first container](https://tonyandrewmeyer.github.io/borescope/docs/tutorial.md): From install to poking around a live workload container, in about ten minutes. No prior borescope experience required.
+
+## How-to guides
+
+- [Connect to a unit](https://tonyandrewmeyer.github.io/borescope/docs/howto-connect.md): Point borescope at exactly the workload container you want to debug.
+- [Run inside the charm container](https://tonyandrewmeyer.github.io/borescope/docs/howto-here.md): Skip Juju entirely and talk to a mounted Pebble socket directly, from a charm hook, a debug-hooks session, or against any socket path.
+- [Run one command (no REPL)](https://tonyandrewmeyer.github.io/borescope/docs/howto-oneshot.md): Use borescope from scripts: run a single command and exit, or pipe a sequence of commands in on stdin.
+- [Copy files in and out](https://tonyandrewmeyer.github.io/borescope/docs/howto-files.md): Get a log or config file off a shell-less container, or push a patched file back in, over Pebble's files API.
+- [Capture a state snapshot](https://tonyandrewmeyer.github.io/borescope/docs/howto-snapshot.md): Produce one machine-readable JSON document describing a container's state, for bug reports and tooling.
+
+## Reference
+
+- [CLI reference](https://tonyandrewmeyer.github.io/borescope/docs/reference-cli.md): Every command-line argument, the modes they select, and exit codes.
+- [Command reference](https://tonyandrewmeyer.github.io/borescope/docs/reference-commands.md): The complete built-in command set, plus the grammar the REPL understands.
+
+## Explanation
+
+- [How borescope works](https://tonyandrewmeyer.github.io/borescope/docs/explanation-architecture.md): borescope is three thin, independently-testable layers. Understanding the seams helps you read its behaviour when something goes wrong.
+- [How it reaches Pebble](https://tonyandrewmeyer.github.io/borescope/docs/explanation-transport.md): The trick that makes borescope work against a rock with no shell, and the two ways it connects.
+- [Scope and philosophy](https://tonyandrewmeyer.github.io/borescope/docs/explanation-scope.md): What borescope deliberately does (and doesn't), and why.

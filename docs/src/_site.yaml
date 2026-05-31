@@ -4,6 +4,10 @@
 # pages. The build script uses this to render the primary section-nav list
 # in the sidebar (with `class="current"` on the active page).
 
+# Public site root. Used to build absolute URLs in llms.txt so LLM agents
+# can fetch the Markdown source of each page from the deployed site.
+site_url: "https://tonyandrewmeyer.github.io/borescope/"
+
 sections:
   tutorial:
     heading: "Tutorial"

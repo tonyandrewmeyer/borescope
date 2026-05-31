@@ -19,9 +19,11 @@ docs/
 │   ├── _site.yaml      # section/page order for the sidebar
 │   ├── _templates/     # Jinja2 chrome
 │   └── *.md            # one file per page
+├── llms.txt            # BUILT OUTPUT — llms.txt index for LLM agents
 └── docs/               # BUILT OUTPUT — do not hand-edit
     ├── docs.css
-    └── *.html
+    ├── *.html
+    └── *.md            # plain-Markdown companion for each page (linked from llms.txt)
 ```
 
 ## Building
