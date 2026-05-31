@@ -12,7 +12,7 @@ execute: |
   pebble_up
 
   set +e
-  out="$(borescope_run -c 'echo a | cat | grep a' 2>&1)"
+  out="$(borescope_run --command 'echo a | cat | grep a' 2>&1)"
   rc=$?
   set -e
 

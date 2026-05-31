@@ -12,7 +12,7 @@ execute: |
   pebble_up
 
   # borescope starts in /, so a bare `pwd` should report `/`.
-  out="$(borescope_run -c 'pwd')"
+  out="$(borescope_run --command 'pwd')"
   echo "$out" | MATCH '^/$'
 
 restore: |

@@ -92,7 +92,7 @@ borescope opens a REPL; otherwise it runs non-interactively (see
 </tr>
 <tr>
 <td><code>-m</code>, <code>--model MODEL</code></td>
-<td>Juju model. Defaults to the current model. Passed through to <code>juju</code>.</td>
+<td>Juju model. Defaults to the current model. Passed through to <code>juju</code>. (Short form retained for <code>juju</code>-CLI muscle memory.)</td>
 </tr>
 <tr>
 <td><code>--juju PATH</code></td>
@@ -133,7 +133,7 @@ resolves the target through Juju (the default for a remote unit).</p>
 </thead>
 <tbody>
 <tr>
-<td><code>-c</code>, <code>--command CMD</code></td>
+<td><code>--command CMD</code></td>
 <td>Run a single command <code>CMD</code> and exit, without entering the REPL.</td>
 </tr>
 <tr>
@@ -171,17 +171,25 @@ runs each, and exits with the status of the last. See
 </thead>
 <tbody>
 <tr>
-<td><code>--version</code></td>
+<td><code>--version</code>, <code>version</code></td>
 <td>Print the borescope version and exit.</td>
 </tr>
 <tr>
-<td><code>-h</code>, <code>--help</code></td>
+<td><code>-h</code>, <code>--help</code>, <code>help</code></td>
 <td>Print usage and exit.</td>
 </tr>
 </tbody>
 </table>
+<p><code>help</code> and <code>version</code> (bare, as the first argument) are Canonical-CLI aliases
+for the Python-conventional <code>--help</code> / <code>--version</code>. borescope accepts both
+forms.</p>
 <p><code>--help</code> and <code>--version</code> are fast: borescope defers its heavier imports until
 after argument parsing.</p>
+<h3>Verbosity</h3>
+<p>borescope does <strong>not</strong> implement the Canonical <code>--quiet</code> / <code>--verbose</code> /
+<code>--verbosity=debug|trace</code> ladder. The tool's output is the REPL or a single
+command's result; a five-level taxonomy adds no value, so v1 stays minimal.
+This may change if a concrete need surfaces.</p>
 <h2 id="exit-codes">Exit codes</h2>
 <table>
 <thead>

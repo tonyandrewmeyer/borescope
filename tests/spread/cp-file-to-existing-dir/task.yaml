@@ -15,7 +15,7 @@ execute: |
   printf 'inside\n' > "${workdir}/file"
   mkdir "${workdir}/dir"
 
-  borescope_run -c "cp ${workdir}/file ${workdir}/dir"
+  borescope_run --command "cp ${workdir}/file ${workdir}/dir"
   cat "${workdir}/dir/file" | MATCH '^inside$'
 
   rm -rf "${workdir}"

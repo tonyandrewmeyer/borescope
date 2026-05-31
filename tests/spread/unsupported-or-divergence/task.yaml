@@ -10,7 +10,7 @@ execute: |
   pebble_up
 
   set +e
-  out="$(borescope_run -c 'false || echo b' 2>&1)"
+  out="$(borescope_run --command 'false || echo b' 2>&1)"
   rc=$?
   set -e
 

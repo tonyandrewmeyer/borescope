@@ -71,9 +71,12 @@ def _type_char(info: Any) -> str:
 def _long_format(info: Any) -> str:
     size = getattr(info, 'size', None) or 0
     mtime = getattr(info, 'last_modified', None)
-    when = mtime.strftime('%Y-%m-%d %H:%M') if mtime else ''
+    # POSIX `ls -l` time format: `MMM DD HH:MM`, with a space-padded day
+    # (`%e`). Canonical's CLI spec recommends ISO 8601 elsewhere, but inside a
+    # POSIX shell `ls` should look like the system `ls` users already know.
+    when = mtime.strftime('%b %e %H:%M') if mtime else ''
     perms = _mode_str(getattr(info, 'permissions', None))
-    return f'{_type_char(info)}{perms} {str(size).rjust(8)} {when:>16} {safe_name(info.name)}'
+    return f'{_type_char(info)}{perms} {str(size).rjust(8)} {when:>12} {safe_name(info.name)}'
 
 
 def _resolve(ctx: ShellContext, path: str) -> str:

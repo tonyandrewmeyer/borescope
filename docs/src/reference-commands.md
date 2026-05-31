@@ -90,24 +90,40 @@ Pebble's operational vocabulary, exposed directly — no `pebble` prefix.
 
 | Command | Usage | Description |
 |---|---|---|
-| `services` | `services [name…]` | List services and their status. |
+| `services` | `services [--format=json\|yaml] [--no-headers] [name…]` | List services and their status. |
 | `start` | `start <service…>` | Start services. |
 | `stop` | `stop <service…>` | Stop services. |
 | `restart` | `restart <service…>` | Restart services. |
 | `replan` | `replan` | Apply the plan: stop/start services as the plan requires. |
 | `plan` | `plan` | Show the merged Pebble plan (YAML). |
 | `logs` | `logs [-f\|--follow] [-n N] [service…]` | Show service logs; `-f` streams. |
-| `checks` | `checks [name…]` | List health checks and their status. |
+| `checks` | `checks [--format=json\|yaml] [--no-headers] [name…]` | List health checks and their status. |
 | `health` | `health` | Report overall health (are all checks up?). |
-| `notices` | `notices` | List recent notices. |
+| `notices` | `notices [--format=json\|yaml] [--no-headers]` | List recent notices. |
 | `notice` | `notice <id>` | Show a single notice by ID. |
 | `notify` | `notify <key> [data-key=value…]` | Record a custom notice. |
-| `changes` | `changes` | List recent changes. |
-| `tasks` | `tasks [change-id]` | Show tasks for a change (defaults to the most recent). |
+| `changes` | `changes [--format=json\|yaml] [--no-headers]` | List recent changes. |
+| `tasks` | `tasks [--format=json\|yaml] [--no-headers] [change-id]` | Show tasks for a change (defaults to the most recent). |
 
 `start`, `stop`, `restart`, and `replan` change the running container. `logs
 --follow` and `tail -f` stream until you press <kbd>Ctrl-C</kbd> and can't be
 used inside a pipe.
+
+### Tabular output
+
+The list commands above (`services`, `checks`, `notices`, `changes`, `tasks`)
+follow the same convention:
+
+- Headers are UPPER CASE and bold; columns are separated by two spaces. Pass
+  `--no-headers` to suppress the header line — handy for piping into `awk`,
+  `cut`, or `sort`.
+- When the listing is empty, a short note goes to **stderr** (`No services
+  configured.`, `No checks configured.`, …) and the exit code stays `0`.
+  Stdout is empty, so `borescope myapp/0 --command services | wc -l` reports
+  `0` when there are no services.
+- `--format=json` and `--format=yaml` emit a machine-readable form instead of
+  the table. Empty lists render as `[]` (JSON) or `items: []` (YAML), again
+  with exit code `0` and no stderr noise.
 
 {#exec}
 ## exec

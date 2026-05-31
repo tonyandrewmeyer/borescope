@@ -14,7 +14,7 @@ execute: |
   workdir="$(mktemp -d)"
   printf 'moved\n' > "${workdir}/before"
 
-  borescope_run -c "mv ${workdir}/before ${workdir}/after"
+  borescope_run --command "mv ${workdir}/before ${workdir}/after"
   test ! -e "${workdir}/before"
   cat "${workdir}/after" | MATCH '^moved$'
 

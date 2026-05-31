@@ -13,7 +13,7 @@ execute: |
   printf 'first\n'  > "${workdir}/a"
   printf 'second\n' > "${workdir}/b"
 
-  out="$(borescope_run -c "cat ${workdir}/a ${workdir}/b")"
+  out="$(borescope_run --command "cat ${workdir}/a ${workdir}/b")"
   echo "$out" | MATCH '^first$'
   echo "$out" | MATCH '^second$'
   # Order: first before second.

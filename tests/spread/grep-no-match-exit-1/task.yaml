@@ -13,7 +13,7 @@ execute: |
   printf 'alpha\nbeta\n' > "${workdir}/f"
 
   set +e
-  out="$(borescope_run -c "grep zeta ${workdir}/f")"
+  out="$(borescope_run --command "grep zeta ${workdir}/f")"
   rc=$?
   set -e
 

@@ -17,7 +17,7 @@ execute: |
   mkdir "${workdir}/sub"
   touch "${workdir}/sub/nested.log"
 
-  out="$(borescope_run -c "find ${workdir} -name *.log")"
+  out="$(borescope_run --command "find ${workdir} -name *.log")"
   echo "$out" | MATCH "${workdir}/keep\.log"
   echo "$out" | MATCH "${workdir}/sub/nested\.log"
   echo "$out" | NOMATCH "skip\.txt"

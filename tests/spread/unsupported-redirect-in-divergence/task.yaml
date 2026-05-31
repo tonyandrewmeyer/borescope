@@ -10,7 +10,7 @@ execute: |
   pebble_up
 
   set +e
-  out="$(borescope_run -c 'cat < /etc/hostname' 2>&1)"
+  out="$(borescope_run --command 'cat < /etc/hostname' 2>&1)"
   rc=$?
   set -e
 

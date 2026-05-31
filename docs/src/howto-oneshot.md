@@ -22,17 +22,17 @@ CI, you can run it non-interactively instead.
 {#command}
 ## Run one command
 
-Pass `-c`/`--command` to run a single command and exit, without ever entering
-the REPL:
+Pass `--command` to run a single command and exit, without ever entering the
+REPL:
 
 <pre><code><span class="prompt">$</span> borescope myapp/0 --command "services"
-<span class="prompt">$</span> borescope myapp/0 -c "plan"
-<span class="prompt">$</span> borescope myapp/0 -c "logs -n 100 myapp"</code></pre>
+<span class="prompt">$</span> borescope myapp/0 --command "plan"
+<span class="prompt">$</span> borescope myapp/0 --command "logs -n 100 myapp"</code></pre>
 
 The command is parsed and run exactly as if you'd typed it at the prompt —
 including pipes:
 
-<pre><code><span class="prompt">$</span> borescope myapp/0 -c "logs -n 500 myapp | grep -i error"</code></pre>
+<pre><code><span class="prompt">$</span> borescope myapp/0 --command "logs -n 500 myapp | grep -i error"</code></pre>
 
 Output goes to stdout, errors to stderr.
 
@@ -49,7 +49,7 @@ borescope's process exit code reflects what happened:
 
 That makes `--command` safe to use in shell conditionals:
 
-<pre><code><span class="prompt">$</span> if borescope myapp/0 -c "health" >/dev/null; then echo healthy; fi</code></pre>
+<pre><code><span class="prompt">$</span> if borescope myapp/0 --command "health" >/dev/null; then echo healthy; fi</code></pre>
 
 {#stdin}
 ## Pipe a script on stdin
@@ -77,8 +77,8 @@ in version control.
 `exec` works the same non-interactively, so you can reach any tool in the
 container from a script:
 
-<pre><code><span class="prompt">$</span> borescope myapp/0 -c "exec cat /proc/1/cmdline"
-<span class="prompt">$</span> borescope myapp/0 -c "exec ps aux"</code></pre>
+<pre><code><span class="prompt">$</span> borescope myapp/0 --command "exec cat /proc/1/cmdline"
+<span class="prompt">$</span> borescope myapp/0 --command "exec ps aux"</code></pre>
 
 {#tips}
 ## Scripting tips

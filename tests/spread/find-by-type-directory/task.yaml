@@ -13,7 +13,7 @@ execute: |
   mkdir "${workdir}/d1" "${workdir}/d2"
   touch "${workdir}/file"
 
-  out="$(borescope_run -c "find ${workdir} -type d")"
+  out="$(borescope_run --command "find ${workdir} -type d")"
   echo "$out" | MATCH "${workdir}/d1$"
   echo "$out" | MATCH "${workdir}/d2$"
   echo "$out" | NOMATCH "${workdir}/file$"

@@ -13,7 +13,7 @@ execute: |
   pebble_up
 
   set +e
-  out="$(borescope_run -c "echo 'unterminated" 2>&1)"
+  out="$(borescope_run --command "echo 'unterminated" 2>&1)"
   rc=$?
   set -e
 

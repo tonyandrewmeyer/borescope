@@ -11,7 +11,7 @@ execute: |
 
   workdir="$(mktemp -d)"
 
-  borescope_run -c "mkdir -p ${workdir}/a/b/c"
+  borescope_run --command "mkdir -p ${workdir}/a/b/c"
   test -d "${workdir}/a"
   test -d "${workdir}/a/b"
   test -d "${workdir}/a/b/c"

@@ -10,7 +10,7 @@ execute: |
   pebble_up
 
   set +e
-  out="$(borescope_run -c 'echo a >> /tmp/borescope-spread-append' 2>&1)"
+  out="$(borescope_run --command 'echo a >> /tmp/borescope-spread-append' 2>&1)"
   rc=$?
   set -e
 

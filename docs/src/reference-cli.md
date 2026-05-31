@@ -40,7 +40,7 @@ These select *which* workload container borescope talks to.
 |---|---|
 | `UNIT` | Positional. Unit reference (`app/n`), for example `myapp/0`. Required unless `--here`/`--socket` is given. |
 | `--container NAME` | Workload container name. Defaults to the first container declared in the charm's metadata. |
-| `-m`, `--model MODEL` | Juju model. Defaults to the current model. Passed through to `juju`. |
+| `-m`, `--model MODEL` | Juju model. Defaults to the current model. Passed through to `juju`. (Short form retained for `juju`-CLI muscle memory.) |
 | `--juju PATH` | The `juju` binary to invoke. Default: `juju` (found on `PATH`). |
 
 {#modes}
@@ -63,7 +63,7 @@ These change what borescope *does* once connected.
 
 | Argument | Description |
 |---|---|
-| `-c`, `--command CMD` | Run a single command `CMD` and exit, without entering the REPL. |
+| `--command CMD` | Run a single command `CMD` and exit, without entering the REPL. |
 | `--snapshot` | Dump the container's state as JSON and exit. See [Capture a state snapshot](howto-snapshot.html). |
 
 With neither flag set: if stdin is a terminal, borescope opens the interactive
@@ -83,11 +83,22 @@ runs each, and exits with the status of the last. See
 
 | Argument | Description |
 |---|---|
-| `--version` | Print the borescope version and exit. |
-| `-h`, `--help` | Print usage and exit. |
+| `--version`, `version` | Print the borescope version and exit. |
+| `-h`, `--help`, `help` | Print usage and exit. |
+
+`help` and `version` (bare, as the first argument) are Canonical-CLI aliases
+for the Python-conventional `--help` / `--version`. borescope accepts both
+forms.
 
 `--help` and `--version` are fast: borescope defers its heavier imports until
 after argument parsing.
+
+### Verbosity
+
+borescope does **not** implement the Canonical `--quiet` / `--verbose` /
+`--verbosity=debug|trace` ladder. The tool's output is the REPL or a single
+command's result; a five-level taxonomy adds no value, so v1 stays minimal.
+This may change if a concrete need surfaces.
 
 {#exit-codes}
 ## Exit codes

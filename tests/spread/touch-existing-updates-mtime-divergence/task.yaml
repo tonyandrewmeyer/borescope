@@ -23,7 +23,7 @@ execute: |
   touch -t 200001010000 "${workdir}/f"
   before="$(stat -c '%Y' "${workdir}/f")"
 
-  borescope_run -c "touch ${workdir}/f"
+  borescope_run --command "touch ${workdir}/f"
   after="$(stat -c '%Y' "${workdir}/f")"
 
   # Current behaviour: mtime unchanged. POSIX would require after > before.

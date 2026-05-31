@@ -12,7 +12,7 @@ execute: |
   workdir="$(mktemp -d)"
   printf 'Error: boom\nok\n' > "${workdir}/f"
 
-  out="$(borescope_run -c "grep -i error ${workdir}/f")"
+  out="$(borescope_run --command "grep -i error ${workdir}/f")"
   echo "$out" | MATCH '^Error: boom$'
 
   rm -rf "${workdir}"

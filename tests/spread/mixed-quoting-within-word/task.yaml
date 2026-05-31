@@ -15,7 +15,7 @@ execute: |
   # Borescope receives: echo x'foo'"bar"
   # Three segments — unquoted 'x', single-quoted 'foo', double-quoted 'bar'
   # — form the single argument 'xfoobar'.
-  out="$(borescope_run -c "echo x'foo'\"bar\"")"
+  out="$(borescope_run --command "echo x'foo'\"bar\"")"
   echo "$out" | MATCH '^xfoobar$'
 
 restore: |

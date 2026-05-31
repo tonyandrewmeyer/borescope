@@ -38,6 +38,17 @@ def test_long_flag_and_valued():
     assert values == {'name': 'x'}
 
 
+def test_long_flag_equals_form():
+    _, values, _ = parse_args(['--format=json'], valued=('format',))
+    assert values == {'format': 'json'}
+
+
+def test_long_flag_equals_form_unknown_stays_flag():
+    flags, values, _ = parse_args(['--foo=bar'])
+    assert flags == {'foo=bar'}
+    assert values == {}
+
+
 def test_double_dash_terminates_options():
     flags, _, positionals = parse_args(['--', '-notaflag'])
     assert flags == set()

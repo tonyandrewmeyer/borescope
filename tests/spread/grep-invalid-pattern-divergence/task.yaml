@@ -21,7 +21,7 @@ execute: |
   printf 'x\n' > "${workdir}/f"
 
   set +e
-  borescope_run -c "grep '[' ${workdir}/f" >/dev/null 2>&1
+  borescope_run --command "grep '[' ${workdir}/f" >/dev/null 2>&1
   rc=$?
   set -e
 

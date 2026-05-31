@@ -3,7 +3,7 @@
 #
 #   source "${SPREAD_PATH}/tests/spread/lib.sh"
 #   pebble_up
-#   borescope_run -c 'ls /etc' | MATCH hostname
+#   borescope_run --command 'ls /etc' | MATCH hostname
 #   pebble_down
 
 # Bring up a fresh Pebble in a temporary directory and export PEBBLE/PEBBLE_SOCK.

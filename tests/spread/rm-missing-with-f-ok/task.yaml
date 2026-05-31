@@ -16,7 +16,7 @@ execute: |
   # not any byte on stderr — borescope's startup (ops/pebble client) is
   # entitled to log; we only assert that no `rm:` line was emitted.
   err="$(mktemp)"
-  out="$(borescope_run -c 'rm -f /no/such/file' 2>"$err")"
+  out="$(borescope_run --command 'rm -f /no/such/file' 2>"$err")"
   rc=$?
   set -e
 

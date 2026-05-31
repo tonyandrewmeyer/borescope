@@ -16,7 +16,7 @@ execute: |
   mkdir "${workdir}/already"
 
   set +e
-  out="$(borescope_run -c "mkdir ${workdir}/already" 2>&1)"
+  out="$(borescope_run --command "mkdir ${workdir}/already" 2>&1)"
   rc=$?
   set -e
 
