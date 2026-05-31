@@ -9,23 +9,43 @@ description: |
   plan, ...) front and centre alongside familiar commands (ls, cat, grep, ...).
 version: '0.1.0-b1'
 grade: devel
-# Classic confinement: borescope shells out to the `juju` snap and reads the
-# user's Juju config in $HOME, neither of which is possible under strict
-# confinement. This mirrors how comparable Juju debug tooling (e.g. jhack) ships.
-confinement: classic
+confinement: strict
 
 apps:
   borescope:
     command: bin/borescope
+    plugs:
+      # Read/write non-hidden $HOME paths; used by the `pull` and `push`
+      # commands when transferring files to/from the local filesystem.
+      - home
+      # Read access to ~/.local/share/juju/ (the Juju client data directory).
+      # When `juju` is a classic (unconfined) snap the AppArmor Px transition
+      # means juju reads this under its own authority, so this plug is a safety
+      # net for system-package or strict-snap juju installs.
+      - juju-client-observe
+      # Read access to ~/.ssh/; same reasoning as juju-client-observe above.
+      - ssh-keys
+      # Read/write to ~/.local/state/borescope/ for per-target shell history.
+      # The `home` plug does not cover hidden directories, so this is declared
+      # explicitly below.
+      - personal-files
+
+plugs:
+  personal-files:
+    interface: personal-files
+    read:
+      - $HOME/.local/state/borescope
+    write:
+      - $HOME/.local/state/borescope
 
 parts:
   borescope:
     plugin: python
     source: .
-    # Classic snaps don't inherit the base's Python; the interpreter and
-    # stdlib have to be bundled in the snap explicitly, with both the
-    # versioned (python3.12-minimal) and unversioned (python3-minimal)
-    # packages so the venv pyvenv.cfg lands in the right place.
+    # Bundle the Python interpreter and stdlib so the snap is self-contained
+    # and does not rely on the host Python. Both the versioned
+    # (python3.12-minimal) and unversioned (python3-minimal) packages are
+    # needed so the venv pyvenv.cfg lands in the right place.
     stage-packages:
       - python3-minimal
       - python3.12-minimal
