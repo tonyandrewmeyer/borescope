@@ -1,5 +1,5 @@
 ---
-title: "How to copy files in and out — borescope"
+title: "How to copy files in and out: borescope"
 description: "Pull files out of a shell-less Juju Kubernetes workload container, or push files in, with borescope's pull and push commands."
 h1: "Copy files in and out"
 subtitle: "Get a log or config file off a shell-less container, or push a patched file back in, over Pebble's files API."
@@ -46,7 +46,7 @@ Pushed ./fixed-config.yaml -&gt; /etc/myapp/config.yaml</code></pre>
 need to `mkdir` first.
 
 > Pushing a file changes the running container. Pebble won't restart a service
-> for you — use [`restart`](reference-commands.html#pebble-native) afterwards if
+> for you; use [`restart`](reference-commands.html#pebble-native) afterwards if
 > the workload needs to re-read the file.
 
 {#vs-cat}
@@ -73,5 +73,5 @@ borescope has a few overlapping ways to move bytes; pick by intent:
   survive the round trip intact.
 - **Permissions follow Pebble.** A `push` writes with Pebble's defaults; the
   workload must have permission to read the destination path.
-- **No globbing.** Paths are literal — `pull /var/log/*.log` won't expand. Use
+- **No globbing.** Paths are literal. `pull /var/log/*.log` won't expand; use
   `find` to locate files, then pull them by name.

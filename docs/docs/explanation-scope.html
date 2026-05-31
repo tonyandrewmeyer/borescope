@@ -3,12 +3,19 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Scope and philosophy &mdash; borescope</title>
+<title>Scope and philosophy: borescope</title>
 <meta name="description" content="Why borescope is Kubernetes-only, ships a minimal command set, and leans on exec rather than reimplementing coreutils.">
 <link rel="icon" href="../favicon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.bunny.net">
 <link rel="stylesheet" href="https://fonts.bunny.net/css?family=inter:400,500,600,700,800|jetbrains-mono:400&display=swap">
 <link rel="stylesheet" href="docs.css">
+<script>
+// Apply stored theme before first paint to prevent flash.
+(function() {
+  var t = localStorage.getItem("borescope-theme");
+  if (t && t !== "auto") document.documentElement.setAttribute("data-theme", t);
+})();
+</script>
 </head>
 <body>
 
@@ -27,9 +34,38 @@
       <a href="index.html" class="current">Docs</a>
       <a href="../index.html#features">Features</a>
       <a href="https://github.com/tonyandrewmeyer/borescope" target="_blank" rel="noopener">GitHub</a>
+      <button type="button" class="palette-trigger" aria-label="Search docs" aria-keyshortcuts="Control+K Meta+K">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3-3"/></svg>
+        <span>Search</span>
+        <kbd>⌘K</kbd>
+      </button>
+      <div class="theme-switcher" role="group" aria-label="Colour theme">
+        <button type="button" data-theme="light" aria-pressed="false">Light</button>
+        <button type="button" data-theme="auto" aria-pressed="true">Auto</button>
+        <button type="button" data-theme="dark" aria-pressed="false">Dark</button>
+      </div>
     </div>
   </div>
 </nav>
+
+<dialog class="palette" aria-label="Search documentation">
+  <div class="palette-inner">
+    <div class="palette-input-row">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3-3"/></svg>
+      <input type="search" class="palette-input" placeholder="Search docs..." autocomplete="off" spellcheck="false" aria-label="Type to filter pages" aria-controls="palette-list" aria-activedescendant="">
+      <kbd>Esc</kbd>
+    </div>
+    <ul class="palette-list" id="palette-list" role="listbox"></ul>
+    <div class="palette-empty" hidden>No pages match. Try a different search.</div>
+    <div class="palette-footer">
+      <span><kbd>↑</kbd><kbd>↓</kbd> Navigate</span>
+      <span><kbd>Enter</kbd> Open</span>
+      <span><kbd>Esc</kbd> Close</span>
+    </div>
+  </div>
+</dialog>
+
+<script type="application/json" id="palette-data">[{"slug":"index","label":"Documentation home","section":""},{"slug":"tutorial","label":"Debug your first container","section":"Tutorial"},{"slug":"howto-connect","label":"Connect to a unit","section":"How-to guides"},{"slug":"howto-here","label":"Run inside the charm container","section":"How-to guides"},{"slug":"howto-oneshot","label":"Run one command (no REPL)","section":"How-to guides"},{"slug":"howto-files","label":"Copy files in and out","section":"How-to guides"},{"slug":"howto-snapshot","label":"Capture a state snapshot","section":"How-to guides"},{"slug":"reference-cli","label":"CLI reference","section":"Reference"},{"slug":"reference-commands","label":"Command reference","section":"Reference"},{"slug":"explanation-architecture","label":"How borescope works","section":"Explanation"},{"slug":"explanation-transport","label":"How it reaches Pebble","section":"Explanation"},{"slug":"explanation-scope","label":"Scope and philosophy","section":"Explanation"}]</script>
 <div class="doc-layout">
   <aside class="doc-sidebar">
     <h4>Explanation</h4>
@@ -60,7 +96,7 @@
 
     <h1>Scope and philosophy</h1>
     <p class="subtitle">
-      What borescope deliberately does &mdash; and doesn't &mdash; do, and why.
+      What borescope deliberately does (and doesn't), and why.
     </p>
 
 <p>borescope has a small, opinionated surface. The constraints below are choices,
@@ -71,27 +107,27 @@ Machine (IAAS) charms are explicitly out of scope: they already run on a machine
 with a real shell, so <code>juju ssh</code> drops you somewhere useful and borescope would
 add nothing. Discovery detects a machine model and refuses early, with a message
 pointing you back to <code>juju ssh</code>.</p>
-<p>The whole reason borescope exists is the gap Kubernetes workloads create &mdash; a
+<p>The whole reason borescope exists is the gap Kubernetes workloads create, a
 supervised container with no shell of its own. Where that gap doesn't exist,
 neither does borescope's job.</p>
 <h2 id="minimal">A minimal command set</h2>
 <p>borescope ships a <em>minimal</em> set of commands on purpose. The built-ins exist for
 two reasons only:</p>
 <ul>
-<li>they need <strong>session state</strong> &mdash; paths relative to your current directory; or</li>
+<li>they need <strong>session state</strong>, paths relative to your current directory; or</li>
 <li>they need the <strong>Pebble files API</strong> to work against a rock with no shell or
 coreutils (<code>ls</code>, <code>cat</code>, <code>grep</code>, &hellip;); or</li>
 <li>they expose <strong>Pebble's own operations</strong> that a shell wouldn't have at all
 (<code>services</code>, <code>logs</code>, <code>plan</code>, <code>checks</code>, &hellip;).</li>
 </ul>
-<p>Likewise the <a href="reference-commands.html#grammar">line grammar</a> is tiny &mdash; one
+<p>Likewise the <a href="reference-commands.html#grammar">line grammar</a> is tiny, one
 command, at most one pipe, no sequencing or redirection. That covers the
 overwhelming majority of debug-shell use at a fraction of the complexity of a
 real shell, and keeps each command small and well-tested.</p>
 <h2 id="exec-first">exec over reimplementation</h2>
 <p>For anything outside that core, the answer is
 <a href="reference-commands.html#exec"><code>exec</code></a>, not a new built-in. <code>exec</code> runs a binary
-that's <em>already in the container</em> &mdash; so if the rock ships <code>ps</code>, <code>curl</code>, or the
+that's <em>already in the container</em>, so if the rock ships <code>ps</code>, <code>curl</code>, or the
 workload's own CLI, you reach it directly. borescope deliberately does <strong>not</strong>
 bundle tools into the container or reimplement a coreutils zoo: that would bloat
 the surface, drift from the real tools' behaviour, and still never be complete.</p>
@@ -100,18 +136,18 @@ cover this?</em> Usually it does.</p>
 <h2 id="grow">Growing on request</h2>
 <p>The guiding principle is <strong>ship a minimal core and grow on request</strong> rather than
 speculate. Commands are auto-discovered and self-contained, so adding one when a
-real need shows up is a small change &mdash; but the default is to wait for that need.
+real need shows up is a small change, but the default is to wait for that need.
 A command earns its place by being something <code>exec</code> genuinely can't do well, not
 by being conceivably useful.</p>
 <h2 id="not">What borescope is not</h2>
 <ul>
-<li><strong>Not a replacement for <code>juju ssh</code></strong> on machine charms &mdash; those already have a
+<li><strong>Not a replacement for <code>juju ssh</code></strong> on machine charms. Those already have a
 shell.</li>
 <li><strong>Not a <code>kubectl</code> wrapper.</strong> It never uses <code>kubectl</code> or cluster-admin; it
 works strictly within your Juju authority. See <a href="explanation-transport.html#authority">How it reaches
 Pebble</a>.</li>
-<li><strong>Not a full shell.</strong> No job control, scripting constructs, or redirection &mdash;
-use <a href="howto-oneshot.html"><code>--command</code></a> and your real shell around borescope for
+<li><strong>Not a full shell.</strong> No job control, scripting constructs, or redirection.
+Use <a href="howto-oneshot.html"><code>--command</code></a> and your real shell around borescope for
 that.</li>
 <li><strong>Not a config manager.</strong> It's a debugging instrument: look first, change
 deliberately. The Pebble-native write commands (<code>start</code>, <code>stop</code>, <code>push</code>, &hellip;)
@@ -122,7 +158,7 @@ are there for fixing things in the moment, not for managing a deployment.</li>
 
 <footer class="doc-footer">
   <div class="doc-footer-inner">
-    <span>borescope &mdash; free &amp; open source &middot; Apache 2.0</span>
+    <span>borescope &middot; free &amp; open source &middot; Apache 2.0</span>
     <div>
       <a href="https://github.com/tonyandrewmeyer/borescope" target="_blank" rel="noopener">GitHub</a>
     </div>
@@ -147,6 +183,131 @@ are there for fixing things in the moment, not for managing a deployment.</li>
       toggle.setAttribute('aria-expanded', 'false');
       toggle.setAttribute('aria-label', 'Open menu');
     });
+  });
+})();
+
+(function() {
+  var root = document.documentElement;
+  var buttons = document.querySelectorAll('.theme-switcher button');
+  if (!buttons.length) return;
+  var stored = localStorage.getItem('borescope-theme') || 'auto';
+  function apply(theme) {
+    if (theme === 'auto') root.removeAttribute('data-theme');
+    else root.setAttribute('data-theme', theme);
+    buttons.forEach(function(btn) {
+      btn.setAttribute('aria-pressed', btn.getAttribute('data-theme') === theme ? 'true' : 'false');
+    });
+    localStorage.setItem('borescope-theme', theme);
+  }
+  buttons.forEach(function(btn) {
+    btn.addEventListener('click', function() { apply(btn.getAttribute('data-theme')); });
+  });
+  apply(stored);
+})();
+
+// Command palette: Cmd/Ctrl-K opens, type to filter, arrows to navigate.
+(function() {
+  var dialog = document.querySelector('.palette');
+  var dataEl = document.getElementById('palette-data');
+  var triggers = document.querySelectorAll('.palette-trigger');
+  if (!dialog || !dataEl || typeof dialog.showModal !== 'function') return;
+
+  var pages;
+  try { pages = JSON.parse(dataEl.textContent); } catch (e) { return; }
+
+  var input = dialog.querySelector('.palette-input');
+  var list = dialog.querySelector('.palette-list');
+  var empty = dialog.querySelector('.palette-empty');
+  var here = (location.pathname.split('/').pop() || 'index.html').replace('.html', '');
+  var idx = 0;
+  var visible = [];
+
+  function render(query) {
+    var q = (query || '').toLowerCase().trim();
+    list.innerHTML = '';
+    visible = pages.filter(function(p) {
+      if (!q) return true;
+      return p.label.toLowerCase().indexOf(q) !== -1
+          || p.section.toLowerCase().indexOf(q) !== -1
+          || p.slug.toLowerCase().indexOf(q) !== -1;
+    });
+    if (!visible.length) {
+      empty.hidden = false;
+      input.setAttribute('aria-activedescendant', '');
+      return;
+    }
+    empty.hidden = true;
+    idx = 0;
+    visible.forEach(function(p, i) {
+      var li = document.createElement('li');
+      li.id = 'palette-item-' + i;
+      li.className = 'palette-item' + (p.slug === here ? ' current' : '');
+      li.setAttribute('role', 'option');
+      li.setAttribute('data-href', p.slug + '.html');
+      li.innerHTML = '<span class="palette-item-label">' + p.label + '</span>'
+                   + (p.section ? '<span class="palette-item-section">' + p.section + '</span>' : '<span class="palette-item-section">Index</span>');
+      li.addEventListener('mouseenter', function() { setActive(i); });
+      li.addEventListener('click', function() { open(visible[i]); });
+      list.appendChild(li);
+    });
+    setActive(0);
+  }
+
+  function setActive(i) {
+    if (!visible.length) return;
+    idx = (i + visible.length) % visible.length;
+    Array.prototype.forEach.call(list.children, function(li, j) {
+      li.setAttribute('aria-selected', j === idx ? 'true' : 'false');
+      if (j === idx) {
+        input.setAttribute('aria-activedescendant', li.id);
+        var top = li.offsetTop, bot = top + li.offsetHeight;
+        if (top < list.scrollTop) list.scrollTop = top;
+        else if (bot > list.scrollTop + list.clientHeight) list.scrollTop = bot - list.clientHeight;
+      }
+    });
+  }
+
+  function open(page) {
+    if (!page) return;
+    location.href = page.slug + '.html';
+  }
+
+  function show() {
+    if (dialog.open) return;
+    input.value = '';
+    render('');
+    dialog.showModal();
+    setTimeout(function() { input.focus(); }, 0);
+  }
+
+  triggers.forEach(function(t) { t.addEventListener('click', show); });
+
+  document.addEventListener('keydown', function(e) {
+    if ((e.metaKey || e.ctrlKey) && (e.key === 'k' || e.key === 'K')) {
+      e.preventDefault();
+      if (dialog.open) dialog.close(); else show();
+      return;
+    }
+    var typingInField = e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable);
+    if (e.key === '/' && !typingInField && !dialog.open) {
+      e.preventDefault();
+      show();
+    }
+  });
+
+  input.addEventListener('input', function() { render(input.value); });
+
+  input.addEventListener('keydown', function(e) {
+    if (e.key === 'ArrowDown') { e.preventDefault(); setActive(idx + 1); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); setActive(idx - 1); }
+    else if (e.key === 'Enter') { e.preventDefault(); open(visible[idx]); }
+  });
+
+  dialog.addEventListener('click', function(e) {
+    var r = dialog.getBoundingClientRect();
+    if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) {
+      dialog.close();
+    }
   });
 })();
 

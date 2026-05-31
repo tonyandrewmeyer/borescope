@@ -1,5 +1,5 @@
 ---
-title: "Command reference — borescope"
+title: "Command reference: borescope"
 description: "Every built-in borescope command: shell built-ins, file commands, Pebble-native commands, and the exec escape hatch."
 h1: "Command reference"
 subtitle: "The complete built-in command set, plus the grammar the REPL understands."
@@ -59,7 +59,7 @@ State and session commands.
 {#files}
 ## File commands
 
-These are built in — rather than left to `exec` — because they need either
+These are built in, rather than left to `exec`, because they need either
 session state (paths relative to the current directory) or Pebble's files API,
 so they work against a rock with no shell and no coreutils.
 
@@ -86,7 +86,7 @@ container. See [Copy files in and out](howto-files.html).
 {#pebble-native}
 ## Pebble-native commands
 
-Pebble's operational vocabulary, exposed directly — no `pebble` prefix.
+Pebble's operational vocabulary, exposed directly, no `pebble` prefix.
 
 | Command | Usage | Description |
 |---|---|---|
@@ -115,8 +115,8 @@ The list commands above (`services`, `checks`, `notices`, `changes`, `tasks`)
 follow the same convention:
 
 - Headers are UPPER CASE and bold; columns are separated by two spaces. Pass
-  `--no-headers` to suppress the header line — handy for piping into `awk`,
-  `cut`, or `sort`.
+  `--no-headers` to suppress the header line (handy for piping into `awk`,
+  `cut`, or `sort`).
 - When the listing is empty, a short note goes to **stderr** (`No services
   configured.`, `No checks configured.`, …) and the exit code stays `0`.
   Stdout is empty, so `borescope myapp/0 --command services | wc -l` reports
@@ -140,7 +140,7 @@ and exit code:
 <span class="prompt">pebble:/#</span> exec cat /proc/1/cmdline
 <span class="prompt">pebble:/#</span> exec /usr/bin/myapp --version</code></pre>
 
-If the binary isn't in the rock, `exec` reports that it couldn't run it — which
+If the binary isn't in the rock, `exec` reports that it couldn't run it, which
 is expected on a minimal image. borescope doesn't bundle tools into the
 container; `exec` only reaches what's there. See
 [Scope and philosophy](explanation-scope.html).

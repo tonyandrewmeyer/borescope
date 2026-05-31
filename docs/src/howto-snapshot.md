@@ -1,6 +1,6 @@
 ---
-title: "How to capture a state snapshot — borescope"
-description: "Dump a Juju Kubernetes workload container's Pebble state — services, plan, checks, notices, and recent logs — as a single stable JSON document."
+title: "How to capture a state snapshot: borescope"
+description: "Dump a Juju Kubernetes workload container's Pebble state (services, plan, checks, notices, and recent logs) as a single stable JSON document."
 h1: "Capture a state snapshot"
 subtitle: "Produce one machine-readable JSON document describing a container's state, for bug reports and tooling."
 section: howto
@@ -18,7 +18,7 @@ see_also:
 {#run}
 ## Take a snapshot
 
-Pass `--snapshot` to dump the container's state as JSON and exit — no REPL:
+Pass `--snapshot` to dump the container's state as JSON and exit. No REPL:
 
 <pre><code><span class="prompt">$</span> borescope myapp/0 --snapshot</code></pre>
 
@@ -80,14 +80,14 @@ The top-level keys:
 
 A snapshot never aborts halfway because one section failed. If borescope can't
 collect a section, it omits that key and adds a matching `*_error` key with the
-reason — for example `services_error`, `plan_error`, or `logs_error`. So a
+reason, for example `services_error`, `plan_error`, or `logs_error`. So a
 snapshot of a half-broken container still captures everything that *did* answer,
 which is usually exactly what you want in a bug report.
 
 {#uses}
 ## What it's for
 
-- **Bug reports.** One file captures the whole picture — far more useful than a
+- **Bug reports.** One file captures the whole picture, far more useful than a
   screenshot of `services`.
 - **Diffing.** Snapshot before and after a change and `diff` the JSON.
 - **Tooling.** The stable shape is meant to be fed into other tools (for

@@ -1,6 +1,6 @@
 ---
-title: "Tutorial: Debug your first container — borescope"
-description: "A step-by-step tutorial: install borescope and explore a live Juju Kubernetes workload container — services, logs, files, and the plan."
+title: "Tutorial: Debug your first container: borescope"
+description: "A step-by-step tutorial: install borescope and explore a live Juju Kubernetes workload container, services, logs, files, and the plan."
 h1: "Debug your first container"
 subtitle: "From install to poking around a live workload container, in about ten minutes. No prior borescope experience required."
 section: tutorial
@@ -81,7 +81,7 @@ pebble:/#</code></pre>
 borescope picked up your current Juju controller and model, confirmed the unit
 exists, read the charm's metadata to find its workload container, and checked
 that the container's Pebble answers. The `pebble:/#` prompt is borescope's, not
-a real shell — but it behaves like one. You're in the container's root
+a real shell, but it behaves like one. You're in the container's root
 directory.
 
 > If the application declares more than one workload container, borescope uses
@@ -91,7 +91,7 @@ directory.
 {#look-around}
 ## Look around the filesystem
 
-The familiar commands work, even though the rock has no shell or coreutils —
+The familiar commands work even though the rock has no shell or coreutils.
 borescope implements them over Pebble's files API:
 
 <pre><code><span class="prompt">pebble:/#</span> pwd
@@ -111,7 +111,7 @@ with `head` and `tail`:
 {#services}
 ## Inspect services and logs
 
-Pebble's own vocabulary is built in — no `pebble` prefix. List the services
+Pebble's own vocabulary is built in, no `pebble` prefix. List the services
 Pebble is supervising:
 
 <pre><code><span class="prompt">pebble:/#</span> services
@@ -152,7 +152,7 @@ directory:
 <pre><code><span class="prompt">pebble:/#</span> exec ps aux
 <span class="prompt">pebble:/#</span> exec cat /proc/1/status</code></pre>
 
-If the tool isn't in the rock, `exec` will tell you it can't find it — that's
+If the tool isn't in the rock, `exec` will tell you it can't find it. That's
 expected on a minimal image. (See
 [Scope and philosophy](explanation-scope.html) for why borescope leans on
 `exec` rather than bundling tools.)
@@ -171,9 +171,9 @@ Type `exit` (or press <kbd>Ctrl-D</kbd>):
 You've connected to a unit, read its filesystem, inspected services and logs,
 and run a container tool. From here:
 
-- [Connect to a unit](howto-connect.html) — choose a container, model, or
+- [Connect to a unit](howto-connect.html): choose a container, model, or
   controller explicitly.
-- [Run one command (no REPL)](howto-oneshot.html) — use borescope from scripts.
-- [Capture a state snapshot](howto-snapshot.html) — dump container state as JSON
+- [Run one command (no REPL)](howto-oneshot.html): use borescope from scripts.
+- [Capture a state snapshot](howto-snapshot.html): dump container state as JSON
   for a bug report.
-- [Command reference](reference-commands.html) — the full built-in command set.
+- [Command reference](reference-commands.html): the full built-in command set.

@@ -3,12 +3,19 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>How to run inside the charm container &mdash; borescope</title>
+<title>How to run inside the charm container: borescope</title>
 <meta name="description" content="Use borescope from inside a Juju Kubernetes charm container, or against a Pebble socket directly, with --here and --socket.">
 <link rel="icon" href="../favicon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.bunny.net">
 <link rel="stylesheet" href="https://fonts.bunny.net/css?family=inter:400,500,600,700,800|jetbrains-mono:400&display=swap">
 <link rel="stylesheet" href="docs.css">
+<script>
+// Apply stored theme before first paint to prevent flash.
+(function() {
+  var t = localStorage.getItem("borescope-theme");
+  if (t && t !== "auto") document.documentElement.setAttribute("data-theme", t);
+})();
+</script>
 </head>
 <body>
 
@@ -27,9 +34,38 @@
       <a href="index.html" class="current">Docs</a>
       <a href="../index.html#features">Features</a>
       <a href="https://github.com/tonyandrewmeyer/borescope" target="_blank" rel="noopener">GitHub</a>
+      <button type="button" class="palette-trigger" aria-label="Search docs" aria-keyshortcuts="Control+K Meta+K">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3-3"/></svg>
+        <span>Search</span>
+        <kbd>⌘K</kbd>
+      </button>
+      <div class="theme-switcher" role="group" aria-label="Colour theme">
+        <button type="button" data-theme="light" aria-pressed="false">Light</button>
+        <button type="button" data-theme="auto" aria-pressed="true">Auto</button>
+        <button type="button" data-theme="dark" aria-pressed="false">Dark</button>
+      </div>
     </div>
   </div>
 </nav>
+
+<dialog class="palette" aria-label="Search documentation">
+  <div class="palette-inner">
+    <div class="palette-input-row">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3-3"/></svg>
+      <input type="search" class="palette-input" placeholder="Search docs..." autocomplete="off" spellcheck="false" aria-label="Type to filter pages" aria-controls="palette-list" aria-activedescendant="">
+      <kbd>Esc</kbd>
+    </div>
+    <ul class="palette-list" id="palette-list" role="listbox"></ul>
+    <div class="palette-empty" hidden>No pages match. Try a different search.</div>
+    <div class="palette-footer">
+      <span><kbd>↑</kbd><kbd>↓</kbd> Navigate</span>
+      <span><kbd>Enter</kbd> Open</span>
+      <span><kbd>Esc</kbd> Close</span>
+    </div>
+  </div>
+</dialog>
+
+<script type="application/json" id="palette-data">[{"slug":"index","label":"Documentation home","section":""},{"slug":"tutorial","label":"Debug your first container","section":"Tutorial"},{"slug":"howto-connect","label":"Connect to a unit","section":"How-to guides"},{"slug":"howto-here","label":"Run inside the charm container","section":"How-to guides"},{"slug":"howto-oneshot","label":"Run one command (no REPL)","section":"How-to guides"},{"slug":"howto-files","label":"Copy files in and out","section":"How-to guides"},{"slug":"howto-snapshot","label":"Capture a state snapshot","section":"How-to guides"},{"slug":"reference-cli","label":"CLI reference","section":"Reference"},{"slug":"reference-commands","label":"Command reference","section":"Reference"},{"slug":"explanation-architecture","label":"How borescope works","section":"Explanation"},{"slug":"explanation-transport","label":"How it reaches Pebble","section":"Explanation"},{"slug":"explanation-scope","label":"Scope and philosophy","section":"Explanation"}]</script>
 <div class="doc-layout">
   <aside class="doc-sidebar">
     <h4>How-to guides</h4>
@@ -61,7 +97,7 @@
 
     <h1>Run inside the charm container</h1>
     <p class="subtitle">
-      Skip Juju entirely and talk to a mounted Pebble socket directly &mdash; from a charm hook, a debug-hooks session, or against any socket path.
+      Skip Juju entirely and talk to a mounted Pebble socket directly, from a charm hook, a debug-hooks session, or against any socket path.
     </p>
 
 <p>When borescope runs <em>inside</em> a Juju Kubernetes charm container, it doesn't need
@@ -73,7 +109,7 @@ socket directly with the real <code>ops.pebble.Client</code> API.</p>
 run:</p>
 <pre><code><span class="prompt">$</span> borescope --here</code></pre>
 <p>borescope scans <code>/charm/containers/</code> for mounted Pebble sockets. If the charm
-declares exactly one workload container, it connects to that one &mdash; no unit
+declares exactly one workload container, it connects to that one. No unit
 reference, no model, no Juju round-trip.</p>
 <h2 id="multiple">Several containers</h2>
 <p>If the charm has more than one workload container, <code>--here</code> can't guess which
@@ -82,8 +118,8 @@ you mean, so name it:</p>
 <p>If you omit <code>--container</code> with multiple containers present, borescope lists the
 available names and asks you to choose one.</p>
 <h2 id="socket">Point at a socket</h2>
-<p>To talk to a Pebble over a specific Unix socket &mdash; a workload socket at a
-non-standard path, or a local Pebble you're running yourself &mdash; pass <code>--socket</code>:</p>
+<p>To talk to a Pebble over a specific Unix socket (a workload socket at a
+non-standard path, or a local Pebble you're running yourself), pass <code>--socket</code>:</p>
 <pre><code><span class="prompt">$</span> borescope --socket /charm/containers/workload/pebble.socket
 <span class="prompt">$</span> borescope --socket /var/run/pebble.socket</code></pre>
 <p>With <code>--socket</code>, borescope skips Juju discovery entirely and connects straight
@@ -117,7 +153,7 @@ labelling (it's used for the history key and the prompt), but it isn't required.
 </tbody>
 </table>
 <p><code>--here</code> and <code>--socket</code> both use the direct socket transport, which is faster
-than going through <code>juju ssh</code> and works without any Juju access &mdash; but only
+than going through <code>juju ssh</code> and works without any Juju access, but only
 from somewhere that can see the socket. From your workstation, use a unit
 reference instead. See <a href="explanation-transport.html">How it reaches Pebble</a> for
 how the two transports differ.</p>
@@ -126,7 +162,7 @@ how the two transports differ.</p>
 
 <footer class="doc-footer">
   <div class="doc-footer-inner">
-    <span>borescope &mdash; free &amp; open source &middot; Apache 2.0</span>
+    <span>borescope &middot; free &amp; open source &middot; Apache 2.0</span>
     <div>
       <a href="https://github.com/tonyandrewmeyer/borescope" target="_blank" rel="noopener">GitHub</a>
     </div>
@@ -151,6 +187,131 @@ how the two transports differ.</p>
       toggle.setAttribute('aria-expanded', 'false');
       toggle.setAttribute('aria-label', 'Open menu');
     });
+  });
+})();
+
+(function() {
+  var root = document.documentElement;
+  var buttons = document.querySelectorAll('.theme-switcher button');
+  if (!buttons.length) return;
+  var stored = localStorage.getItem('borescope-theme') || 'auto';
+  function apply(theme) {
+    if (theme === 'auto') root.removeAttribute('data-theme');
+    else root.setAttribute('data-theme', theme);
+    buttons.forEach(function(btn) {
+      btn.setAttribute('aria-pressed', btn.getAttribute('data-theme') === theme ? 'true' : 'false');
+    });
+    localStorage.setItem('borescope-theme', theme);
+  }
+  buttons.forEach(function(btn) {
+    btn.addEventListener('click', function() { apply(btn.getAttribute('data-theme')); });
+  });
+  apply(stored);
+})();
+
+// Command palette: Cmd/Ctrl-K opens, type to filter, arrows to navigate.
+(function() {
+  var dialog = document.querySelector('.palette');
+  var dataEl = document.getElementById('palette-data');
+  var triggers = document.querySelectorAll('.palette-trigger');
+  if (!dialog || !dataEl || typeof dialog.showModal !== 'function') return;
+
+  var pages;
+  try { pages = JSON.parse(dataEl.textContent); } catch (e) { return; }
+
+  var input = dialog.querySelector('.palette-input');
+  var list = dialog.querySelector('.palette-list');
+  var empty = dialog.querySelector('.palette-empty');
+  var here = (location.pathname.split('/').pop() || 'index.html').replace('.html', '');
+  var idx = 0;
+  var visible = [];
+
+  function render(query) {
+    var q = (query || '').toLowerCase().trim();
+    list.innerHTML = '';
+    visible = pages.filter(function(p) {
+      if (!q) return true;
+      return p.label.toLowerCase().indexOf(q) !== -1
+          || p.section.toLowerCase().indexOf(q) !== -1
+          || p.slug.toLowerCase().indexOf(q) !== -1;
+    });
+    if (!visible.length) {
+      empty.hidden = false;
+      input.setAttribute('aria-activedescendant', '');
+      return;
+    }
+    empty.hidden = true;
+    idx = 0;
+    visible.forEach(function(p, i) {
+      var li = document.createElement('li');
+      li.id = 'palette-item-' + i;
+      li.className = 'palette-item' + (p.slug === here ? ' current' : '');
+      li.setAttribute('role', 'option');
+      li.setAttribute('data-href', p.slug + '.html');
+      li.innerHTML = '<span class="palette-item-label">' + p.label + '</span>'
+                   + (p.section ? '<span class="palette-item-section">' + p.section + '</span>' : '<span class="palette-item-section">Index</span>');
+      li.addEventListener('mouseenter', function() { setActive(i); });
+      li.addEventListener('click', function() { open(visible[i]); });
+      list.appendChild(li);
+    });
+    setActive(0);
+  }
+
+  function setActive(i) {
+    if (!visible.length) return;
+    idx = (i + visible.length) % visible.length;
+    Array.prototype.forEach.call(list.children, function(li, j) {
+      li.setAttribute('aria-selected', j === idx ? 'true' : 'false');
+      if (j === idx) {
+        input.setAttribute('aria-activedescendant', li.id);
+        var top = li.offsetTop, bot = top + li.offsetHeight;
+        if (top < list.scrollTop) list.scrollTop = top;
+        else if (bot > list.scrollTop + list.clientHeight) list.scrollTop = bot - list.clientHeight;
+      }
+    });
+  }
+
+  function open(page) {
+    if (!page) return;
+    location.href = page.slug + '.html';
+  }
+
+  function show() {
+    if (dialog.open) return;
+    input.value = '';
+    render('');
+    dialog.showModal();
+    setTimeout(function() { input.focus(); }, 0);
+  }
+
+  triggers.forEach(function(t) { t.addEventListener('click', show); });
+
+  document.addEventListener('keydown', function(e) {
+    if ((e.metaKey || e.ctrlKey) && (e.key === 'k' || e.key === 'K')) {
+      e.preventDefault();
+      if (dialog.open) dialog.close(); else show();
+      return;
+    }
+    var typingInField = e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable);
+    if (e.key === '/' && !typingInField && !dialog.open) {
+      e.preventDefault();
+      show();
+    }
+  });
+
+  input.addEventListener('input', function() { render(input.value); });
+
+  input.addEventListener('keydown', function(e) {
+    if (e.key === 'ArrowDown') { e.preventDefault(); setActive(idx + 1); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); setActive(idx - 1); }
+    else if (e.key === 'Enter') { e.preventDefault(); open(visible[idx]); }
+  });
+
+  dialog.addEventListener('click', function(e) {
+    var r = dialog.getBoundingClientRect();
+    if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) {
+      dialog.close();
+    }
   });
 })();
 

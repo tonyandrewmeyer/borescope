@@ -1,5 +1,5 @@
 ---
-title: "CLI reference — borescope"
+title: "CLI reference: borescope"
 description: "Complete reference for borescope's command-line arguments, modes, and exit codes."
 h1: "CLI reference"
 subtitle: "Every command-line argument, the modes they select, and exit codes."
@@ -107,7 +107,7 @@ This may change if a concrete need surfaces.
 |---|---|
 | `0` | Success. |
 | `1` | A command failed, or discovery/connection failed. The reason is printed to stderr as `borescope: …`. |
-| `2` | Usage error — no unit reference and neither `--here` nor `--socket`. |
+| `2` | Usage error: no unit reference and neither `--here` nor `--socket`. |
 
 In non-interactive modes the exit code is that of the command run (or the last
 command, when reading from stdin), making borescope safe to use in shell
@@ -117,7 +117,7 @@ conditionals and CI.
 ## Environment
 
 borescope has no environment variables of its own. It inherits the environment
-of the `juju` CLI it shells out to — so the controller and model selection,
+of the `juju` CLI it shells out to, so the controller and model selection,
 `JUJU_DATA`, and your Juju credentials are all picked up exactly as `juju`
 would use them. If `juju status` and `juju ssh` work in your shell, borescope
 works too.
