@@ -1,0 +1,8 @@
+#!/bin/bash -e
+# Integration tests need a `pebble` binary on PATH. When the `pebble` plug is
+# connected to a pebble dev workshop, pebble-src is the mounted binary and
+# setup-project puts it on PATH. When unconnected, install the stable snap.
+src=/home/workshop/.local/bin/pebble-src
+if [ ! -f "$src" ] || [ ! -x "$src" ]; then
+    snap install pebble --classic --channel=latest/stable
+fi

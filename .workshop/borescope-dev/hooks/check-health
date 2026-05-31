@@ -1,0 +1,9 @@
+#!/bin/bash
+# Healthy when borescope is importable in the synced env and `pebble` is on PATH.
+if sudo -H -i -u workshop -- bash -c \
+    'command -v pebble >/dev/null && cd /project && uv run python -c "import borescope"'
+then
+    workshopctl set-health okay
+else
+    workshopctl set-health --code="borescope-env-broken" error
+fi
