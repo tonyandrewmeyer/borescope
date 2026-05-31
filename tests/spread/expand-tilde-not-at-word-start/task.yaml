@@ -1,0 +1,21 @@
+summary: |
+  POSIX XCU §2.6.1 — tilde expansion only applies when `~` is at the
+  start of a word; a mid-word `~` is left as a literal character.
+systems:
+  - ubuntu-24.04
+
+execute: |
+  # https://pubs.opengroup.org/onlinepubs/9699919799/utilities/V3_chap02.html#tag_18_06_01
+  # "The following rules shall be used to determine whether tilde expansion
+  #  applies … only an unquoted tilde-prefix shall be expanded."
+  # A tilde that is not the first character of a word is not a tilde-prefix
+  # and must not be substituted.
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_up
+
+  out="$(borescope_run -c 'echo a~b')"
+  echo "$out" | MATCH '^a~b$'
+
+restore: |
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_down

@@ -1,0 +1,23 @@
+summary: |
+  POSIX XCU §2.2 — adjacent quoted and unquoted segments within a word
+  are concatenated into a single argument.
+systems:
+  - ubuntu-24.04
+
+execute: |
+  # https://pubs.opengroup.org/onlinepubs/9699919799/utilities/V3_chap02.html#tag_18_02
+  # POSIX §2.2 allows any combination of quoting styles within a single
+  # word. Here an unquoted prefix, a single-quoted segment, and a
+  # double-quoted segment must all be concatenated into one argument.
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_up
+
+  # Borescope receives: echo x'foo'"bar"
+  # Three segments — unquoted 'x', single-quoted 'foo', double-quoted 'bar'
+  # — form the single argument 'xfoobar'.
+  out="$(borescope_run -c "echo x'foo'\"bar\"")"
+  echo "$out" | MATCH '^xfoobar$'
+
+restore: |
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_down

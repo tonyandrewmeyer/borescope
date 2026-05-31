@@ -1,0 +1,23 @@
+summary: |
+  POSIX XCU §2.2.3 + §2.6.2 — parameter expansion is performed inside
+  double-quotes; `"$VAR"` is replaced by the variable's value.
+systems:
+  - ubuntu-24.04
+
+execute: |
+  # https://pubs.opengroup.org/onlinepubs/9699919799/utilities/V3_chap02.html#tag_18_02_03
+  # §2.2.3: "The <dollar-sign> and <backquote> characters shall retain
+  #  their special meaning introducing the other expansions …"
+  # https://pubs.opengroup.org/onlinepubs/9699919799/utilities/V3_chap02.html#tag_18_06_02
+  # §2.6.2: parameter expansion applies inside double-quotes.
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_up
+
+  # Outer single-quotes pass the string verbatim to borescope, which then
+  # expands $HOME inside its own double-quote processing.
+  out="$(borescope_run -c 'echo "$HOME"')"
+  echo "$out" | MATCH '^/root$'
+
+restore: |
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_down
