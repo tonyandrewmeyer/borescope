@@ -105,7 +105,10 @@ prepare: |
   if ! command -v pebble >/dev/null; then
     arch="$(dpkg --print-architecture)"
     tarball="pebble_${PEBBLE_VERSION}_linux_${arch}.tar.gz"
-    curl -L -o "/tmp/${tarball}" \
+    # --fail so a 4xx/5xx HTML error page never gets piped into tar, and
+    # --retry to ride out transient GitHub release-asset CDN hiccups.
+    curl -fL --retry 5 --retry-delay 2 --retry-all-errors \
+      -o "/tmp/${tarball}" \
       "https://github.com/canonical/pebble/releases/download/${PEBBLE_VERSION}/${tarball}"
     tar -xzf "/tmp/${tarball}" -C /usr/local/bin pebble
     rm "/tmp/${tarball}"
