@@ -28,3 +28,8 @@ htmlcov
 
 # Local docs-preview tooling writes this when viewing the page
 /docs/localStorage.json
+
+# libFuzzer-generated corpus entries (SHA1-named).
+# The hand-written seeds use descriptive names and stay tracked; ignore the
+# auto-discovered ones that accumulate during local fuzz runs.
+tests/fuzz/corpus/[0-9a-f]*
