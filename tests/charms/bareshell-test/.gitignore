@@ -1,0 +1,5 @@
+# Compiled workload binary (built from workload-src/ by `make binary`).
+src/workload-app
+
+# Packed charm artefact (built by `make charm`).
+*.charm

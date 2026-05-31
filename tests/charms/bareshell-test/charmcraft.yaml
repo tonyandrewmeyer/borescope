@@ -1,0 +1,30 @@
+name: bareshell-test
+type: charm
+title: Bare shell test
+summary: A sidecar charm whose workload has no shell, to test cascade.
+description: |
+  Minimal Kubernetes sidecar charm whose workload container uses a distroless
+  (shell-less) image. Used to verify cascade against a workload rock with no
+  shell. The charm pushes a tiny static `workload-app` binary (bundled inside
+  the charm under `src/workload-app`) into the workload container, and runs
+  two Pebble services (`app` + `ticker`) plus an HTTP check, so cascade has
+  services, logs, checks, and files to exercise — all without a shell in the
+  workload.
+
+base: ubuntu@24.04
+platforms:
+  amd64:
+
+containers:
+  workload:
+    resource: workload-image
+
+resources:
+  workload-image:
+    type: oci-image
+    description: A shell-less (distroless) workload image.
+
+parts:
+  charm:
+    plugin: charm
+    source: .
