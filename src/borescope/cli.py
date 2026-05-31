@@ -1,7 +1,14 @@
 # Copyright 2026 Tony Meyer
 # SPDX-License-Identifier: Apache-2.0
 
-"""Command-line entry point for borescope."""
+"""Command-line entry point for borescope.
+
+Deliberately *out* of scope for v1, and worth marking explicitly: borescope has
+no Canonical-spec verbosity ladder (`--quiet` / `--verbose` /
+`--verbosity=debug|trace`). The tool's primary output is the REPL or a single
+command's result, neither of which benefits from a five-level taxonomy, so we
+stay minimal until a concrete need shows up.
+"""
 
 from __future__ import annotations
 
@@ -88,10 +95,21 @@ def _build_target(args: argparse.Namespace):
 
 def main(argv: list[str] | None = None) -> int:
     """Run borescope from the command line and return the exit code."""
+    # Accept Canonical-style `help` / `version` subcommands as aliases for the
+    # Python-default `--help` / `--version`. Awkward to support both, but it
+    # means the tool matches the standard *and* what `argparse` users expect.
+    cli_args = sys.argv[1:] if argv is None else argv
+    if cli_args[:1] == ['help']:
+        build_parser().print_help()
+        return 0
+    if cli_args[:1] == ['version']:
+        print(f'borescope {__version__}')
+        return 0
+
     args = build_parser().parse_args(argv)
     if not args.unit and not args.socket and not args.here:
         print(
-            "borescope: a unit reference is required (for example 'borescope myapp/0'), "
+            "borescope: A unit reference is required (for example 'borescope myapp/0'), "
             'or use --here when running inside a charm container.',
             file=sys.stderr,
         )

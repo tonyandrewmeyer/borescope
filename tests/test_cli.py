@@ -15,7 +15,22 @@ from borescope.errors import DiscoveryError
 
 def test_no_target_is_usage_error(capsys):
     assert cli.main([]) == 2
-    assert 'unit reference is required' in capsys.readouterr().err
+    err = capsys.readouterr().err
+    # Sentence-case content after the `borescope:` prefix, matching the
+    # Canonical CLI missing-argument style.
+    assert 'borescope: A unit reference is required' in err
+
+
+def test_help_subcommand_matches_dashdash_help(capsys):
+    assert cli.main(['help']) == 0
+    out = capsys.readouterr().out
+    assert 'usage: borescope' in out
+    assert '--help' in out
+
+
+def test_version_subcommand_matches_dashdash_version(capsys):
+    assert cli.main(['version']) == 0
+    assert capsys.readouterr().out.strip() == f'borescope {cli.__version__}'
 
 
 def test_rejects_unsafe_container(capsys):

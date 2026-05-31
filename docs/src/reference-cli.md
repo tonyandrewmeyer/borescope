@@ -83,11 +83,22 @@ runs each, and exits with the status of the last. See
 
 | Argument | Description |
 |---|---|
-| `--version` | Print the borescope version and exit. |
-| `-h`, `--help` | Print usage and exit. |
+| `--version`, `version` | Print the borescope version and exit. |
+| `-h`, `--help`, `help` | Print usage and exit. |
+
+`help` and `version` (bare, as the first argument) are Canonical-CLI aliases
+for the Python-conventional `--help` / `--version`. borescope accepts both
+forms.
 
 `--help` and `--version` are fast: borescope defers its heavier imports until
 after argument parsing.
+
+### Verbosity
+
+borescope does **not** implement the Canonical `--quiet` / `--verbose` /
+`--verbosity=debug|trace` ladder. The tool's output is the REPL or a single
+command's result; a five-level taxonomy adds no value, so v1 stays minimal.
+This may change if a concrete need surfaces.
 
 {#exit-codes}
 ## Exit codes
