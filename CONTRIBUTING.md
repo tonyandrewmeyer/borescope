@@ -80,6 +80,54 @@ See `docs/README.md` for frontmatter and authoring conventions.
 - Before adding a command, ask whether `exec <tool>` already covers it. Most things
   do.
 
+## Releases
+
+Releases are tag-driven: pushing a `v*` tag to `main` triggers
+[`publish.yaml`](.github/workflows/publish.yaml), which gates on CI and then
+publishes to PyPI (Trusted Publishing + Sigstore attestations), the snap store
+(`latest/edge`), and creates a GitHub release with the build artefacts.
+
+### Where the version lives
+
+The same version is repeated in four places — bump all of them in one commit:
+
+| File | Format | Example |
+|---|---|---|
+| `pyproject.toml` (`version = "..."`) | [PEP 440](https://peps.python.org/pep-0440/) | `0.1.0b2` |
+| `snap/snapcraft.yaml` (`version: '...'`) | snapcraft `MAJOR.MINOR.PATCH-PRERELEASE` | `0.1.0-b2` |
+| `docs/src/tutorial.md` (`borescope --version` output) | PEP 440 | `borescope 0.1.0b2` |
+| `docs/src/howto-snapshot.md` (`borescope_version` field in the snapshot JSON) | PEP 440 | `0.1.0b2` |
+
+The two snap shapes differ by a single hyphen: snapcraft rejects `0.1.0b2` and
+PyPI rejects `0.1.0-b2`. `borescope --version` reads from the installed package
+metadata, so the docs literals are illustrative — they need manual updating to
+match.
+
+### Steps
+
+1. Create a release branch: `git checkout -b release/<version>`.
+2. Bump the version in all four files above.
+3. Rebuild the docs (the committed HTML must match): `uv run python docs/src/_build.py`.
+4. Verify: `tox -e lint && tox -e unit && uv run python docs/src/_build.py --check`.
+5. Commit, push, open a PR. Per the repo's branch-protection rules a release
+   PR still goes through CI like any other change.
+6. After the PR merges, tag the merge commit on `main` and push the tag — that
+   fires the publish workflow:
+   ```console
+   git checkout main && git pull
+   git tag v<version>             # e.g. v0.1.0b2; matches the PEP 440 form
+   git push origin v<version>
+   ```
+
+### Retrying a failed publish
+
+If the snap (or any other job) fails after PyPI has already accepted the
+artefact, the same workflow can be re-run via `workflow_dispatch` against
+`main` — PyPI's `skip-existing` swallows the duplicate, and only the failing
+job re-runs. The GitHub-release job is skipped on workflow_dispatch (it only
+fires on actual tag pushes), so it has to be created manually if the tag-push
+run failed before reaching it.
+
 ## License
 
 By contributing, you agree your contributions are licensed under Apache-2.0.

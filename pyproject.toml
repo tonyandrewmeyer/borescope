@@ -1,6 +1,6 @@
 [project]
 name = "borescope"
-version = "0.1.0b1"
+version = "0.1.0b2"
 description = "A natural shell for debugging Juju Kubernetes workload containers via Pebble"
 readme = "README.md"
 requires-python = ">=3.11"

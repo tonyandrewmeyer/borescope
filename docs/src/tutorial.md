@@ -68,7 +68,7 @@ From your checkout:
 Check it's on your `PATH`:
 
 <pre><code><span class="prompt">$</span> borescope --version
-borescope 0.1.0b1</code></pre>
+borescope 0.1.0b2</code></pre>
 
 {#connect}
 ## Connect to a unit

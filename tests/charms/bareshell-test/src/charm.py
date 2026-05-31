@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+# Copyright 2026 Tony Meyer
+# SPDX-License-Identifier: Apache-2.0
+
 """Sidecar charm with a shell-less workload, set up so cascade has things to look at.
 
 The workload container is distroless (no shell, no binaries) at start. On
@@ -25,10 +28,10 @@ import ops
 
 logger = logging.getLogger(__name__)
 
-WORKLOAD_CONTAINER = "workload"
-APP_BINARY_PATH = "/usr/local/bin/workload-app"
-CONFIG_PATH = "/etc/workload-app/config.yaml"
-HISTORY_LOG_PATH = "/var/log/workload-app/history.log"
+WORKLOAD_CONTAINER = 'workload'
+APP_BINARY_PATH = '/usr/local/bin/workload-app'
+CONFIG_PATH = '/etc/workload-app/config.yaml'
+HISTORY_LOG_PATH = '/var/log/workload-app/history.log'
 
 
 SAMPLE_CONFIG = """\
@@ -52,30 +55,30 @@ SAMPLE_HISTORY = """\
 """
 
 PEBBLE_LAYER: ops.pebble.LayerDict = {
-    "summary": "bareshell-test workload",
-    "description": "Two services and an HTTP check for cascade to exercise.",
-    "services": {
-        "app": {
-            "override": "replace",
-            "summary": "HTTP demo server",
-            "command": f"{APP_BINARY_PATH} http :8080",
-            "startup": "enabled",
+    'summary': 'bareshell-test workload',
+    'description': 'Two services and an HTTP check for cascade to exercise.',
+    'services': {
+        'app': {
+            'override': 'replace',
+            'summary': 'HTTP demo server',
+            'command': f'{APP_BINARY_PATH} http :8080',
+            'startup': 'enabled',
         },
-        "ticker": {
-            "override": "replace",
-            "summary": "Log a tick every 2 seconds",
-            "command": f"{APP_BINARY_PATH} ticker 2",
-            "startup": "enabled",
+        'ticker': {
+            'override': 'replace',
+            'summary': 'Log a tick every 2 seconds',
+            'command': f'{APP_BINARY_PATH} ticker 2',
+            'startup': 'enabled',
         },
     },
-    "checks": {
-        "app-ready": {
-            "override": "replace",
-            "level": "ready",
-            "period": "5s",
-            "timeout": "2s",
-            "threshold": 3,
-            "http": {"url": "http://localhost:8080/health"},
+    'checks': {
+        'app-ready': {
+            'override': 'replace',
+            'level': 'ready',
+            'period': '5s',
+            'timeout': '2s',
+            'threshold': 3,
+            'http': {'url': 'http://localhost:8080/health'},
         },
     },
 }
@@ -90,15 +93,15 @@ class BareShellCharm(ops.CharmBase):
         container = self.unit.get_container(WORKLOAD_CONTAINER)
         self._push_binary(container)
         self._push_sample_files(container)
-        container.add_layer("workload", PEBBLE_LAYER, combine=True)
+        container.add_layer('workload', PEBBLE_LAYER, combine=True)
         container.replan()
-        self.unit.status = ops.ActiveStatus("workload ready: app + ticker (no shell)")
+        self.unit.status = ops.ActiveStatus('workload ready: app + ticker (no shell)')
 
     def _push_binary(self, container: ops.Container) -> None:
         # Binary is bundled inside the charm at src/workload-app; the charm's
         # `src` dir is the package containing this module.
-        source = Path(__file__).parent / "workload-app"
-        with source.open("rb") as f:
+        source = Path(__file__).parent / 'workload-app'
+        with source.open('rb') as f:
             container.push(
                 APP_BINARY_PATH,
                 f,
@@ -116,5 +119,5 @@ class BareShellCharm(ops.CharmBase):
         )
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     ops.main(BareShellCharm)
