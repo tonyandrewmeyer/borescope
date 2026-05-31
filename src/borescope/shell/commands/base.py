@@ -28,6 +28,15 @@ class Result:
     def fail(cls, error: str, code: int = 1) -> Result:
         return cls(error=error, code=code)
 
+    @classmethod
+    def empty(cls, message: str) -> Result:
+        """An empty-listing outcome: human-readable note on stderr, exit code 0.
+
+        Keeps stdout empty so ``borescope … -c services | wc -l`` reports 0 when
+        nothing is listed, matching the Canonical CLI spec for tabular output.
+        """
+        return cls(error=message, code=0)
+
 
 class ExitShell(Exception):  # noqa: N818 - control-flow signal, not an error
     """Raised by ``exit`` to leave the REPL cleanly."""

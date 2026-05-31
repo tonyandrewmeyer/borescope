@@ -15,7 +15,7 @@ execute: |
 
   # Use braces so the boundary is unambiguous; bare $UNSETb would treat
   # `UNSETb` as the parameter name.
-  out="$(borescope_run -c 'echo a${UNSET}b')"
+  out="$(borescope_run --command 'echo a${UNSET}b')"
   echo "$out" | MATCH '^ab$'
 
 restore: |

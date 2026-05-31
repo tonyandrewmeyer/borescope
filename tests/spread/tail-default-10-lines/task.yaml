@@ -12,7 +12,7 @@ execute: |
   workdir="$(mktemp -d)"
   seq 1 20 > "${workdir}/twenty"
 
-  out="$(borescope_run -c "tail ${workdir}/twenty")"
+  out="$(borescope_run --command "tail ${workdir}/twenty")"
   echo "$out" | MATCH '^11$'
   echo "$out" | MATCH '^20$'
   echo "$out" | NOMATCH '^10$'

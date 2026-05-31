@@ -14,7 +14,7 @@ execute: |
 
   # Borescope tracks HOME and PWD by default; both must appear in `name=value`
   # form.
-  out="$(borescope_run -c 'env')"
+  out="$(borescope_run --command 'env')"
   echo "$out" | MATCH '^HOME=/root$'
   echo "$out" | MATCH '^PWD=/$'
 

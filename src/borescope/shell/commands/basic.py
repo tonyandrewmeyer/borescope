@@ -8,6 +8,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from .. import pathutils
+from ..output import supports_ansi
 from .base import Command, ExitShell, Result
 
 if TYPE_CHECKING:
@@ -83,7 +84,10 @@ class Clear(Command):
     summary = 'Clear the screen'
 
     def run(self, ctx: ShellContext, args: list[str], stdin: str | None = None) -> Result:
-        return Result.ok('\033[H\033[2J')
+        # Only emit the cursor-home + erase-screen sequence when the output
+        # stream will actually render it — piping `clear` into a file should
+        # produce zero bytes, not literal escape codes.
+        return Result.ok('\033[H\033[2J' if supports_ansi() else '')
 
 
 class Help(Command):

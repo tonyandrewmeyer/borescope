@@ -9,7 +9,7 @@ execute: |
   source "${SPREAD_PATH}/tests/spread/lib.sh"
   pebble_up
 
-  out="$(borescope_run -c 'echo ~/logs')"
+  out="$(borescope_run --command 'echo ~/logs')"
   echo "$out" | MATCH '^/root/logs$'
 
 restore: |

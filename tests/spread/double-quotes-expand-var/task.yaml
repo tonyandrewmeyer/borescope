@@ -15,7 +15,7 @@ execute: |
 
   # Outer single-quotes pass the string verbatim to borescope, which then
   # expands $HOME inside its own double-quote processing.
-  out="$(borescope_run -c 'echo "$HOME"')"
+  out="$(borescope_run --command 'echo "$HOME"')"
   echo "$out" | MATCH '^/root$'
 
 restore: |

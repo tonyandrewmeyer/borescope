@@ -15,7 +15,7 @@ execute: |
   printf 'hit-a\n'  > "${workdir}/a"
   printf 'miss\nhit-b\n' > "${workdir}/b"
 
-  out="$(borescope_run -c "grep hit ${workdir}/a ${workdir}/b")"
+  out="$(borescope_run --command "grep hit ${workdir}/a ${workdir}/b")"
   echo "$out" | MATCH "^${workdir}/a:hit-a$"
   echo "$out" | MATCH "^${workdir}/b:hit-b$"
 

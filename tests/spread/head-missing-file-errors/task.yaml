@@ -9,7 +9,7 @@ execute: |
   pebble_up
 
   set +e
-  out="$(borescope_run -c 'head /no/such/file' 2>&1)"
+  out="$(borescope_run --command 'head /no/such/file' 2>&1)"
   rc=$?
   set -e
 

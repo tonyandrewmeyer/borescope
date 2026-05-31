@@ -16,7 +16,7 @@ execute: |
   d2="$(mktemp -d)"
   touch "${d1}/in-one" "${d2}/in-two"
 
-  out="$(borescope_run -c "ls ${d1} ${d2}")"
+  out="$(borescope_run --command "ls ${d1} ${d2}")"
   # Each operand gets a header line that ends with a colon.
   echo "$out" | MATCH "^${d1}:$"
   echo "$out" | MATCH "^${d2}:$"

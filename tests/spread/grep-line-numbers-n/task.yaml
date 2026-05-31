@@ -13,7 +13,7 @@ execute: |
   workdir="$(mktemp -d)"
   printf 'alpha\nbeta\nbb\n' > "${workdir}/f"
 
-  out="$(borescope_run -c "grep -n b ${workdir}/f")"
+  out="$(borescope_run --command "grep -n b ${workdir}/f")"
   echo "$out" | MATCH '^2:beta$'
   echo "$out" | MATCH '^3:bb$'
 

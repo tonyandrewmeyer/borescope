@@ -14,7 +14,7 @@ execute: |
   pebble_up
 
   # Current behaviour: 0 bytes. POSIX would require 1.
-  raw="$(borescope_run -c "echo ''" | wc -c)"
+  raw="$(borescope_run --command "echo ''" | wc -c)"
   test "$raw" -eq 0
 
 restore: |

@@ -13,7 +13,7 @@ execute: |
   workdir="$(mktemp -d)"
   printf 'payload\n' > "${workdir}/src"
 
-  borescope_run -c "cp ${workdir}/src ${workdir}/dst"
+  borescope_run --command "cp ${workdir}/src ${workdir}/dst"
   cat "${workdir}/dst" | MATCH '^payload$'
 
   rm -rf "${workdir}"

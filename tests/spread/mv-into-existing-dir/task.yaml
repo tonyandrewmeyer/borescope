@@ -16,7 +16,7 @@ execute: |
   printf 'payload\n' > "${workdir}/file"
   mkdir "${workdir}/dir"
 
-  borescope_run -c "mv ${workdir}/file ${workdir}/dir"
+  borescope_run --command "mv ${workdir}/file ${workdir}/dir"
   test ! -e "${workdir}/file"
   cat "${workdir}/dir/file" | MATCH '^payload$'
 

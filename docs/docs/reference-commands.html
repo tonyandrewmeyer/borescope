@@ -230,7 +230,7 @@ container. See <a href="howto-files.html">Copy files in and out</a>.</p>
 <tbody>
 <tr>
 <td><code>services</code></td>
-<td><code>services [name&hellip;]</code></td>
+<td><code>services [--format=json|yaml] [--no-headers] [name&hellip;]</code></td>
 <td>List services and their status.</td>
 </tr>
 <tr>
@@ -265,7 +265,7 @@ container. See <a href="howto-files.html">Copy files in and out</a>.</p>
 </tr>
 <tr>
 <td><code>checks</code></td>
-<td><code>checks [name&hellip;]</code></td>
+<td><code>checks [--format=json|yaml] [--no-headers] [name&hellip;]</code></td>
 <td>List health checks and their status.</td>
 </tr>
 <tr>
@@ -275,7 +275,7 @@ container. See <a href="howto-files.html">Copy files in and out</a>.</p>
 </tr>
 <tr>
 <td><code>notices</code></td>
-<td><code>notices</code></td>
+<td><code>notices [--format=json|yaml] [--no-headers]</code></td>
 <td>List recent notices.</td>
 </tr>
 <tr>
@@ -290,18 +290,32 @@ container. See <a href="howto-files.html">Copy files in and out</a>.</p>
 </tr>
 <tr>
 <td><code>changes</code></td>
-<td><code>changes</code></td>
+<td><code>changes [--format=json|yaml] [--no-headers]</code></td>
 <td>List recent changes.</td>
 </tr>
 <tr>
 <td><code>tasks</code></td>
-<td><code>tasks [change-id]</code></td>
+<td><code>tasks [--format=json|yaml] [--no-headers] [change-id]</code></td>
 <td>Show tasks for a change (defaults to the most recent).</td>
 </tr>
 </tbody>
 </table>
 <p><code>start</code>, <code>stop</code>, <code>restart</code>, and <code>replan</code> change the running container. <code>logs --follow</code> and <code>tail -f</code> stream until you press <kbd>Ctrl-C</kbd> and can't be
 used inside a pipe.</p>
+<h3>Tabular output</h3>
+<p>The list commands above (<code>services</code>, <code>checks</code>, <code>notices</code>, <code>changes</code>, <code>tasks</code>)
+follow the same convention:</p>
+<ul>
+<li>Headers are UPPER CASE and bold; columns are separated by two spaces. Pass
+<code>--no-headers</code> to suppress the header line &mdash; handy for piping into <code>awk</code>,
+<code>cut</code>, or <code>sort</code>.</li>
+<li>When the listing is empty, a short note goes to <strong>stderr</strong> (<code>No services configured.</code>, <code>No checks configured.</code>, &hellip;) and the exit code stays <code>0</code>.
+Stdout is empty, so <code>borescope myapp/0 --command services | wc -l</code> reports
+<code>0</code> when there are no services.</li>
+<li><code>--format=json</code> and <code>--format=yaml</code> emit a machine-readable form instead of
+the table. Empty lists render as <code>[]</code> (JSON) or <code>items: []</code> (YAML), again
+with exit code <code>0</code> and no stderr noise.</li>
+</ul>
 <h2 id="exec">exec</h2>
 <pre><code>exec &lt;command&gt; [args&hellip;]
 </code></pre>

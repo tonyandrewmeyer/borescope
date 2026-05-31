@@ -11,7 +11,7 @@ execute: |
   source "${SPREAD_PATH}/tests/spread/lib.sh"
   pebble_up
 
-  out="$(borescope_run -c 'echo "hello world"')"
+  out="$(borescope_run --command 'echo "hello world"')"
   echo "$out" | MATCH '^hello world$'
 
 restore: |

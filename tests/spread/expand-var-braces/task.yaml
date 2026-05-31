@@ -11,7 +11,7 @@ execute: |
   source "${SPREAD_PATH}/tests/spread/lib.sh"
   pebble_up
 
-  out="$(borescope_run -c 'echo ${HOME}/sub')"
+  out="$(borescope_run --command 'echo ${HOME}/sub')"
   echo "$out" | MATCH '^/root/sub$'
 
 restore: |

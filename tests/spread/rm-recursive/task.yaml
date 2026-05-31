@@ -13,7 +13,7 @@ execute: |
   mkdir -p "${workdir}/tree/sub"
   touch "${workdir}/tree/a" "${workdir}/tree/sub/b"
 
-  borescope_run -c "rm -r ${workdir}/tree"
+  borescope_run --command "rm -r ${workdir}/tree"
   test ! -e "${workdir}/tree"
 
   rm -rf "${workdir}"

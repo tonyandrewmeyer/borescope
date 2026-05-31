@@ -40,7 +40,7 @@ These select *which* workload container borescope talks to.
 |---|---|
 | `UNIT` | Positional. Unit reference (`app/n`), for example `myapp/0`. Required unless `--here`/`--socket` is given. |
 | `--container NAME` | Workload container name. Defaults to the first container declared in the charm's metadata. |
-| `-m`, `--model MODEL` | Juju model. Defaults to the current model. Passed through to `juju`. |
+| `-m`, `--model MODEL` | Juju model. Defaults to the current model. Passed through to `juju`. (Short form retained for `juju`-CLI muscle memory.) |
 | `--juju PATH` | The `juju` binary to invoke. Default: `juju` (found on `PATH`). |
 
 {#modes}
@@ -63,7 +63,7 @@ These change what borescope *does* once connected.
 
 | Argument | Description |
 |---|---|
-| `-c`, `--command CMD` | Run a single command `CMD` and exit, without entering the REPL. |
+| `--command CMD` | Run a single command `CMD` and exit, without entering the REPL. |
 | `--snapshot` | Dump the container's state as JSON and exit. See [Capture a state snapshot](howto-snapshot.html). |
 
 With neither flag set: if stdin is a terminal, borescope opens the interactive

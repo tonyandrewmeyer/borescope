@@ -14,7 +14,7 @@ execute: |
 
   workdir="$(mktemp -d)"
 
-  borescope_run -c "touch ${workdir}/new"
+  borescope_run --command "touch ${workdir}/new"
   test -f "${workdir}/new"
   test ! -s "${workdir}/new"  # empty
 

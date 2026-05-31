@@ -12,7 +12,7 @@ execute: |
   workdir="$(mktemp -d)"
   printf 'x\nxy\nz\nxxxxx\n' > "${workdir}/f"
 
-  out="$(borescope_run -c "grep -c x ${workdir}/f")"
+  out="$(borescope_run --command "grep -c x ${workdir}/f")"
   echo "$out" | MATCH '^3$'
 
   rm -rf "${workdir}"

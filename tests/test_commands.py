@@ -236,3 +236,16 @@ def test_service_action_past_tense_strings():
     assert Start.past == 'Started'
     assert Stop.past == 'Stopped'
     assert Restart.past == 'Restarted'
+
+
+def test_clear_emits_nothing_when_not_a_tty(registry, ctx):
+    # pytest captures stdout via a non-TTY pipe, so `clear` should produce
+    # zero output rather than literal escape codes.
+    result = run(registry, ctx, 'clear')
+    assert result.output == ''
+    assert result.code == 0
+
+
+def test_clear_emits_nothing_when_no_color_set(registry, ctx, monkeypatch):
+    monkeypatch.setenv('NO_COLOR', '1')
+    assert run(registry, ctx, 'clear').output == ''

@@ -14,7 +14,7 @@ execute: |
   workdir="$(mktemp -d)"
   printf 'alpha\nbeta\ngamma\n' > "${workdir}/lines"
 
-  out="$(borescope_run -c "cat ${workdir}/lines | grep beta")"
+  out="$(borescope_run --command "cat ${workdir}/lines | grep beta")"
   echo "$out" | MATCH '^beta$'
 
   rm -rf "${workdir}"

@@ -104,6 +104,6 @@ def test_entrypoint_snapshot_against_real_pebble(pebble_socket):
 
 
 def test_entrypoint_oneshot_command_against_real_pebble(pebble_socket):
-    result = _run_borescope('--socket', pebble_socket, '-c', 'services')
+    result = _run_borescope('--socket', pebble_socket, '--command', 'services')
     assert result.returncode == 0, result.stderr
     assert 'hello' in result.stdout

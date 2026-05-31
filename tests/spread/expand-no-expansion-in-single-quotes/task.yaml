@@ -12,7 +12,7 @@ execute: |
   pebble_up
 
   # Single-quoted `$HOME` must reach the command verbatim, not as /root.
-  out="$(borescope_run -c "echo '\$HOME'")"
+  out="$(borescope_run --command "echo '\$HOME'")"
   echo "$out" | MATCH '^\$HOME$'
 
 restore: |

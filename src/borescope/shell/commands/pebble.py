@@ -6,15 +6,24 @@
 These are the operational value-add over a plain shell: ``services``, ``logs``,
 ``plan``, ``checks``, ``notices`` and friends, as thin wrappers over the transport
 (an ``ops.pebble.Client``-shaped object).
+
+The list-style commands (``services``, ``checks``, ``notices``, ``changes``,
+``tasks``) follow the Canonical CLI tabular-output spec: UPPER CASE bold headers
+(bold only when stdout is a TTY), two-space column delimiter, an empty-state
+line that goes to stderr with exit code 0, and ``--no-headers`` /
+``--format=json|yaml`` for machine-readable use.
 """
 
 from __future__ import annotations
 
+import json
 import sys
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
+import yaml
 from ops import pebble
 
+from ..output import bold
 from ._args import parse_args
 from .base import Command, Result
 
@@ -22,20 +31,54 @@ if TYPE_CHECKING:
     from ..context import ShellContext
 
 
-def _table(headers: list[str], rows: list[list[str]]) -> str:
-    widths = [len(h) for h in headers]
+VALUED_LIST_FLAGS = ('format',)
+
+
+def _table(headers: list[str], rows: list[list[Any]], *, show_headers: bool = True) -> str:
+    headers_up = [h.upper() for h in headers]
+    widths = [len(h) for h in headers_up]
     for row in rows:
         for i, cell in enumerate(row):
             widths[i] = max(widths[i], len(str(cell)))
 
-    def fmt(row: list[str]) -> str:
+    def fmt(row: list[Any]) -> str:
         return '  '.join(str(cell).ljust(widths[i]) for i, cell in enumerate(row))
 
-    return '\n'.join([fmt(headers), *(fmt(r) for r in rows)])
+    lines: list[str] = []
+    if show_headers:
+        lines.append(bold(fmt(headers_up)))
+    lines.extend(fmt(r) for r in rows)
+    return '\n'.join(lines)
 
 
 def _enum_value(value: object) -> str:
     return getattr(value, 'value', str(value))
+
+
+def _structured(fmt: str, items: list[Any]) -> Result | None:
+    """Render *items* as JSON/YAML if *fmt* selects a machine-readable mode.
+
+    Returns ``None`` to signal "fall back to the table"; raises nothing on the
+    empty case — JSON renders ``[]`` and YAML renders ``items: []``, both with
+    exit code 0 and no stderr noise (the spec for empty machine-readable output).
+    """
+    if fmt == 'json':
+        return Result.ok(json.dumps(items, indent=2, default=str))
+    if fmt == 'yaml':
+        body = yaml.safe_dump({'items': items}, sort_keys=False).rstrip('\n')
+        return Result.ok(body)
+    if fmt:
+        return Result.fail(f"format: unknown value '{fmt}' (expected: json, yaml)")
+    return None
+
+
+def _listing(
+    args: list[str],
+    *,
+    extra_valued: tuple[str, ...] = (),
+) -> tuple[set[str], dict[str, str], list[str]]:
+    """``parse_args`` configured for a list-style command (``--format``, ``--no-headers``)."""
+    return parse_args(args, valued=(*VALUED_LIST_FLAGS, *extra_valued))
 
 
 # --------------------------------------------------------------------------- #
@@ -44,15 +87,24 @@ def _enum_value(value: object) -> str:
 class Services(Command):
     name = 'services'
     summary = 'List services and their status'
-    usage = 'services [name...]'
+    usage = 'services [--format=json|yaml] [--no-headers] [name...]'
 
     def run(self, ctx: ShellContext, args: list[str], stdin: str | None = None) -> Result:
-        _, _, names = parse_args(args)
+        flags, values, names = _listing(args)
         infos = ctx.transport.get_services(names or None)
+        items = [
+            {'name': i.name, 'startup': _enum_value(i.startup), 'current': _enum_value(i.current)}
+            for i in infos
+        ]
+        structured = _structured(values.get('format', ''), items)
+        if structured is not None:
+            return structured
         if not infos:
-            return Result.ok('(no services)')
-        rows = [[i.name, _enum_value(i.startup), _enum_value(i.current)] for i in infos]
-        return Result.ok(_table(['Service', 'Startup', 'Current'], rows))
+            return Result.empty('No services configured.')
+        rows = [[i['name'], i['startup'], i['current']] for i in items]
+        return Result.ok(
+            _table(['Service', 'Startup', 'Current'], rows, show_headers='no-headers' not in flags)
+        )
 
 
 class _ServiceAction(Command):
@@ -100,7 +152,7 @@ class Replan(Command):
 
     def run(self, ctx: ShellContext, args: list[str], stdin: str | None = None) -> Result:
         ctx.transport.replan_services()
-        return Result.ok('Replanned.')
+        return Result.ok('Replanned')
 
 
 # --------------------------------------------------------------------------- #
@@ -169,23 +221,37 @@ class Logs(Command):
 class Checks(Command):
     name = 'checks'
     summary = 'List health checks and their status'
-    usage = 'checks [name...]'
+    usage = 'checks [--format=json|yaml] [--no-headers] [name...]'
 
     def run(self, ctx: ShellContext, args: list[str], stdin: str | None = None) -> Result:
-        _, _, names = parse_args(args)
+        flags, values, names = _listing(args)
         infos = ctx.transport.get_checks(names=names or None)
-        if not infos:
-            return Result.ok('(no checks)')
-        rows = [
-            [
-                i.name,
-                _enum_value(i.level),
-                _enum_value(i.status),
-                f'{i.failures}/{i.threshold}',
-            ]
+        items = [
+            {
+                'name': i.name,
+                'level': _enum_value(i.level),
+                'status': _enum_value(i.status),
+                'failures': i.failures,
+                'threshold': i.threshold,
+            }
             for i in infos
         ]
-        return Result.ok(_table(['Check', 'Level', 'Status', 'Failures'], rows))
+        structured = _structured(values.get('format', ''), items)
+        if structured is not None:
+            return structured
+        if not infos:
+            return Result.empty('No checks configured.')
+        rows = [
+            [i['name'], i['level'], i['status'], f'{i["failures"]}/{i["threshold"]}']
+            for i in items
+        ]
+        return Result.ok(
+            _table(
+                ['Check', 'Level', 'Status', 'Failures'],
+                rows,
+                show_headers='no-headers' not in flags,
+            )
+        )
 
 
 class Health(Command):
@@ -208,22 +274,37 @@ class Health(Command):
 class Notices(Command):
     name = 'notices'
     summary = 'List recent notices'
+    usage = 'notices [--format=json|yaml] [--no-headers]'
 
     def run(self, ctx: ShellContext, args: list[str], stdin: str | None = None) -> Result:
+        flags, values, _ = _listing(args)
         notices = ctx.transport.get_notices()
-        if not notices:
-            return Result.ok('(no notices)')
-        rows = [
-            [
-                n.id,
-                _enum_value(n.type),
-                n.key,
-                str(n.occurrences),
-                n.last_repeated.isoformat() if n.last_repeated else '',
-            ]
+        items = [
+            {
+                'id': n.id,
+                'type': _enum_value(n.type),
+                'key': n.key,
+                'occurrences': n.occurrences,
+                'last_repeated': n.last_repeated.isoformat() if n.last_repeated else None,
+            }
             for n in notices
         ]
-        return Result.ok(_table(['ID', 'Type', 'Key', 'Count', 'Last'], rows))
+        structured = _structured(values.get('format', ''), items)
+        if structured is not None:
+            return structured
+        if not notices:
+            return Result.empty('No notices recorded.')
+        rows = [
+            [i['id'], i['type'], i['key'], str(i['occurrences']), i['last_repeated'] or '']
+            for i in items
+        ]
+        return Result.ok(
+            _table(
+                ['ID', 'Type', 'Key', 'Count', 'Last'],
+                rows,
+                show_headers='no-headers' not in flags,
+            )
+        )
 
 
 class Notice(Command):
@@ -276,41 +357,87 @@ def _all_changes(transport) -> list:
 class Changes(Command):
     name = 'changes'
     summary = 'List recent changes'
+    usage = 'changes [--format=json|yaml] [--no-headers]'
 
     def run(self, ctx: ShellContext, args: list[str], stdin: str | None = None) -> Result:
+        flags, values, _ = _listing(args)
         changes = _all_changes(ctx.transport)
-        if not changes:
-            return Result.ok('(no changes)')
-        rows = [
-            [
-                c.id,
-                _enum_value(c.status),
-                'ready' if c.ready else 'doing',
-                c.summary,
-            ]
+        items = [
+            {
+                'id': c.id,
+                'status': _enum_value(c.status),
+                'state': 'ready' if c.ready else 'doing',
+                'summary': c.summary,
+            }
             for c in changes
         ]
-        return Result.ok(_table(['ID', 'Status', 'State', 'Summary'], rows))
+        structured = _structured(values.get('format', ''), items)
+        if structured is not None:
+            return structured
+        if not changes:
+            return Result.empty('No changes recorded.')
+        rows = [[i['id'], i['status'], i['state'], i['summary']] for i in items]
+        return Result.ok(
+            _table(
+                ['ID', 'Status', 'State', 'Summary'],
+                rows,
+                show_headers='no-headers' not in flags,
+            )
+        )
 
 
 class Tasks(Command):
     name = 'tasks'
     summary = 'Show tasks for a change (defaults to the most recent)'
-    usage = 'tasks [change-id]'
+    usage = 'tasks [--format=json|yaml] [--no-headers] [change-id]'
 
     def run(self, ctx: ShellContext, args: list[str], stdin: str | None = None) -> Result:
-        if args:
-            change = ctx.transport.get_change(pebble.ChangeID(args[0]))
+        flags, values, positionals = _listing(args)
+        fmt = values.get('format', '')
+        if positionals:
+            change = ctx.transport.get_change(pebble.ChangeID(positionals[0]))
         else:
             changes = _all_changes(ctx.transport)
             if not changes:
-                return Result.ok('(no changes)')
+                if fmt == 'json':
+                    return Result.ok(json.dumps({'change': None, 'tasks': []}, indent=2))
+                if fmt == 'yaml':
+                    return Result.ok('change: null\ntasks: []')
+                return Result.empty('No changes recorded.')
             change = changes[-1]
-        rows = [[_enum_value(t.status), t.summary] for t in getattr(change, 'tasks', [])]
-        if not rows:
-            return Result.ok(f'Change {change.id}: (no tasks)')
+        tasks = getattr(change, 'tasks', [])
+        items = [{'status': _enum_value(t.status), 'summary': t.summary} for t in tasks]
+        if fmt == 'json':
+            return Result.ok(
+                json.dumps(
+                    {
+                        'change': {'id': change.id, 'summary': change.summary},
+                        'tasks': items,
+                    },
+                    indent=2,
+                    default=str,
+                )
+            )
+        if fmt == 'yaml':
+            body = yaml.safe_dump(
+                {
+                    'change': {'id': change.id, 'summary': change.summary},
+                    'tasks': items,
+                },
+                sort_keys=False,
+            ).rstrip('\n')
+            return Result.ok(body)
+        if fmt:
+            return Result.fail(f"format: unknown value '{fmt}' (expected: json, yaml)")
+        if not tasks:
+            return Result.empty(f'Change {change.id}: no tasks.')
         header = f'Change {change.id}: {change.summary}'
-        return Result.ok(header + '\n' + _table(['Status', 'Summary'], rows))
+        body = _table(
+            ['Status', 'Summary'],
+            [[i['status'], i['summary']] for i in items],
+            show_headers='no-headers' not in flags,
+        )
+        return Result.ok(header + '\n' + body)
 
 
 # --------------------------------------------------------------------------- #

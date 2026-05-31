@@ -25,7 +25,7 @@ def test_services_lists(registry, pebble_ctx):
     result = run(registry, pebble_ctx, 'services')
     assert 'web' in result.output
     assert 'worker' in result.output
-    assert 'Service' in result.output  # header
+    assert 'SERVICE' in result.output  # UPPER CASE header per Canonical CLI spec
 
 
 def test_services_filtered(registry, pebble_ctx):
@@ -34,9 +34,48 @@ def test_services_filtered(registry, pebble_ctx):
     assert 'worker' not in result.output
 
 
+def test_services_no_headers(registry, pebble_ctx):
+    result = run(registry, pebble_ctx, 'services', '--no-headers')
+    assert 'SERVICE' not in result.output
+    assert 'web' in result.output
+
+
 def test_services_empty(registry, pebble_ctx, pebble_transport):
     pebble_transport._services = []
-    assert run(registry, pebble_ctx, 'services').output == '(no services)'
+    result = run(registry, pebble_ctx, 'services')
+    # Empty-state line goes to stderr, exit code stays 0, stdout is bare.
+    assert result.output == ''
+    assert result.error == 'No services configured.'
+    assert result.code == 0
+
+
+def test_services_format_json(registry, pebble_ctx):
+    import json
+
+    result = run(registry, pebble_ctx, 'services', '--format=json')
+    items = json.loads(result.output)
+    assert {'name': 'web', 'startup': 'enabled', 'current': 'active'} in items
+
+
+def test_services_format_yaml(registry, pebble_ctx):
+    result = run(registry, pebble_ctx, 'services', '--format', 'yaml')
+    assert 'items:' in result.output
+    assert 'name: web' in result.output
+
+
+def test_services_format_json_empty(registry, pebble_ctx, pebble_transport):
+    import json
+
+    pebble_transport._services = []
+    result = run(registry, pebble_ctx, 'services', '--format=json')
+    assert json.loads(result.output) == []
+    assert result.error == ''
+
+
+def test_services_format_unknown(registry, pebble_ctx):
+    result = run(registry, pebble_ctx, 'services', '--format=xml')
+    assert result.code == 1
+    assert 'unknown value' in result.error
 
 
 @pytest.mark.parametrize(
@@ -60,7 +99,7 @@ def test_service_action_requires_name(registry, pebble_ctx):
 
 
 def test_replan(registry, pebble_ctx, pebble_transport):
-    assert run(registry, pebble_ctx, 'replan').output == 'Replanned.'
+    assert run(registry, pebble_ctx, 'replan').output == 'Replanned'
     assert ('replan', ()) in pebble_transport.calls
 
 
@@ -79,7 +118,10 @@ def test_checks_lists(registry, pebble_ctx):
 
 def test_checks_empty(registry, pebble_ctx, pebble_transport):
     pebble_transport._checks = []
-    assert run(registry, pebble_ctx, 'checks').output == '(no checks)'
+    result = run(registry, pebble_ctx, 'checks')
+    assert result.output == ''
+    assert result.error == 'No checks configured.'
+    assert result.code == 0
 
 
 def test_health_healthy(registry, pebble_ctx):
@@ -109,7 +151,10 @@ def test_notices_lists(registry, pebble_ctx):
 
 def test_notices_empty(registry, pebble_ctx, pebble_transport):
     pebble_transport.get_notices = lambda **kw: []
-    assert run(registry, pebble_ctx, 'notices').output == '(no notices)'
+    result = run(registry, pebble_ctx, 'notices')
+    assert result.output == ''
+    assert result.error == 'No notices recorded.'
+    assert result.code == 0
 
 
 def test_notice_detail(registry, pebble_ctx):
@@ -151,19 +196,26 @@ def test_tasks_by_id(registry, pebble_ctx):
 
 def test_changes_empty(registry, pebble_ctx, pebble_transport):
     pebble_transport.get_changes = lambda *a, **k: []
-    assert run(registry, pebble_ctx, 'changes').output == '(no changes)'
+    result = run(registry, pebble_ctx, 'changes')
+    assert result.output == ''
+    assert result.error == 'No changes recorded.'
+    assert result.code == 0
 
 
 def test_tasks_no_changes(registry, pebble_ctx, pebble_transport):
     pebble_transport.get_changes = lambda *a, **k: []
-    assert run(registry, pebble_ctx, 'tasks').output == '(no changes)'
+    result = run(registry, pebble_ctx, 'tasks')
+    assert result.output == ''
+    assert result.error == 'No changes recorded.'
 
 
 def test_tasks_change_without_tasks(registry, pebble_ctx, pebble_transport):
     from types import SimpleNamespace
 
     pebble_transport.get_change = lambda cid: SimpleNamespace(id=str(cid), summary='x', tasks=[])
-    assert run(registry, pebble_ctx, 'tasks', '5').output == 'Change 5: (no tasks)'
+    result = run(registry, pebble_ctx, 'tasks', '5')
+    assert result.output == ''
+    assert result.error == 'Change 5: no tasks.'
 
 
 def test_notice_without_data(registry, pebble_ctx, pebble_transport):

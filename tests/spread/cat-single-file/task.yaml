@@ -13,7 +13,7 @@ execute: |
   workdir="$(mktemp -d)"
   printf 'one\ntwo\nthree\n' > "${workdir}/f"
 
-  out="$(borescope_run -c "cat ${workdir}/f")"
+  out="$(borescope_run --command "cat ${workdir}/f")"
   echo "$out" | MATCH '^one$'
   echo "$out" | MATCH '^two$'
   echo "$out" | MATCH '^three$'

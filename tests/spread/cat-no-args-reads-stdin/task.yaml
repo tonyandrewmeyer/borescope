@@ -10,7 +10,7 @@ execute: |
   pebble_up
 
   # Use the v1 pipe so the cat stage receives a non-empty stdin.
-  out="$(borescope_run -c 'echo passthrough | cat')"
+  out="$(borescope_run --command 'echo passthrough | cat')"
   echo "$out" | MATCH '^passthrough$'
 
 restore: |

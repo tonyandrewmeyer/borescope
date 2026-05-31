@@ -14,7 +14,7 @@ execute: |
   workdir="$(mktemp -d)"
   touch "${workdir}/alpha" "${workdir}/beta" "${workdir}/.hidden"
 
-  out="$(borescope_run -c "ls ${workdir}")"
+  out="$(borescope_run --command "ls ${workdir}")"
   echo "$out" | MATCH '^alpha$'
   echo "$out" | MATCH '^beta$'
   echo "$out" | NOMATCH '^\.hidden$'

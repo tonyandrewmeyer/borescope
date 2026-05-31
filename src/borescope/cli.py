@@ -19,9 +19,12 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument('unit', nargs='?', help="unit reference, for example 'myapp/0'")
     parser.add_argument('--container', help='workload container name (default: first declared)')
+    # Canonical CLI guidance is "don't offer both short and long" for the same
+    # flag — `-m/--model` deliberately diverges to match `juju`'s own convention
+    # (`juju ssh -m <model> …`), which is what users muscle-memory their way to
+    # when reaching for borescope.
     parser.add_argument('-m', '--model', help='Juju model (default: current)')
     parser.add_argument(
-        '-c',
         '--command',
         help='run a single command and exit (no REPL)',
     )

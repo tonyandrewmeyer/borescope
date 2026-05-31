@@ -14,7 +14,7 @@ execute: |
   workdir="$(mktemp -d)"
   seq 1 5 > "${workdir}/five"
 
-  out="$(borescope_run -c "tail -n 2 ${workdir}/five")"
+  out="$(borescope_run --command "tail -n 2 ${workdir}/five")"
   echo "$out" | MATCH '^4$'
   echo "$out" | MATCH '^5$'
   echo "$out" | NOMATCH '^3$'

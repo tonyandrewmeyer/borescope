@@ -31,7 +31,15 @@ def parse_args(
             break
         if arg.startswith('--'):
             name = arg[2:]
-            if name in valued:
+            # `--name=value` form: split eagerly so valued flags don't have to
+            # be followed by a separate token.
+            if '=' in name:
+                name, _, eqval = name.partition('=')
+                if name in valued:
+                    values[name] = eqval
+                else:
+                    flags.add(arg[2:])
+            elif name in valued:
                 i += 1
                 values[name] = args[i] if i < len(args) else ''
             else:

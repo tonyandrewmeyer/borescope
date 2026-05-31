@@ -13,7 +13,7 @@ execute: |
   workdir="$(mktemp -d)"
   mkdir "${workdir}/already"
 
-  borescope_run -c "mkdir -p ${workdir}/already"
+  borescope_run --command "mkdir -p ${workdir}/already"
   # Still exists, still a directory; no error.
   test -d "${workdir}/already"
 

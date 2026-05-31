@@ -13,7 +13,7 @@ execute: |
   workdir="$(mktemp -d)"
   touch "${workdir}/doomed"
 
-  borescope_run -c "rm ${workdir}/doomed"
+  borescope_run --command "rm ${workdir}/doomed"
   test ! -e "${workdir}/doomed"
 
   rm -rf "${workdir}"

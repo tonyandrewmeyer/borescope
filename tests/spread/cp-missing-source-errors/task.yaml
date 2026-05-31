@@ -13,7 +13,7 @@ execute: |
   workdir="$(mktemp -d)"
 
   set +e
-  out="$(borescope_run -c "cp /no/such/file ${workdir}/dst" 2>&1)"
+  out="$(borescope_run --command "cp /no/such/file ${workdir}/dst" 2>&1)"
   rc=$?
   set -e
 
