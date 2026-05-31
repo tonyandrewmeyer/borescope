@@ -21,11 +21,19 @@ Two runners share that pattern:
   -u <unit> --``. For sites where interactive ssh is disabled but ``juju exec`` is
   allowed. Request/response, so streaming commands (``logs -f``, ``exec`` with stdin)
   may not behave the same.
+
+Both runners also implement shimmer's ``FileTransferRunner`` protocol so that
+``push`` / ``pull`` (and the commands built on them: ``cat``, ``head``, ``tail``,
+``grep <file>``) stage temp files via ``juju scp`` in the charm container,
+rather than on the local filesystem (where the remote ``pebble`` can't reach
+them).
 """
 
 from __future__ import annotations
 
+import base64
 import subprocess
+import uuid
 from collections.abc import Mapping
 from typing import IO, Any
 
@@ -111,6 +119,77 @@ class _JujuRunnerBase:
             stdout=stdout,
             stderr=stderr,
             text=text,
+        )
+
+    # ------------------------------------------------------------------
+    # shimmer ``FileTransferRunner`` protocol — stage temp files for
+    # ``PebbleCliClient.push`` and ``pull`` on the charm container's
+    # filesystem (where the remote ``pebble`` can actually reach them)
+    # rather than on the local workstation.
+    #
+    # Implementation note: ``juju scp`` would be the obvious choice but it
+    # lands files as the ``ubuntu`` user, and Pebble (running as root) refuses
+    # to ``open(2)`` a file owned by a different user — even with 0666
+    # permission bits — for both ``pull`` (write) and ``push`` (read). So we
+    # instead pipe base64-encoded bytes through the runner's own juju channel,
+    # which executes as root: that lands the file as root, dodges Pebble's
+    # owner check, and crucially works the same under ``juju ssh`` and
+    # ``juju exec`` (no second auth bit required, no scp transport).
+    # base64 also avoids any line-ending or charset mangling on binary
+    # content over the (text-mode) ssh channel.
+
+    def _juju_argv_no_pebble(self, *args: str) -> list[str]:
+        """Build a juju argv for a non-pebble command in the charm container."""
+        return [*self._prefix(), *args]
+
+    def upload_temp(self, content: bytes) -> str:
+        # /tmp here is the REMOTE charm container's /tmp, not the workstation's
+        # — single-tenant, short-lived k8s pod, so the usual /tmp predictability
+        # concerns don't apply; uuid4 suffix is just belt-and-braces.
+        remote_path = f'/tmp/cascade-upload-{uuid.uuid4().hex}'  # noqa: S108
+        encoded = base64.b64encode(content).decode('ascii')
+        # `sh -c 'echo … | base64 -d > <path>'`: the runner's _prefix() handles
+        # the juju framing; the inner `sh -c` makes the redirect work under
+        # both runners (juju exec doesn't wrap argv in a shell the way k8s
+        # juju ssh does).
+        inner = f'echo {encoded} | base64 -d > {remote_path}'
+        result = subprocess.run(
+            self._juju_argv_no_pebble('sh', '-c', inner),
+            stdin=subprocess.DEVNULL,
+            capture_output=True,
+            check=False,
+        )
+        if result.returncode != 0:
+            stderr = result.stderr.decode('utf-8', errors='replace')
+            raise RuntimeError(
+                f'upload_temp: staging {remote_path} failed: {stderr.strip()}'
+            )
+        return remote_path
+
+    def download_temp(self, path: str) -> bytes:
+        # base64 the file on the remote side so binary content survives the
+        # text-mode juju channel intact. Output goes to stdout, which works
+        # the same under both ssh and exec.
+        result = subprocess.run(
+            self._juju_argv_no_pebble('base64', path),
+            stdin=subprocess.DEVNULL,
+            capture_output=True,
+            check=False,
+        )
+        if result.returncode != 0:
+            stderr = result.stderr.decode('utf-8', errors='replace')
+            raise RuntimeError(
+                f'download_temp: reading {path} failed: {stderr.strip()}'
+            )
+        return base64.b64decode(result.stdout)
+
+    def cleanup_temp(self, path: str) -> None:
+        # Best-effort: a stale /tmp/cascade-upload-<hex> isn't worth raising on.
+        subprocess.run(
+            self._juju_argv_no_pebble('rm', '-f', path),
+            stdin=subprocess.DEVNULL,
+            capture_output=True,
+            check=False,
         )
 
 

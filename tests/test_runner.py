@@ -10,6 +10,14 @@ a shell and mounts the workload's socket), not via ``juju ssh --container=<workl
 
 from __future__ import annotations
 
+import base64
+import subprocess
+from typing import Any
+from unittest.mock import patch
+
+import pytest
+from shimmer import FileTransferRunner
+
 from borescope.transport.runner import JujuExecRunner, JujuSshRunner
 
 
@@ -90,3 +98,106 @@ def test_exec_wrap_no_socket_shim_without_container():
     argv = runner.wrap(['/charm/bin/pebble', 'ls'])
     assert 'env' not in argv
     assert runner.pebble_socket is None
+
+
+# --------------------------------------------------------------------------- #
+# FileTransferRunner: stage push/pull temp files in the charm container, not
+# locally. The base impl pipes base64-encoded bytes through the runner's own
+# juju channel (which executes as root) so Pebble's same-owner check passes
+# and the same code path works for ssh and exec.
+# --------------------------------------------------------------------------- #
+
+
+def _fake_completed(stdout: bytes = b'', stderr: bytes = b'', returncode: int = 0):
+    return subprocess.CompletedProcess(args=[], returncode=returncode, stdout=stdout, stderr=stderr)
+
+
+def test_runners_satisfy_filetransferrunner_protocol():
+    # Runtime-checkable protocol — both runners must look like FileTransferRunners
+    # so PebbleCliClient.push/pull take the remote-staging path, not the local
+    # temp-file fallback.
+    assert isinstance(JujuSshRunner('a/0', 'c'), FileTransferRunner)
+    assert isinstance(JujuExecRunner('a/0', 'c'), FileTransferRunner)
+
+
+def test_upload_temp_pipes_base64_via_charm_channel():
+    runner = JujuSshRunner('a/0', 'c', model='m')
+    captured: dict[str, Any] = {}
+
+    def fake_run(argv, **kwargs):
+        captured['argv'] = argv
+        return _fake_completed()
+
+    with patch.object(subprocess, 'run', side_effect=fake_run):
+        path = runner.upload_temp(b'hello world')
+
+    assert path.startswith('/tmp/cascade-upload-')  # noqa: S108 (remote path, not local)
+    # juju ssh prefix is preserved; argv ends in `sh -c '<base64 pipeline>'`.
+    assert captured['argv'][:4] == ['juju', 'ssh', '-m', 'm']
+    assert captured['argv'][-2] == 'sh' or captured['argv'][-3] == 'sh'
+    inner = captured['argv'][-1]
+    assert isinstance(inner, str)
+    assert 'base64 -d' in inner
+    assert path in inner
+    # The encoded content is in there verbatim.
+    expected = base64.b64encode(b'hello world').decode('ascii')
+    assert expected in inner
+
+
+def test_upload_temp_raises_on_juju_failure():
+    runner = JujuSshRunner('a/0', 'c')
+    with patch.object(
+        subprocess, 'run', return_value=_fake_completed(stderr=b'boom', returncode=1)
+    ), pytest.raises(RuntimeError, match=r'upload_temp.*boom'):
+        runner.upload_temp(b'x')
+
+
+def test_download_temp_reverses_base64():
+    runner = JujuSshRunner('a/0', 'c')
+    payload = b'\x00\x01binary stuff\xff'
+    encoded = base64.b64encode(payload)
+    with patch.object(subprocess, 'run', return_value=_fake_completed(stdout=encoded)):
+        out = runner.download_temp('/tmp/cascade-upload-xyz')  # noqa: S108 (remote path)
+    assert out == payload
+
+
+def test_download_temp_uses_base64_command_via_charm_channel():
+    runner = JujuExecRunner('a/0', 'c', model='m')
+    captured: dict[str, Any] = {}
+
+    def fake_run(argv, **kwargs):
+        captured['argv'] = argv
+        return _fake_completed(stdout=base64.b64encode(b''))
+
+    with patch.object(subprocess, 'run', side_effect=fake_run):
+        runner.download_temp('/tmp/foo')  # noqa: S108 (remote path)
+
+    # juju exec prefix + `base64 /tmp/foo` (no env shim — this isn't a pebble call).
+    assert captured['argv'][:4] == ['juju', 'exec', '-m', 'm']
+    assert '--' in captured['argv']
+    assert captured['argv'][-2:] == ['base64', '/tmp/foo']  # noqa: S108 (remote path)
+
+
+def test_download_temp_raises_on_juju_failure():
+    runner = JujuSshRunner('a/0', 'c')
+    with patch.object(
+        subprocess, 'run', return_value=_fake_completed(stderr=b'no such file', returncode=1)
+    ), pytest.raises(RuntimeError, match=r'download_temp.*no such file'):
+        runner.download_temp('/tmp/missing')  # noqa: S108 (remote path)
+
+
+def test_cleanup_temp_runs_rm_f_and_swallows_errors():
+    runner = JujuSshRunner('a/0', 'c')
+    captured: dict[str, Any] = {}
+
+    def fake_run(argv, **kwargs):
+        captured['argv'] = argv
+        captured['check'] = kwargs.get('check')
+        return _fake_completed(returncode=1)  # simulate failure
+
+    with patch.object(subprocess, 'run', side_effect=fake_run):
+        # Must NOT raise even though rm returned non-zero.
+        runner.cleanup_temp('/tmp/foo')  # noqa: S108 (remote path)
+
+    assert captured['argv'][-3:] == ['rm', '-f', '/tmp/foo']  # noqa: S108 (remote path)
+    assert captured['check'] is False

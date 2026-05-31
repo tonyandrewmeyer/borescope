@@ -26,7 +26,7 @@ classifiers = [
 ]
 dependencies = [
     "ops>=2.0.0,<4",
-    "pebble-shimmer>=1.0.0b2",
+    "pebble-shimmer>=1.0.0b3",
     "prompt_toolkit>=3.0",
     "PyYAML>=6.0",
 ]
