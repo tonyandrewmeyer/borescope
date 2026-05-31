@@ -74,8 +74,9 @@ BUG_REPORT_URL="https://github.com/GoogleContainerTools/distroless/issues/new"
 
 Same `ls /` as the workstation demo — same UX, different transport. Mode A's
 big win is that it works against **any** Pebble version (the HTTP API has
-always returned JSON), so it sidesteps the "needs Pebble ≥1.31 / Juju that
-bundles it" constraint that Mode B has. The trade-off is that you have to
+always returned JSON), so it sidesteps the "needs a Juju that bundles
+Pebble ≥1.31" constraint that Mode B has (Pebble 1.31 is in `latest/stable`
+now, but Juju doesn't bundle it yet). The trade-off is that you have to
 get borescope into the charm container first.
 
 ```bash
