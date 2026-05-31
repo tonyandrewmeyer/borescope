@@ -67,9 +67,7 @@ def test_wrap_shlex_quotes_argv_with_shell_metacharacters():
     # '...'`) would split the command before reaching the inner sh. wrap must
     # shlex-quote each piece so the outer sh-c sees one literal token.
     runner = JujuSshRunner('a/0', 'c')
-    argv = runner.wrap(
-        ['/charm/bin/pebble', 'exec', '--', 'sh', '-c', 'echo a; echo b']
-    )
+    argv = runner.wrap(['/charm/bin/pebble', 'exec', '--', 'sh', '-c', 'echo a; echo b'])
     # The dangerous arg is quoted; safe tokens (paths, plain words) are not.
     assert "'echo a; echo b'" in argv
     assert '/charm/bin/pebble' in argv
@@ -127,7 +125,9 @@ def test_exec_wrap_no_socket_shim_without_container():
 
 
 def _fake_completed(stdout: bytes = b'', stderr: bytes = b'', returncode: int = 0):
-    return subprocess.CompletedProcess(args=[], returncode=returncode, stdout=stdout, stderr=stderr)
+    return subprocess.CompletedProcess(
+        args=[], returncode=returncode, stdout=stdout, stderr=stderr
+    )
 
 
 def test_runners_satisfy_filetransferrunner_protocol():
@@ -164,9 +164,12 @@ def test_upload_temp_pipes_base64_via_charm_channel():
 
 def test_upload_temp_raises_on_juju_failure():
     runner = JujuSshRunner('a/0', 'c')
-    with patch.object(
-        subprocess, 'run', return_value=_fake_completed(stderr=b'boom', returncode=1)
-    ), pytest.raises(RuntimeError, match=r'upload_temp.*boom'):
+    with (
+        patch.object(
+            subprocess, 'run', return_value=_fake_completed(stderr=b'boom', returncode=1)
+        ),
+        pytest.raises(RuntimeError, match=r'upload_temp.*boom'),
+    ):
         runner.upload_temp(b'x')
 
 
@@ -198,9 +201,12 @@ def test_download_temp_uses_base64_command_via_charm_channel():
 
 def test_download_temp_raises_on_juju_failure():
     runner = JujuSshRunner('a/0', 'c')
-    with patch.object(
-        subprocess, 'run', return_value=_fake_completed(stderr=b'no such file', returncode=1)
-    ), pytest.raises(RuntimeError, match=r'download_temp.*no such file'):
+    with (
+        patch.object(
+            subprocess, 'run', return_value=_fake_completed(stderr=b'no such file', returncode=1)
+        ),
+        pytest.raises(RuntimeError, match=r'download_temp.*no such file'),
+    ):
         runner.download_temp('/tmp/missing')  # noqa: S108 (remote path)
 
 

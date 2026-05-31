@@ -162,9 +162,7 @@ class _JujuRunnerBase:
         )
         if result.returncode != 0:
             stderr = result.stderr.decode('utf-8', errors='replace')
-            raise RuntimeError(
-                f'upload_temp: staging {remote_path} failed: {stderr.strip()}'
-            )
+            raise RuntimeError(f'upload_temp: staging {remote_path} failed: {stderr.strip()}')
         return remote_path
 
     def download_temp(self, path: str) -> bytes:
@@ -179,9 +177,7 @@ class _JujuRunnerBase:
         )
         if result.returncode != 0:
             stderr = result.stderr.decode('utf-8', errors='replace')
-            raise RuntimeError(
-                f'download_temp: reading {path} failed: {stderr.strip()}'
-            )
+            raise RuntimeError(f'download_temp: reading {path} failed: {stderr.strip()}')
         return base64.b64decode(result.stdout)
 
     def cleanup_temp(self, path: str) -> None:
