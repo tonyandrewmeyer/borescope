@@ -38,7 +38,7 @@ consumable** by other tools:
 
 ```json
 {
-  "borescope_version": "0.1.0.dev1",
+  "borescope_version": "0.1.0b1",
   "captured_at": "2026-05-31T09:14:02.118402+00:00",
   "unit": "myapp/0",
   "container": "myapp",
