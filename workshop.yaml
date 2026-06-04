@@ -24,13 +24,13 @@ sdks:
 # - name: pi
 
 actions:
-  unit: |
-    uv run tox -e unit "$@"
+  test: |
+    make test
   integration: |
-    uv run tox -e integration "$@"
+    make integration
   lint: |
-    uv run tox -e lint
+    make lint
   format: |
-    uv run tox -e format
+    make fmt
   docs: |
-    uv run tox -e docs "$@"
+    make docs

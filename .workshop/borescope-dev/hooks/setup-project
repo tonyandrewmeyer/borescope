@@ -3,8 +3,8 @@ sudo -i -u workshop -- bash -e << 'EOF'
 set -e
 cd /project
 
-# Install borescope and all pinned dev tools.
-uv sync --group dev
+# Install borescope and all pinned dev + docs tools.
+uv sync --group dev --group docs
 
 # Install pre-commit hooks so linting runs automatically on every commit.
 uv run pre-commit install
@@ -15,7 +15,4 @@ src=/home/workshop/.local/bin/pebble-src
 if [ -f "$src" ] && [ -x "$src" ]; then
     ln -sf "$src" /home/workshop/.local/bin/pebble
 fi
-
-# Pre-warm the unit and lint environments so the first run isn't slow.
-uv run tox --notest -e unit,lint
 EOF
