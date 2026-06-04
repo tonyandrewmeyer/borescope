@@ -27,9 +27,9 @@ uv pip install -e ../shimmer    # re-run after any `uv sync`, which resets it
 ## Running checks
 
 ```console
-tox -e lint            # ruff + ty
-tox -e unit            # unit tests (no pebble binary / juju needed)
-tox -e integration     # integration tests (needs a local `pebble` binary)
+make lint              # ruff + ty
+make test              # unit tests (no pebble binary / juju needed)
+make integration       # integration tests (needs a local `pebble` binary)
 spread lxd:            # POSIX-conformance suite (real VM, real Pebble; needs LXD)
 ```
 
@@ -65,7 +65,7 @@ the committed HTML under `docs/docs/` is generated and checked in (GitHub Pages
 serves it directly). After editing any source, rebuild and commit both:
 
 ```console
-uv run python docs/src/_build.py     # or: tox -e docs
+uv run python docs/src/_build.py     # or: make docs
 uv run python docs/src/_build.py --check   # what CI runs
 ```
 
@@ -108,7 +108,7 @@ match.
 1. Create a release branch: `git checkout -b release/<version>`.
 2. Bump the version in all four files above.
 3. Rebuild the docs (the committed HTML must match): `uv run python docs/src/_build.py`.
-4. Verify: `tox -e lint && tox -e unit && uv run python docs/src/_build.py --check`.
+4. Verify: `make lint && make test && uv run python docs/src/_build.py --check`.
 5. Commit, push, open a PR. Per the repo's branch-protection rules a release
    PR still goes through CI like any other change.
 6. After the PR merges, tag the merge commit on `main` and push the tag — that

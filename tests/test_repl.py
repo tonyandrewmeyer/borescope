@@ -47,3 +47,21 @@ def test_blank_line_is_noop(ctx):
     result = Shell(ctx).run_line('   ')
     assert result.code == 0
     assert result.output == ''
+
+
+def test_logs_follow_rejected_in_pipe(ctx):
+    result = Shell(ctx).run_line('logs --follow myapp | grep ERROR')
+    assert result.code != 0
+    assert "borescope: 'logs' cannot be used in a pipe." in result.error
+
+
+def test_logs_follow_short_flag_rejected_in_pipe(ctx):
+    result = Shell(ctx).run_line('logs -f myapp | grep ERROR')
+    assert result.code != 0
+    assert "borescope: 'logs' cannot be used in a pipe." in result.error
+
+
+def test_logs_without_follow_not_rejected_in_pipe(ctx):
+    """logs without --follow is pipeable; any failure here is not a pipe-rejection."""
+    result = Shell(ctx).run_line('logs myapp | grep ERROR')
+    assert 'cannot be used in a pipe' not in result.error

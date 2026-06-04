@@ -175,6 +175,9 @@ class Logs(Command):
     summary = 'Show service logs (-f / --follow to stream)'
     usage = 'logs [-f|--follow] [-n N] [service...]'
 
+    def would_stream(self, args: list[str]) -> bool:
+        return '--follow' in args or '-f' in args
+
     def run(self, ctx: ShellContext, args: list[str], stdin: str | None = None) -> Result:
         flags, values, services = parse_args(args, valued=('n',))
         follow = 'f' in flags or 'follow' in flags
