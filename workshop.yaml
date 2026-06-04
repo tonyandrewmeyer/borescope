@@ -18,11 +18,6 @@ sdks:
   - name: uv
   - name: project-borescope-dev  # .workshop/borescope-dev/sdk.yaml
 
-# AI coding agents — uncomment any you want available in this workshop.
-# - name: claude-code
-# - name: copilot-cli
-# - name: pi
-
 actions:
   test: |
     make test
