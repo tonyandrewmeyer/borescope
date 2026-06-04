@@ -11,7 +11,7 @@ Use **uv**: `uv sync --group dev`, `uv run <cmd>`
 | Typecheck | `uv run ty check path/to/file.py` |
 | Test | `uv run pytest tests/test_file.py` |
 
-Full suite: `tox -e lint`, `tox -e unit`, `tox -e integration` (integration requires a local `pebble` binary).
+Full suite: `make lint`, `make test`, `make integration` (integration requires a local `pebble` binary).
 
 POSIX-conformance suite (real VM, real Pebble): `spread lxd:ubuntu-24.04:tests/spread/` — see [`tests/spread/`](tests/spread/) and the top-level [`spread.yaml`](spread.yaml).
 
