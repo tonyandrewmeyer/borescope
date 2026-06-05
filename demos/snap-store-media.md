@@ -21,25 +21,42 @@ and PNG stills for five scenes plus a single concatenated video.
 Per-scene outputs (replace `N` with the scene number):
 
 - `sceneN.cast` — raw asciinema recording (replayable, editable).
-- `sceneN.gif` — agg-rendered GIF for quick previews.
-- `sceneN.mp4` — same content as MP4 (smaller, more compatible).
+- `sceneN.mp4` — full-resolution H.264 for the listing video.
+- `sceneN.gif` — Snap-Store-compliant GIF: 480 wide, ≤16.7 fps,
+  ≤270 KB, ≤28 s, aspect ratio between 1:2 and 2:1.
 - `sceneN-final.png` — final frame as PNG (1214×730 for scenes 1–3,
-  1214×780 for scene 5, 1214×2040 for scene 4 — the snapshot needs the
-  height).
+  1214×780 for scene 5, 1214×2040 for scene 4 — the snapshot needs
+  the height).
 
-Combined video: `borescope-demo.mp4` (~92s, scenes 1 → 2 → 3 → 5
-back-to-back, padded to a common 1214×780 canvas). Scene 4 is *not*
-in the video — a static JSON dump doesn't reward motion. Use its PNG
-in the screenshots slot to convey the same information.
+Combined video: `borescope-demo.mp4` (~76 s, scenes 1 → 2 → 3 → 4 → 5
+back-to-back on a 1214×2040 canvas anchored top-left, padded with
+monokai background `#26271f`). Scene 4's last frame is held an extra
+six seconds (`tpad=stop_duration=6:stop_mode=clone`) so the JSON is
+readable. The video does **not** need to follow the GIF rules — only
+the standalone `sceneN.gif` files do.
 
 ## Snap Store upload
 
-The listing accepts up to 5 screenshots (PNG/JPG, 1920×1080 max) and
-one video URL (YouTube/Vimeo).
+The listing accepts up to 5 screenshots and one video URL
+(YouTube/Vimeo).
 
-- **Screenshots** — upload all five `scene{1,2,3,4,5}-final.png`.
+- **Screenshots** — upload `scene{1,2,3,4,5}-final.png` (PNG) **or**
+  `scene{1,2,3,4,5}.gif` (animated). The PNGs work fine if the GIFs
+  are rejected for some reason; otherwise the GIFs are punchier.
 - **Video** — upload `borescope-demo.mp4` to YouTube as an unlisted
   video and paste the URL into the listing.
+
+The Snap Store enforces these rules on GIF screenshots (the rules
+the PNGs and the linked video are exempt from):
+
+- Resolution: min 480×480, max 480×2160.
+- Aspect ratio: between 1:2 (tall) and 2:1 (wide).
+- File size: ≤2 MB.
+- Length: ≤40 s.
+- Frame rate: 1–30 fps.
+
+`scene{1,2,3,5}.gif` are 480×288–308; `scene4.gif` is 480×806 (the
+snapshot needs the height). All are well inside the rules.
 
 ## Reproducing the recordings
 
@@ -113,28 +130,41 @@ export TERM=xterm-256color
 asciinema rec --overwrite --cols 110 --rows 28 \
     --command "bash scene1-install.sh" scene1.cast
 
-# Render to GIF and MP4:
-agg --font-size 18 --theme monokai scene1.cast scene1.gif
-ffmpeg -y -i scene1.gif \
+# Render the full-resolution MP4 from the cast via agg:
+agg --font-size 18 --theme monokai scene1.cast scene1-fullres.gif
+ffmpeg -y -i scene1-fullres.gif \
     -movflags faststart -pix_fmt yuv420p \
     -vf "scale=trunc(iw/2)*2:trunc(ih/2)*2" \
     scene1.mp4
+rm scene1-fullres.gif
+
+# Render the store-compliant GIF (480 wide, ≤16.67 fps, palette-optimised):
+ffmpeg -y -i scene1.mp4 -vf \
+    "fps=15,scale=480:-2:flags=lanczos,split[s0][s1];[s0]palettegen=max_colors=128[p];[s1][p]paletteuse=dither=bayer:bayer_scale=4" \
+    scene1.gif
 
 # Grab a still ~0.5s before the end:
 dur=$(ffprobe -v error -show_entries format=duration -of csv=p=0 scene1.mp4)
 t=$(awk -v d="$dur" 'BEGIN { print (d>1) ? d-0.5 : d/2 }')
 ffmpeg -y -ss "$t" -i scene1.mp4 -frames:v 1 scene1-final.png
 
-# Concatenate scenes 1, 2, 3, 5 into the listing video. They have
-# slightly different heights, so pad to 780 first (skipping scene 4 —
-# its 2040-row snapshot is for the still only):
+# Concatenate all five scenes into the listing video. Pad every scene
+# to a uniform 1214×2040 canvas anchored top-left (scene 4 is already
+# 2040 tall; everything else gets monokai bg below). Scene 4 also
+# gets a 6-second freeze at the end so the JSON is readable. Then
+# concat with -c copy, which works cleanly now that codec params
+# match across inputs.
 for s in 1 2 3 5; do
     ffmpeg -y -i scene${s}.mp4 \
-        -vf "pad=1214:780:0:(oh-ih)/2:black" \
-        -c:v libx264 -pix_fmt yuv420p -movflags faststart \
-        scene${s}-padded.mp4
+        -vf "pad=1214:2040:0:0:0x26271f,setsar=1" \
+        -c:v libx264 -pix_fmt yuv420p -r 30 -movflags faststart \
+        scene${s}-canvas.mp4
 done
-printf 'file scene1-padded.mp4\nfile scene2-padded.mp4\nfile scene3-padded.mp4\nfile scene5-padded.mp4\n' > concat.txt
+ffmpeg -y -i scene4.mp4 \
+    -vf "tpad=stop_duration=6:stop_mode=clone,setsar=1" \
+    -c:v libx264 -pix_fmt yuv420p -r 30 -movflags faststart \
+    scene4-canvas.mp4
+printf 'file scene1-canvas.mp4\nfile scene2-canvas.mp4\nfile scene3-canvas.mp4\nfile scene4-canvas.mp4\nfile scene5-canvas.mp4\n' > concat.txt
 ffmpeg -y -f concat -safe 0 -i concat.txt -c copy borescope-demo.mp4
 ```
 
