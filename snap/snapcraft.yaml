@@ -1,40 +1,80 @@
 name: borescope
+title: borescope
 base: core24
 summary: A natural shell for debugging Juju Kubernetes workload containers
+contact: borescope@aotearoa.dev
+issues: https://github.com/tonyandrewmeyer/borescope/issues
+license: Apache-2.0
+source-code: https://github.com/tonyandrewmeyer/borescope
+website: https://tonyandrewmeyer.github.io/borescope/
 description: |
   borescope gives you a prompt that feels like bash but talks to a Kubernetes
   charm workload container's Pebble instead of a real shell — handy when the
   rock has no shell at all. It uses your existing Juju authority (juju ssh),
   needs no kubectl/cluster-admin, and puts Pebble's vocabulary (services, logs,
   plan, ...) front and centre alongside familiar commands (ls, cat, grep, ...).
-version: '1.0.0'
+version: '1.0.1'
 grade: stable
 confinement: strict
 
 apps:
   borescope:
     command: bin/borescope
+    environment:
+      # Ensure the venv'd python at $SNAP/bin/python3.12 wins over the bare
+      # stage-package interpreter at $SNAP/usr/bin/python3.12 — otherwise the
+      # `#!/usr/bin/env python3.12` shebang on bin/borescope picks the wrong
+      # one, sys.prefix doesn't resolve to $SNAP, and the borescope module is
+      # invisible (ModuleNotFoundError on every invocation).
+      PATH: $SNAP/bin:$SNAP/usr/sbin:$SNAP/usr/bin:$SNAP/sbin:$PATH
     plugs:
+      # Outbound network access for the bundled juju client (talks to the
+      # controller API; for k8s controllers that's typically the cluster's
+      # apiserver, which may resolve to 127.0.0.1 in single-node setups).
+      - network
+      # Juju's k8s controller connection spins up a local proxy that binds
+      # an ephemeral local port (k8s_proxy.Wrapper). Without network-bind we
+      # see "could not find an available port" / EPERM on bind.
+      - network-bind
       # Read/write non-hidden $HOME paths; used by the `pull` and `push`
       # commands when transferring files to/from the local filesystem.
       - home
-      # Read access to ~/.local/share/juju/ (the Juju client data directory).
-      # When `juju` is a classic (unconfined) snap the AppArmor Px transition
-      # means juju reads this under its own authority, so this plug is a safety
-      # net for system-package or strict-snap juju installs.
-      - juju-client-observe
-      # Read access to ~/.ssh/; same reasoning as juju-client-observe above.
+      # Read access to ~/.ssh/ so the bundled juju can use the user's keys
+      # for `juju ssh` against machine models.
       - ssh-keys
+      # Write access to ~/.local/share/juju (JUJU_DATA): controllers, models,
+      # accounts. `juju-client-observe` would give read-only, but the bundled
+      # juju needs to update accounts.yaml on login etc. Requires a manual
+      # `snap connect borescope:dot-local-share-juju` after install — see
+      # README. This mirrors jhack's approach.
+      - dot-local-share-juju
       # Per-target shell history lands under $HOME/.local/state/borescope/.
       # Inside the snap, $HOME resolves to the snap-private writable area
       # (~/snap/borescope/current/), so no `personal-files` plug is needed.
       # The trade-off: history is per-installation — uninstalling the snap
       # discards it, and snap vs pipx installs do not share history.
 
+plugs:
+  dot-local-share-juju:
+    interface: personal-files
+    write:
+      - $HOME/.local/share/juju
+
 parts:
   borescope:
     plugin: python
     source: .
+    # Bundle juju inside the snap. Strict confinement forbids exec'ing
+    # /snap/bin/juju (snap-to-snap exec), and the snap mounts its own /usr,
+    # so any host-side juju is invisible. Staging juju as a snap copies its
+    # payload into our squashfs — borescope's relay transport then execs an
+    # in-snap `juju` and works without confinement gymnastics. Trade-off:
+    # juju version is pinned at build time. (Same pattern as jhack.)
+    stage-snaps:
+      # Juju 4.x clients can talk to both 3.x and 4.x controllers; 3.x clients
+      # can only talk to 3.x. Pinning to 4/stable gives borescope the widest
+      # reach. Bump on a refresh as 4.x advances.
+      - juju/4/stable
     # Bundle the Python interpreter and stdlib so the snap is self-contained
     # and does not rely on the host Python. Both the versioned
     # (python3.12-minimal) and unversioned (python3-minimal) packages are
