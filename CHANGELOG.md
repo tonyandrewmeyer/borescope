@@ -5,6 +5,38 @@ All notable changes to borescope are documented here.
 The format is loosely based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and the project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.2] — 2026-06-05
+
+Snap release. Replaces 1.0.1, which was withdrawn from the store review
+queue.
+
+### Changed
+
+- Snap now uses the auto-connecting `juju-client-observe` plug instead
+  of a `personal-files` plug for ``$HOME/.local/share/juju``. The
+  `personal-files` interface triggers manual store review on every
+  revision until an auto-connect declaration is granted; falling back
+  to `juju-client-observe` keeps releases ungated. The trade-off is
+  read-only host access — to give the bundled juju a writable JUJU_DATA
+  (it refreshes cookies/macaroons on the fly), borescope now copies
+  the host directory into `$SNAP_USER_COMMON/juju` at startup and
+  points `JUJU_DATA` at the copy. See
+  [#31](https://github.com/tonyandrewmeyer/borescope/issues/31)
+  for the plan to request the auto-connect declaration and drop the
+  staging.
+
+### Added
+
+- `borescope.snap` module with `stage_juju_data()`, the startup hook
+  that copies host JUJU_DATA into the snap's writable home.
+
+### Limitations introduced by the staging
+
+- `juju login` / `juju switch` done *inside* a borescope session do
+  not propagate back to the host. Run them with the host's juju.
+- Macaroon refreshes inside borescope are session-local; if a macaroon
+  expires on the host, refresh it there.
+
 ## [1.0.1] — 2026-06-05
 
 Snap-only release. PyPI and Snap Store contents are otherwise identical

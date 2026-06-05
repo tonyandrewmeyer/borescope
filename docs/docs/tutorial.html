@@ -128,16 +128,17 @@ juju status --watch 2s        # wait until the unit is active/idle
 <code>grafana-k8s/0</code>).</p>
 <h2 id="install">Install borescope</h2>
 <p>From the snap store:</p>
-<pre><code><span class="prompt">$</span> sudo snap install borescope
-<span class="prompt">$</span> sudo snap connect borescope:dot-local-share-juju</code></pre>
-<p>The <code>snap connect</code> is required: the snap bundles its own juju, but it
-needs access to your <code>~/.local/share/juju</code> (JUJU_DATA) to know which
-controller and model you're targeting.</p>
+<pre><code><span class="prompt">$</span> sudo snap install borescope</code></pre>
+<p>The snap bundles its own juju, reads your <code>~/.local/share/juju</code>
+(JUJU_DATA) read-only via the auto-connecting <code>juju-client-observe</code>
+interface, and stages a writable copy inside the snap. Run <code>juju login</code>
+and <code>juju switch</code> outside borescope &mdash; changes made inside a borescope
+session don't propagate back to the host JUJU_DATA.</p>
 <p>Or from PyPI:</p>
 <pre><code><span class="prompt">$</span> uv tool install borescope        <span class="comment"># or: uvx borescope, pipx install borescope</span></code></pre>
 <p>Check it's on your <code>PATH</code>:</p>
 <pre><code><span class="prompt">$</span> borescope --version
-borescope 1.0.1</code></pre>
+borescope 1.0.2</code></pre>
 <h2 id="connect">Connect to a unit</h2>
 <p>Point borescope at your unit:</p>
 <pre><code><span class="prompt">$</span> borescope myapp/0

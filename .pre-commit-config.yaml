@@ -57,3 +57,11 @@ repos:
         files: ^docs/(src|docs)/
         pass_filenames: false
         require_serial: true
+
+      - id: uv-lock-check
+        name: uv lock --check
+        entry: uv lock --check
+        language: system
+        files: ^(pyproject\.toml|uv\.lock)$
+        pass_filenames: false
+        require_serial: true
