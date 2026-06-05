@@ -5,6 +5,43 @@ All notable changes to borescope are documented here.
 The format is loosely based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and the project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.1] — 2026-06-05
+
+Snap-only release. PyPI and Snap Store contents are otherwise identical
+to 1.0.0.
+
+### Fixed
+
+- **Snap was broken on every invocation in 1.0.0.** `bin/borescope`'s
+  `#!/usr/bin/env python3.12` shebang resolved against the snap's PATH
+  (`$SNAP/usr/sbin:$SNAP/usr/bin:...`) and picked the bare stage-package
+  interpreter at `$SNAP/usr/bin/python3.12` instead of the venv'd one at
+  `$SNAP/bin/python3.12`; the wrong interpreter never saw `pyvenv.cfg`
+  and so couldn't find the `borescope` module. Fixed by prepending
+  `$SNAP/bin` to the app's `PATH` so the venv interpreter wins.
+- **Snap couldn't talk to Juju.** Under strict confinement, snap-to-snap
+  exec of `/snap/bin/juju` is blocked, and the snap's mount namespace
+  hides any non-snap juju binary on the host. Bundled Juju 4 inside the
+  snap via `stage-snaps: [juju/4/stable]` (same pattern as
+  [jhack](https://github.com/canonical/jhack)) so the relay transport
+  execs an in-snap juju. Juju 4 clients talk to both 3.x and 4.x
+  controllers, so this is forward- and backward-compatible.
+
+### Added
+
+- `network` and `network-bind` plugs (the bundled juju's k8s API proxy
+  binds a local ephemeral port).
+- `dot-local-share-juju` `personal-files` plug for write access to
+  `$HOME/.local/share/juju` (JUJU_DATA). Needs a manual
+  `sudo snap connect borescope:dot-local-share-juju` after install.
+- Snap metadata fields previously only present on the store side:
+  `title`, `contact`, `license`, `issues`, `source-code`, `website`.
+
+### Removed
+
+- `juju-client-observe` plug, superseded by `dot-local-share-juju` (the
+  bundled juju needs write access to JUJU_DATA, not just read).
+
 ## [1.0.0] — 2026-06-05
 
 First stable release. The public API surface (the `Transport` protocol,

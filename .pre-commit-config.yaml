@@ -49,3 +49,11 @@ repos:
         types: [python]
         pass_filenames: false
         stages: [pre-push]
+
+      - id: docs-build-check
+        name: docs build check
+        entry: uv run --group docs -- python docs/src/_build.py --check
+        language: system
+        files: ^docs/(src|docs)/
+        pass_filenames: false
+        require_serial: true
