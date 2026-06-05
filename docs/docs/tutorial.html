@@ -114,8 +114,10 @@ session.</p>
 <li>A working <code>juju</code> CLI, logged in to a controller, with a <strong>Kubernetes</strong> model
 containing at least one deployed application. If <code>juju ssh &lt;unit&gt;</code> works for
 you, borescope will too.</li>
-<li><a href="https://docs.astral.sh/uv/" target="_blank" rel="noopener"><code>uv</code></a> or <code>pipx</code> to install borescope.</li>
-<li>A checkout of borescope (v1 isn't on PyPI yet).</li>
+<li>A way to install borescope &mdash; either
+<a href="https://snapcraft.io/borescope" target="_blank" rel="noopener"><code>snap</code></a> (the snap CLI ships with Ubuntu and
+is available for <a href="https://snapcraft.io/docs/installing-snapd" target="_blank" rel="noopener">most other Linux distros</a>),
+or <a href="https://docs.astral.sh/uv/" target="_blank" rel="noopener"><code>uv</code></a> / <code>pipx</code> to install from PyPI.</li>
 </ul>
 <p>If you don't have a charm deployed, any Kubernetes charm will do. For example:</p>
 <pre><code class="language-console">juju add-model tutorial
@@ -125,8 +127,10 @@ juju status --watch 2s        # wait until the unit is active/idle
 <p>Throughout this tutorial, replace <code>myapp/0</code> with your unit (for example
 <code>grafana-k8s/0</code>).</p>
 <h2 id="install">Install borescope</h2>
-<p>From your checkout:</p>
-<pre><code><span class="prompt">$</span> uv tool install .        <span class="comment"># or: pipx install .</span></code></pre>
+<p>From the snap store:</p>
+<pre><code><span class="prompt">$</span> sudo snap install borescope</code></pre>
+<p>Or from PyPI:</p>
+<pre><code><span class="prompt">$</span> uv tool install borescope        <span class="comment"># or: uvx borescope, pipx install borescope</span></code></pre>
 <p>Check it's on your <code>PATH</code>:</p>
 <pre><code><span class="prompt">$</span> borescope --version
 borescope 1.0.0</code></pre>

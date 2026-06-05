@@ -44,8 +44,10 @@ You need:
 - A working `juju` CLI, logged in to a controller, with a **Kubernetes** model
   containing at least one deployed application. If `juju ssh <unit>` works for
   you, borescope will too.
-- [`uv`](https://docs.astral.sh/uv/) or `pipx` to install borescope.
-- A checkout of borescope (v1 isn't on PyPI yet).
+- A way to install borescope — either
+  [`snap`](https://snapcraft.io/borescope) (the snap CLI ships with Ubuntu and
+  is available for [most other Linux distros](https://snapcraft.io/docs/installing-snapd)),
+  or [`uv`](https://docs.astral.sh/uv/) / `pipx` to install from PyPI.
 
 If you don't have a charm deployed, any Kubernetes charm will do. For example:
 
@@ -61,9 +63,13 @@ Throughout this tutorial, replace `myapp/0` with your unit (for example
 {#install}
 ## Install borescope
 
-From your checkout:
+From the snap store:
 
-<pre><code><span class="prompt">$</span> uv tool install .        <span class="comment"># or: pipx install .</span></code></pre>
+<pre><code><span class="prompt">$</span> sudo snap install borescope</code></pre>
+
+Or from PyPI:
+
+<pre><code><span class="prompt">$</span> uv tool install borescope        <span class="comment"># or: uvx borescope, pipx install borescope</span></code></pre>
 
 Check it's on your `PATH`:
 

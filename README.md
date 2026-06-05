@@ -23,10 +23,16 @@ can't, it fails the same way.
 
 ## Install
 
-> v1 is under active development. For now, from a checkout:
+From the [snap store](https://snapcraft.io/borescope):
 
 ```console
-uv tool install .        # or: pipx install .
+sudo snap install borescope
+```
+
+Or from [PyPI](https://pypi.org/project/borescope/):
+
+```console
+uv tool install borescope    # or: uvx borescope, pipx install borescope
 ```
 
 ## Usage
