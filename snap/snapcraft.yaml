@@ -7,8 +7,8 @@ description: |
   rock has no shell at all. It uses your existing Juju authority (juju ssh),
   needs no kubectl/cluster-admin, and puts Pebble's vocabulary (services, logs,
   plan, ...) front and centre alongside familiar commands (ls, cat, grep, ...).
-version: '0.1.0-b2'
-grade: devel
+version: '1.0.0'
+grade: stable
 confinement: strict
 
 apps:
@@ -25,18 +25,11 @@ apps:
       - juju-client-observe
       # Read access to ~/.ssh/; same reasoning as juju-client-observe above.
       - ssh-keys
-      # Read/write to ~/.local/state/borescope/ for per-target shell history.
-      # The `home` plug does not cover hidden directories, so this is declared
-      # explicitly below.
-      - personal-files
-
-plugs:
-  personal-files:
-    interface: personal-files
-    read:
-      - $HOME/.local/state/borescope
-    write:
-      - $HOME/.local/state/borescope
+      # Per-target shell history lands under $HOME/.local/state/borescope/.
+      # Inside the snap, $HOME resolves to the snap-private writable area
+      # (~/snap/borescope/current/), so no `personal-files` plug is needed.
+      # The trade-off: history is per-installation — uninstalling the snap
+      # discards it, and snap vs pipx installs do not share history.
 
 parts:
   borescope:

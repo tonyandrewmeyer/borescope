@@ -1,7 +1,10 @@
 #!/bin/bash -e
 # Workshop actions (test, lint, format, docs, integration) are driven by Make.
+# clang provides libFuzzer, which `atheris` (the dev-group fuzz harness)
+# links against at install time — without it, `uv sync --group dev` fails to
+# build atheris and `make test` can't start.
 apt-get update
-apt-get install -y --no-install-recommends make
+apt-get install -y --no-install-recommends make clang
 
 # Integration tests need a `pebble` binary on PATH. When the `pebble` plug is
 # connected to a pebble dev workshop, pebble-src is the mounted binary and

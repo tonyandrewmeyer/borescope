@@ -29,6 +29,9 @@ htmlcov
 # Local docs-preview tooling writes this when viewing the page
 /docs/localStorage.json
 
+# Workshop tool's per-checkout runtime lock; not source.
+/.workshop.lock
+
 # libFuzzer-generated corpus entries (SHA1-named).
 # The hand-written seeds use descriptive names and stay tracked; ignore the
 # auto-discovered ones that accumulate during local fuzz runs.

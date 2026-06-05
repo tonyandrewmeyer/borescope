@@ -65,7 +65,7 @@
   </div>
 </dialog>
 
-<script type="application/json" id="palette-data">[{"slug":"index","label":"Documentation home","section":""},{"slug":"tutorial","label":"Debug your first container","section":"Tutorial"},{"slug":"howto-connect","label":"Connect to a unit","section":"How-to guides"},{"slug":"howto-here","label":"Run inside the charm container","section":"How-to guides"},{"slug":"howto-oneshot","label":"Run one command (no REPL)","section":"How-to guides"},{"slug":"howto-files","label":"Copy files in and out","section":"How-to guides"},{"slug":"howto-snapshot","label":"Capture a state snapshot","section":"How-to guides"},{"slug":"reference-cli","label":"CLI reference","section":"Reference"},{"slug":"reference-commands","label":"Command reference","section":"Reference"},{"slug":"explanation-architecture","label":"How borescope works","section":"Explanation"},{"slug":"explanation-transport","label":"How it reaches Pebble","section":"Explanation"},{"slug":"explanation-scope","label":"Scope and philosophy","section":"Explanation"}]</script>
+<script type="application/json" id="palette-data">[{"slug":"index","label":"Documentation home","section":""},{"slug":"tutorial","label":"Debug your first container","section":"Tutorial"},{"slug":"howto-connect","label":"Connect to a unit","section":"How-to guides"},{"slug":"howto-here","label":"Run inside the charm container","section":"How-to guides"},{"slug":"howto-oneshot","label":"Run one command (no REPL)","section":"How-to guides"},{"slug":"howto-files","label":"Copy files in and out","section":"How-to guides"},{"slug":"howto-snapshot","label":"Capture a state snapshot","section":"How-to guides"},{"slug":"reference-cli","label":"CLI reference","section":"Reference"},{"slug":"reference-commands","label":"Command reference","section":"Reference"},{"slug":"reference-pebble","label":"Pebble compatibility","section":"Reference"},{"slug":"explanation-architecture","label":"How borescope works","section":"Explanation"},{"slug":"explanation-transport","label":"How it reaches Pebble","section":"Explanation"},{"slug":"explanation-scope","label":"Scope and philosophy","section":"Explanation"}]</script>
 <div class="doc-layout">
   <aside class="doc-sidebar">
     <h4>Tutorial</h4>
@@ -129,7 +129,7 @@ juju status --watch 2s        # wait until the unit is active/idle
 <pre><code><span class="prompt">$</span> uv tool install .        <span class="comment"># or: pipx install .</span></code></pre>
 <p>Check it's on your <code>PATH</code>:</p>
 <pre><code><span class="prompt">$</span> borescope --version
-borescope 0.1.0b2</code></pre>
+borescope 1.0.0</code></pre>
 <h2 id="connect">Connect to a unit</h2>
 <p>Point borescope at your unit:</p>
 <pre><code><span class="prompt">$</span> borescope myapp/0
