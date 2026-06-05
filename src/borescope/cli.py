@@ -107,6 +107,14 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     args = build_parser().parse_args(argv)
+
+    # When running as a snap, stage the host's JUJU_DATA into the snap's
+    # writable home so the bundled juju can refresh macaroons/cookies. No-op
+    # outside the snap. See borescope.snap for the trade-offs.
+    from .snap import stage_juju_data
+
+    stage_juju_data()
+
     if not args.unit and not args.socket and not args.here:
         print(
             "borescope: A unit reference is required (for example 'borescope myapp/0'), "

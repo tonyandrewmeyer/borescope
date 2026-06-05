@@ -13,7 +13,7 @@ description: |
   rock has no shell at all. It uses your existing Juju authority (juju ssh),
   needs no kubectl/cluster-admin, and puts Pebble's vocabulary (services, logs,
   plan, ...) front and centre alongside familiar commands (ls, cat, grep, ...).
-version: '1.0.1'
+version: '1.0.2'
 grade: stable
 confinement: strict
 
@@ -27,6 +27,11 @@ apps:
       # one, sys.prefix doesn't resolve to $SNAP, and the borescope module is
       # invisible (ModuleNotFoundError on every invocation).
       PATH: $SNAP/bin:$SNAP/usr/sbin:$SNAP/usr/bin:$SNAP/sbin:$PATH
+      # Point JUJU_DATA at the snap's writable common dir. Borescope's
+      # startup hook (borescope.snap.stage_juju_data) populates this from
+      # the host's read-only ~/.local/share/juju on every invocation, so
+      # the bundled juju can refresh cookies/macaroons in-place.
+      JUJU_DATA: $SNAP_USER_COMMON/juju
     plugs:
       # Outbound network access for the bundled juju client (talks to the
       # controller API; for k8s controllers that's typically the cluster's
@@ -42,23 +47,19 @@ apps:
       # Read access to ~/.ssh/ so the bundled juju can use the user's keys
       # for `juju ssh` against machine models.
       - ssh-keys
-      # Write access to ~/.local/share/juju (JUJU_DATA): controllers, models,
-      # accounts. `juju-client-observe` would give read-only, but the bundled
-      # juju needs to update accounts.yaml on login etc. Requires a manual
-      # `snap connect borescope:dot-local-share-juju` after install — see
-      # README. This mirrors jhack's approach.
-      - dot-local-share-juju
+      # Read-only access to ~/.local/share/juju (JUJU_DATA): controllers,
+      # models, accounts. This auto-connects, which avoids the manual store
+      # review that `personal-files` would force on every release. At
+      # borescope startup we copy this read-only view into the snap's
+      # writable home and point JUJU_DATA at the copy (see borescope.snap),
+      # so the bundled juju can refresh cookies/macaroons freely without
+      # needing write access to the host directory.
+      - juju-client-observe
       # Per-target shell history lands under $HOME/.local/state/borescope/.
       # Inside the snap, $HOME resolves to the snap-private writable area
       # (~/snap/borescope/current/), so no `personal-files` plug is needed.
       # The trade-off: history is per-installation — uninstalling the snap
       # discards it, and snap vs pipx installs do not share history.
-
-plugs:
-  dot-local-share-juju:
-    interface: personal-files
-    write:
-      - $HOME/.local/share/juju
 
 parts:
   borescope:

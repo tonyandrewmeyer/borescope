@@ -27,14 +27,17 @@ From the [snap store](https://snapcraft.io/borescope):
 
 ```console
 sudo snap install borescope
-sudo snap connect borescope:dot-local-share-juju
 ```
 
-The `dot-local-share-juju` connection is required: the snap bundles its
-own juju, but it needs access to your `~/.local/share/juju` (JUJU_DATA)
-to know which controller and model you're talking to. The `ssh-keys`
-plug auto-connects for `juju ssh`; if it doesn't, run
-`sudo snap connect borescope:ssh-keys` as well.
+A few things to know about the snap:
+
+- It bundles its own juju (currently `juju/4/stable`), so it works
+  even without juju installed on the host.
+- It reads your `~/.local/share/juju` (JUJU_DATA) read-only via the
+  auto-connecting `juju-client-observe` interface, then copies it into
+  a writable per-snap directory at startup. **Run `juju login` /
+  `juju switch` outside borescope** — changes made inside a borescope
+  session don't propagate back to the host JUJU_DATA.
 
 Or from [PyPI](https://pypi.org/project/borescope/):
 

@@ -45,12 +45,13 @@ Throughout this tutorial, replace `myapp/0` with your unit (for example
 
 From the snap store:
 
-<pre><code><span class="prompt">$</span> sudo snap install borescope
-<span class="prompt">$</span> sudo snap connect borescope:dot-local-share-juju</code></pre>
+<pre><code><span class="prompt">$</span> sudo snap install borescope</code></pre>
 
-The `snap connect` is required: the snap bundles its own juju, but it
-needs access to your `~/.local/share/juju` (JUJU_DATA) to know which
-controller and model you're targeting.
+The snap bundles its own juju, reads your `~/.local/share/juju`
+(JUJU_DATA) read-only via the auto-connecting `juju-client-observe`
+interface, and stages a writable copy inside the snap. Run `juju login`
+and `juju switch` outside borescope — changes made inside a borescope
+session don't propagate back to the host JUJU_DATA.
 
 Or from PyPI:
 
@@ -59,7 +60,7 @@ Or from PyPI:
 Check it's on your `PATH`:
 
 <pre><code><span class="prompt">$</span> borescope --version
-borescope 1.0.1</code></pre>
+borescope 1.0.2</code></pre>
 
 {#connect}
 ## Connect to a unit
