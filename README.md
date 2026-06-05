@@ -27,17 +27,25 @@ From the [snap store](https://snapcraft.io/borescope):
 
 ```console
 sudo snap install borescope
+sudo snap connect borescope:juju-client-observe
+sudo snap connect borescope:ssh-keys
 ```
+
+The two `snap connect` calls are required today and will go away once
+the snap store grants the auto-connect declarations
+([#31](https://github.com/tonyandrewmeyer/borescope/issues/31)).
+Without them, borescope can't read your `~/.local/share/juju` to find
+your controller, and `juju ssh` can't see your SSH keys.
 
 A few things to know about the snap:
 
 - It bundles its own juju (currently `juju/4/stable`), so it works
   even without juju installed on the host.
 - It reads your `~/.local/share/juju` (JUJU_DATA) read-only via the
-  auto-connecting `juju-client-observe` interface, then copies it into
-  a writable per-snap directory at startup. **Run `juju login` /
-  `juju switch` outside borescope** — changes made inside a borescope
-  session don't propagate back to the host JUJU_DATA.
+  `juju-client-observe` interface, then copies it into a writable
+  per-snap directory at startup. **Run `juju login` / `juju switch`
+  outside borescope** — changes made inside a borescope session don't
+  propagate back to the host JUJU_DATA.
 
 Or from [PyPI](https://pypi.org/project/borescope/):
 
