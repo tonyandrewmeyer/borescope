@@ -1,4 +1,8 @@
 #!/bin/bash -e
+# Workshop actions (test, lint, format, docs, integration) are driven by Make.
+apt-get update
+apt-get install -y --no-install-recommends make
+
 # Integration tests need a `pebble` binary on PATH. When the `pebble` plug is
 # connected to a pebble dev workshop, pebble-src is the mounted binary and
 # setup-project puts it on PATH. When unconnected, install the stable snap.

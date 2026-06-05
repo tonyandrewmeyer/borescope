@@ -1,7 +1,8 @@
 #!/bin/bash
-# Healthy when borescope is importable in the synced env and `pebble` is on PATH.
+# Healthy when borescope is importable in the synced env and `make` and
+# `pebble` are on PATH.
 if sudo -H -i -u workshop -- bash -c \
-    'command -v pebble >/dev/null && cd /project && uv run python -c "import borescope"'
+    'command -v make >/dev/null && command -v pebble >/dev/null && cd /project && uv run python -c "import borescope"'
 then
     workshopctl set-health okay
 else
