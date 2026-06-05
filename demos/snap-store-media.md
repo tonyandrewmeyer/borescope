@@ -22,8 +22,8 @@ Per-scene outputs (replace `N` with the scene number):
 
 - `sceneN.cast` — raw asciinema recording (replayable, editable).
 - `sceneN.mp4` — full-resolution H.264 for the listing video.
-- `sceneN.gif` — Snap-Store-compliant GIF: 480 wide, ≤16.7 fps,
-  ≤270 KB, ≤28 s, aspect ratio between 1:2 and 2:1.
+- `sceneN.gif` — Snap-Store-compliant GIF: 1214 wide, ≤16.7 fps,
+  ≤627 KB, ≤28 s, aspect ratio between 1:2 and 2:1.
 - `sceneN-final.png` — final frame as PNG (1214×730 for scenes 1–3,
   1214×780 for scene 5, 1214×2040 for scene 4 — the snapshot needs
   the height).
@@ -49,14 +49,15 @@ The listing accepts up to 5 screenshots and one video URL
 The Snap Store enforces these rules on GIF screenshots (the rules
 the PNGs and the linked video are exempt from):
 
-- Resolution: min 480×480, max 480×2160.
+- Resolution: min 480×480, max 3840×2160.
 - Aspect ratio: between 1:2 (tall) and 2:1 (wide).
-- File size: ≤2 MB.
+- File size: ≤2 MB per GIF.
 - Length: ≤40 s.
 - Frame rate: 1–30 fps.
 
-`scene{1,2,3,5}.gif` are 480×288–308; `scene4.gif` is 480×806 (the
-snapshot needs the height). All are well inside the rules.
+`scene{1,2,3,5}.gif` are 1214×730–780 (≈ 1.55–1.66 : 1);
+`scene4.gif` is 1214×2040 (≈ 1 : 1.68) — the snapshot needs the
+height. All are well inside the rules.
 
 ## Reproducing the recordings
 
@@ -138,9 +139,10 @@ ffmpeg -y -i scene1-fullres.gif \
     scene1.mp4
 rm scene1-fullres.gif
 
-# Render the store-compliant GIF (480 wide, ≤16.67 fps, palette-optimised):
+# Render the store-compliant GIF (native 1214 wide, 15 fps,
+# palette-optimised). Stays well under the 2 MB per-file ceiling.
 ffmpeg -y -i scene1.mp4 -vf \
-    "fps=15,scale=480:-2:flags=lanczos,split[s0][s1];[s0]palettegen=max_colors=128[p];[s1][p]paletteuse=dither=bayer:bayer_scale=4" \
+    "fps=15,split[s0][s1];[s0]palettegen=max_colors=128[p];[s1][p]paletteuse=dither=bayer:bayer_scale=4" \
     scene1.gif
 
 # Grab a still ~0.5s before the end:
