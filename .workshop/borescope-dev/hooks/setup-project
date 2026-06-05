@@ -1,0 +1,18 @@
+#!/bin/bash -e
+sudo -i -u workshop -- bash -e << 'EOF'
+set -e
+cd /project
+
+# Install borescope and all pinned dev + docs tools.
+uv sync --group dev --group docs
+
+# Install pre-commit hooks so linting runs automatically on every commit.
+uv run pre-commit install
+
+# If a built pebble binary was mounted via the `pebble` plug (a real executable,
+# not the empty directory of an unconnected plug), put it on PATH.
+src=/home/workshop/.local/bin/pebble-src
+if [ -f "$src" ] && [ -x "$src" ]; then
+    ln -sf "$src" /home/workshop/.local/bin/pebble
+fi
+EOF

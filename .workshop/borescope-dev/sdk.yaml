@@ -1,0 +1,19 @@
+# In-project SDK for developing borescope. Consumed as `project-borescope-dev`.
+# In-project SDKs have no build-time features (no base/build-base/platforms/
+# parts) — they're configured entirely via the hooks under hooks/.
+#
+# Unit tests (tests/test_*.py) mock all Juju/Pebble I/O and need no external
+# dependencies. Integration tests (tests/integration/) need a real `pebble`
+# binary on PATH. POSIX-conformance spread tests need LXD and are out of scope.
+#
+# Relies on the `uv` SDK being present in the workshop.
+name: borescope-dev
+version: "0"
+summary: In-project setup for developing borescope
+
+# Optional: consume a `pebble` binary from a pebble dev workshop, for use
+# with the integration tests. Without it, setup-base installs the stable snap.
+plugs:
+  pebble:
+    interface: mount
+    workshop-target: /home/workshop/.local/bin/pebble-src

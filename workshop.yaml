@@ -1,0 +1,31 @@
+# Workshop definition for developing borescope.
+#
+# borescope is a natural shell for debugging Juju Kubernetes workload containers
+# via Pebble. It's a uv-managed Python project. Unit tests need no external
+# dependencies; integration tests need a `pebble` binary on PATH; POSIX-
+# conformance spread tests need LXD and are out of scope here.
+#
+# To develop against an unreleased pebble, run a pebble dev workshop alongside
+# and connect its built binary:
+#
+#   workshop connect dev/project-borescope-dev:pebble \
+#     <pebble-workshop>/project-pebble-dev:pebble-bin
+
+name: dev
+base: ubuntu@24.04
+
+sdks:
+  - name: uv
+  - name: project-borescope-dev  # .workshop/borescope-dev/sdk.yaml
+
+actions:
+  test: |
+    make test
+  integration: |
+    make integration
+  lint: |
+    make lint
+  format: |
+    make fmt
+  docs: |
+    make docs
