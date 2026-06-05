@@ -117,6 +117,20 @@ you mean, so name it:</p>
 <pre><code><span class="prompt">$</span> borescope --here --container=workload</code></pre>
 <p>If you omit <code>--container</code> with multiple containers present, borescope lists the
 available names and asks you to choose one.</p>
+<h2 id="workload-namespace">Files you see are the workload's, not the charm container's</h2>
+<p>When you run <code>borescope --here</code> inside the charm container, the prompt's
+filesystem commands (<code>ls</code>, <code>cat</code>, <code>cp</code>, <code>push</code>, &hellip;) see the <strong>workload
+container's</strong> filesystem, not the charm container's. That's the whole
+point &mdash; <code>--here</code> talks to the workload's Pebble, which serves the
+workload's files.</p>
+<p>This bites most often with <code>/tmp</code>: a file you write in the charm
+container's <code>/tmp</code> is invisible to <code>cat /tmp/whatever</code> at the borescope
+prompt. To poke at a specific local file, push it across first:</p>
+<pre><code><span class="prompt">$</span> borescope --here -c "push /charm/scratch.txt /tmp/scratch.txt"
+<span class="prompt">$</span> borescope --here -c "cat /tmp/scratch.txt"</code></pre>
+<p>The same applies in reverse: <code>pull /workload/path /charm/path</code> brings
+a file out of the workload into the charm container's filesystem
+where you can <code>juju scp</code> it back to your workstation.</p>
 <h2 id="socket">Point at a socket</h2>
 <p>To talk to a Pebble over a specific Unix socket (a workload socket at a
 non-standard path, or a local Pebble you're running yourself), pass <code>--socket</code>:</p>
