@@ -18,6 +18,8 @@ jobs:
         with:
           persist-credentials: false
       - uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b  # v8.1.0
+      - name: uv lock --check
+        run: uv lock --check
       - name: ruff check
         run: uv run --group dev ruff check src tests
       - name: ruff format
