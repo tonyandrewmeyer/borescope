@@ -28,6 +28,7 @@ sections:
     pages:
       - { slug: reference-cli, label: "CLI reference" }
       - { slug: reference-commands, label: "Command reference" }
+      - { slug: reference-pebble, label: "Pebble compatibility" }
 
   explanation:
     heading: "Explanation"

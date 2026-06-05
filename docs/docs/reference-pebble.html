@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>CLI reference: borescope</title>
-<meta name="description" content="Complete reference for borescope's command-line arguments, modes, and exit codes.">
+<title>Pebble compatibility: borescope</title>
+<meta name="description" content="Which Pebble versions borescope is tested against, and what to expect from older Pebbles.">
 <link rel="icon" href="../favicon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.bunny.net">
 <link rel="stylesheet" href="https://fonts.bunny.net/css?family=inter:400,500,600,700,800|jetbrains-mono:400&display=swap">
@@ -70,195 +70,66 @@
   <aside class="doc-sidebar">
     <h4>Reference</h4>
     <ul>
-      <li><a href="reference-cli.html" class="current">CLI reference</a></li>
+      <li><a href="reference-cli.html">CLI reference</a></li>
       <li><a href="reference-commands.html">Command reference</a></li>
-      <li><a href="reference-pebble.html">Pebble compatibility</a></li>
+      <li><a href="reference-pebble.html" class="current">Pebble compatibility</a></li>
     </ul>
     <h4>On this page</h4>
     <ul>
-      <li><a href="#synopsis">Synopsis</a></li>
-      <li><a href="#target">Target arguments</a></li>
-      <li><a href="#modes">Mode arguments</a></li>
-      <li><a href="#behaviour">Behaviour arguments</a></li>
-      <li><a href="#transport">Transport arguments</a></li>
-      <li><a href="#meta">Meta</a></li>
-      <li><a href="#exit-codes">Exit codes</a></li>
-      <li><a href="#environment">Environment</a></li>
+      <li><a href="#supported">Supported versions</a></li>
+      <li><a href="#ssh-shimmer">ssh / exec (shimmer) path</a></li>
+      <li><a href="#socket">Direct socket path</a></li>
+      <li><a href="#checking">Checking what you have</a></li>
     </ul>
     <h4>See also</h4>
     <ul>
-      <li><a href="reference-commands.html">Command reference</a></li>
-      <li><a href="howto-connect.html">Connect to a unit</a></li>
+      <li><a href="explanation-transport.html">How it reaches Pebble</a></li>
+      <li><a href="howto-here.html">Run inside the charm container</a></li>
     </ul>
   </aside>
 
   <main id="main" class="doc-content">
     <div class="breadcrumb">
-      <a href="index.html">Docs</a><span class="sep">/</span>Reference<span class="sep">/</span>CLI reference
+      <a href="index.html">Docs</a><span class="sep">/</span>Reference<span class="sep">/</span>Pebble compatibility
     </div>
 
-    <h1>CLI reference</h1>
+    <h1>Pebble compatibility</h1>
     <p class="subtitle">
-      Every command-line argument, the modes they select, and exit codes.
+      What Pebble versions borescope supports, by transport.
     </p>
 
-<h2 id="synopsis">Synopsis</h2>
-<pre><code>borescope [UNIT] [OPTIONS]
-</code></pre>
-<p><code>UNIT</code> is a unit reference such as <code>myapp/0</code>. It is required unless you pass
-<code>--here</code> or <code>--socket</code>. With no <code>--command</code> and an interactive terminal,
-borescope opens a REPL; otherwise it runs non-interactively (see
-<a href="#behaviour">Behaviour arguments</a>).</p>
-<h2 id="target">Target arguments</h2>
-<p>These select <em>which</em> workload container borescope talks to.</p>
-<table>
-<thead>
-<tr>
-<th>Argument</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>UNIT</code></td>
-<td>Positional. Unit reference (<code>app/n</code>), for example <code>myapp/0</code>. Required unless <code>--here</code>/<code>--socket</code> is given.</td>
-</tr>
-<tr>
-<td><code>--container NAME</code></td>
-<td>Workload container name. Defaults to the first container declared in the charm's metadata.</td>
-</tr>
-<tr>
-<td><code>-m</code>, <code>--model MODEL</code></td>
-<td>Juju model. Defaults to the current model. Passed through to <code>juju</code>. (Short form retained for <code>juju</code>-CLI muscle memory.)</td>
-</tr>
-<tr>
-<td><code>--juju PATH</code></td>
-<td>The <code>juju</code> binary to invoke. Default: <code>juju</code> (found on <code>PATH</code>).</td>
-</tr>
-</tbody>
-</table>
-<h2 id="modes">Mode arguments</h2>
-<p>These change <em>how</em> borescope finds the Pebble. Without either, borescope
-resolves the target through Juju (the default for a remote unit).</p>
-<table>
-<thead>
-<tr>
-<th>Argument</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>--here</code></td>
-<td>Run inside the charm container: auto-detect a workload's mounted Pebble socket under <code>/charm/containers/</code>. Use <code>--container</code> to choose when there are several. No Juju access needed.</td>
-</tr>
-<tr>
-<td><code>--socket PATH</code></td>
-<td>Talk directly to a Pebble Unix socket at <code>PATH</code>, skipping Juju discovery entirely.</td>
-</tr>
-</tbody>
-</table>
-<p>See <a href="howto-here.html">Run inside the charm container</a> for when to use each.</p>
-<h2 id="behaviour">Behaviour arguments</h2>
-<p>These change what borescope <em>does</em> once connected.</p>
-<table>
-<thead>
-<tr>
-<th>Argument</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>--command CMD</code></td>
-<td>Run a single command <code>CMD</code> and exit, without entering the REPL.</td>
-</tr>
-<tr>
-<td><code>--snapshot</code></td>
-<td>Dump the container's state as JSON and exit. See <a href="howto-snapshot.html">Capture a state snapshot</a>.</td>
-</tr>
-</tbody>
-</table>
-<p>With neither flag set: if stdin is a terminal, borescope opens the interactive
-REPL; if stdin is <strong>not</strong> a terminal, it reads commands line by line from stdin,
-runs each, and exits with the status of the last. See
-<a href="howto-oneshot.html">Run one command (no REPL)</a>.</p>
-<h2 id="transport">Transport arguments</h2>
-<table>
-<thead>
-<tr>
-<th>Argument</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>--via {ssh,exec}</code></td>
-<td>The Juju relay to use when going through Juju (the default mode). <code>ssh</code> (default) streams over <code>juju ssh</code>; <code>exec</code> uses request/response <code>juju exec</code>, for sites where <code>juju ssh</code> is disabled. Ignored when <code>--socket</code>/<code>--here</code> is in effect.</td>
-</tr>
-</tbody>
-</table>
-<h2 id="meta">Meta</h2>
-<table>
-<thead>
-<tr>
-<th>Argument</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>--version</code>, <code>version</code></td>
-<td>Print the borescope version and exit.</td>
-</tr>
-<tr>
-<td><code>-h</code>, <code>--help</code>, <code>help</code></td>
-<td>Print usage and exit.</td>
-</tr>
-</tbody>
-</table>
-<p><code>help</code> and <code>version</code> (bare, as the first argument) are Canonical-CLI aliases
-for the Python-conventional <code>--help</code> / <code>--version</code>. borescope accepts both
-forms.</p>
-<p><code>--help</code> and <code>--version</code> are fast: borescope defers its heavier imports until
-after argument parsing.</p>
-<h3>Verbosity</h3>
-<p>borescope does <strong>not</strong> implement the Canonical <code>--quiet</code> / <code>--verbose</code> /
-<code>--verbosity=debug|trace</code> ladder. The tool's output is the REPL or a single
-command's result; a five-level taxonomy adds no value, so v1 stays minimal.
-This may change if a concrete need surfaces.</p>
-<h2 id="exit-codes">Exit codes</h2>
-<table>
-<thead>
-<tr>
-<th>Code</th>
-<th>Meaning</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>0</code></td>
-<td>Success.</td>
-</tr>
-<tr>
-<td><code>1</code></td>
-<td>A command failed, or discovery/connection failed. The reason is printed to stderr as <code>borescope: &hellip;</code>.</td>
-</tr>
-<tr>
-<td><code>2</code></td>
-<td>Usage error: no unit reference and neither <code>--here</code> nor <code>--socket</code>.</td>
-</tr>
-</tbody>
-</table>
-<p>In non-interactive modes the exit code is that of the command run (or the last
-command, when reading from stdin), making borescope safe to use in shell
-conditionals and CI.</p>
-<h2 id="environment">Environment</h2>
-<p>borescope has no environment variables of its own. It inherits the environment
-of the <code>juju</code> CLI it shells out to, so the controller and model selection,
-<code>JUJU_DATA</code>, and your Juju credentials are all picked up exactly as <code>juju</code>
-would use them. If <code>juju status</code> and <code>juju ssh</code> work in your shell, borescope
-works too.</p>
+<h2 id="supported">Supported versions</h2>
+<p>borescope 1.0 is tested against <strong>Pebble 1.31.0</strong> end-to-end (see the
+<a href="https://github.com/tonyandrewmeyer/borescope/blob/main/spread.yaml" target="_blank" rel="noopener"><code>spread.yaml</code></a>
+conformance suite, which pins <code>PEBBLE_VERSION=v1.31.0</code>). 1.31 is what currently
+ships in the <code>pebble</code> snap's <code>latest/stable</code> channel.</p>
+<p>Compatibility across Pebble versions depends on which
+<a href="explanation-transport.html">transport</a> you're using.</p>
+<h2 id="ssh-shimmer">ssh / exec (shimmer) path</h2>
+<p>The default Juju-relayed transports (<code>--via ssh</code>, <code>--via exec</code>) drive the
+remote <code>pebble</code> CLI through
+<a href="https://github.com/tonyandrewmeyer/shimmer" target="_blank" rel="noopener">shimmer</a>. They require
+<strong>Pebble &ge; 1.31</strong> in the charm container, because shimmer relies on CLI
+surface and JSON output shapes that stabilised in that release.</p>
+<p>If a Juju version you're using ships an older Pebble in its charm-container
+sidecar, the ssh/exec path will not work reliably &mdash; fall back to the direct
+socket path below, or upgrade the charm to a base that ships a current Pebble.</p>
+<h2 id="socket">Direct socket path</h2>
+<p><code>--here</code> and <code>--socket PATH</code> talk to Pebble over its HTTP-on-Unix-socket
+API using the real <code>ops.pebble.Client</code>. This path doesn't go through the
+CLI at all, so it isn't bound to the shimmer compatibility floor.</p>
+<p>In principle older Pebbles work here too, going back as far as the
+<code>ops.pebble.Client</code> surface borescope relies on. <strong>In practice we currently
+only test against Pebble 1.31.0</strong>; older versions are unverified for 1.0.
+Automated multi-version coverage is tracked in
+<a href="https://github.com/tonyandrewmeyer/borescope/issues/28" target="_blank" rel="noopener">issue #28</a> &mdash; if
+you hit a regression on an older Pebble, please file it with the exact
+version.</p>
+<h2 id="checking">Checking what you have</h2>
+<p>Inside a charm container, <code>pebble version --client</code> reports the bundled
+Pebble. From a borescope session, <code>pebble version</code> (Pebble's own command,
+exposed as a built-in) prints the server version of whatever Pebble you're
+currently connected to.</p>
   </main>
 </div>
 

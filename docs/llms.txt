@@ -20,6 +20,7 @@ This file is an [llms.txt](https://llmstxt.org) index of the borescope documenta
 
 - [CLI reference](https://tonyandrewmeyer.github.io/borescope/docs/reference-cli.md): Every command-line argument, the modes they select, and exit codes.
 - [Command reference](https://tonyandrewmeyer.github.io/borescope/docs/reference-commands.md): The complete built-in command set, plus the grammar the REPL understands.
+- [Pebble compatibility](https://tonyandrewmeyer.github.io/borescope/docs/reference-pebble.md): What Pebble versions borescope supports, by transport.
 
 ## Explanation
 
