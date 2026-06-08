@@ -30,6 +30,26 @@ you mean, so name it:
 If you omit `--container` with multiple containers present, borescope lists the
 available names and asks you to choose one.
 
+{#workload-namespace}
+## Files you see are the workload's, not the charm container's
+
+When you run `borescope --here` inside the charm container, the prompt's
+filesystem commands (`ls`, `cat`, `cp`, `push`, …) see the **workload
+container's** filesystem, not the charm container's. That's the whole
+point — `--here` talks to the workload's Pebble, which serves the
+workload's files.
+
+This bites most often with `/tmp`: a file you write in the charm
+container's `/tmp` is invisible to `cat /tmp/whatever` at the borescope
+prompt. To poke at a specific local file, push it across first:
+
+<pre><code><span class="prompt">$</span> borescope --here -c "push /charm/scratch.txt /tmp/scratch.txt"
+<span class="prompt">$</span> borescope --here -c "cat /tmp/scratch.txt"</code></pre>
+
+The same applies in reverse: `pull /workload/path /charm/path` brings
+a file out of the workload into the charm container's filesystem
+where you can `juju scp` it back to your workstation.
+
 {#socket}
 ## Point at a socket
 
