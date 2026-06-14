@@ -1,11 +1,16 @@
+# PILOT — temporarily reduced cooldown/frequency for dependabot-agent step 9.
+# Revert after pilot exits per non-roadmap/dependabot-agent/PLAN.md in
+# canonical-work-queue. 3d cooldown is deliberately risky; pilot acceptance
+# is "agent reviews fast", not "releases are settled".
 version: 2
 updates:
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
-      interval: "monthly"  # Hard-coded to the 1st of the month.
+      interval: "daily"
     cooldown:
-      default-days: 7  # Don't adopt a release until it's 7 days old.
+      default-days: 3
+    open-pull-requests-limit: 5
     labels:
       - "dependencies"
   - package-ecosystem: "uv"
@@ -13,7 +18,7 @@ updates:
     schedule:
       interval: "daily"
     cooldown:
-      default-days: 7  # Don't adopt a release until it's 7 days old.
-    open-pull-requests-limit: 0  # Security updates only.
+      default-days: 3
+    open-pull-requests-limit: 5
     labels:
       - "dependencies"
