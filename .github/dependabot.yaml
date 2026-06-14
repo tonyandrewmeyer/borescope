@@ -3,9 +3,10 @@ updates:
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
-      interval: "monthly"  # Hard-coded to the 1st of the month.
+      interval: "daily"
     cooldown:
       default-days: 7  # Don't adopt a release until it's 7 days old.
+    open-pull-requests-limit: 5
     labels:
       - "dependencies"
   - package-ecosystem: "uv"
@@ -13,7 +14,7 @@ updates:
     schedule:
       interval: "daily"
     cooldown:
-      default-days: 7  # Don't adopt a release until it's 7 days old.
-    open-pull-requests-limit: 0  # Security updates only.
+      default-days: 7
+    open-pull-requests-limit: 5
     labels:
       - "dependencies"
