@@ -28,7 +28,7 @@ jobs:
       attestations: write   # Sigstore build-provenance + SBOM attestations.
       contents: read
     steps:
-      - uses: actions/checkout@v6.0.3
+      - uses: actions/checkout@v7.0.0
         with:
           persist-credentials: false
       - uses: actions/setup-python@v6
@@ -76,7 +76,7 @@ jobs:
       attestations: write   # Write the attestation via GitHub's API.
       contents: read
     steps:
-      - uses: actions/checkout@v6.0.3
+      - uses: actions/checkout@v7.0.0
         with:
           persist-credentials: false
       - name: Build snap
