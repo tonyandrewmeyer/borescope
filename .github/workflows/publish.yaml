@@ -46,7 +46,7 @@ jobs:
             --output-format JSON \
             --output-file sbom.cdx.json
       - name: Attest build provenance
-        uses: actions/attest-build-provenance@v4
+        uses: actions/attest-build-provenance@v4.1.0
         with:
           subject-path: "dist/*"
       - name: Attest SBOM
@@ -86,7 +86,7 @@ jobs:
         # SLSA v1.0 Build L2 provenance signed by Sigstore, verifiable with
         # `gh attestation verify <snap-file> --owner tonyandrewmeyer`.
         # Run before publish so what's attested == what's uploaded.
-        uses: actions/attest-build-provenance@v4
+        uses: actions/attest-build-provenance@v4.1.0
         with:
           subject-path: ${{ steps.build.outputs.snap }}
       - name: Upload snap artifact
