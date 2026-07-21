@@ -389,15 +389,15 @@ wheels = [
 
 [[package]]
 name = "pebble-shimmer"
-version = "1.0.0"
+version = "1.1.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "ops" },
     { name = "pyyaml" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/e2/61/4577708a4f130e1dd75d1910402f27c830280eeec394364546651a972c66/pebble_shimmer-1.0.0.tar.gz", hash = "sha256:043effec9e623150d20c4a9e6580e0a45aa182f52f8527d483cde772facb3ce5", size = 42419, upload-time = "2026-06-05T01:24:09.643Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/41/13/38e639eb2635ed9546de769bd4eb7fae3cc680be6e718128c208b72a4f10/pebble_shimmer-1.1.1.tar.gz", hash = "sha256:875aec9aeb8101b6e56c427d7a2858d1bf1dd6307b88e3fb8935ba2344bc4ccf", size = 43636, upload-time = "2026-07-14T04:46:04.306Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/58/00/c44847dfe3de793c897f6084e79164d778379c1ef1cbe02c9b03545f0efa/pebble_shimmer-1.0.0-py3-none-any.whl", hash = "sha256:0b96b4388e0dd6247750d741dfe3e01a66610c163d7843ee23e8abbbcadfb07f", size = 22259, upload-time = "2026-06-05T01:24:08.162Z" },
+    { url = "https://files.pythonhosted.org/packages/b9/0e/319008e5ac2ba07f8321adb0a3bdcf4b4029d90a83b117b294ac01172bcf/pebble_shimmer-1.1.1-py3-none-any.whl", hash = "sha256:65eae7b8d6f9b9a57a0beff19bf21f73039100dff2563671bd1b18e1ba52bbe8", size = 22725, upload-time = "2026-07-14T04:46:02.98Z" },
 ]
 
 [[package]]
