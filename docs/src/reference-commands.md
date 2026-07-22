@@ -1,6 +1,6 @@
 ---
 title: "Command reference: borescope"
-description: "Every built-in borescope command: shell built-ins, file commands, Pebble-native commands, and the exec escape hatch."
+description: "Every built-in borescope command: shell built-ins, file commands, process commands, Pebble-native commands, and the exec escape hatch."
 h1: "Command reference"
 subtitle: "The complete built-in command set, plus the grammar the REPL understands."
 section: reference
@@ -9,6 +9,7 @@ on_this_page:
   - { anchor: "grammar", label: "Line grammar" }
   - { anchor: "builtins", label: "Shell built-ins" }
   - { anchor: "files", label: "File commands" }
+  - { anchor: "process", label: "Process commands" }
   - { anchor: "pebble-native", label: "Pebble-native commands" }
   - { anchor: "exec", label: "exec" }
   - { anchor: "help", label: "Getting help in-session" }
@@ -83,6 +84,35 @@ so they work against a rock with no shell and no coreutils.
 `pull` and `push` cross the host/container boundary; the rest operate inside the
 container. See [Copy files in and out](howto-files.html).
 
+{#process}
+## Process commands
+
+A rock usually has no `ps` binary, so `exec ps` fails on exactly the images
+borescope is for. Everything `ps` reports lives in `/proc`, though, and
+Pebble's files API can read it — so `ps` is built in, like the file commands.
+
+| Command | Usage | Description |
+|---|---|---|
+| `ps` | `ps [-aAdefl] [-o format]… [-p pidlist] [-t termlist] [-u\|-U userlist] [-g\|-G grouplist]` | Report process status, read from `/proc`. |
+
+The option surface follows
+[POSIX `ps`](https://pubs.opengroup.org/onlinepubs/9699919799/utilities/ps.html):
+`-e` selects every process, `-f` and `-l` are the full and long listings, and
+`-o` takes the POSIX field names (`pid`, `ppid`, `pgid`, `user`, `ruser`,
+`group`, `rgroup`, `pcpu`, `vsz`, `nice`, `etime`, `time`, `tty`, `comm`,
+`args`) with optional `field=HEADER` renaming. BSD-style `ps aux` is not
+supported; use `ps -ef`.
+
+<pre><code><span class="prompt">pebble:/#</span> ps -ef
+UID    PID  PPID  C STIME TTY     TIME CMD
+root     1     0  0 09:14 ?   00:00:04 /usr/bin/pebble run --create-dirs
+app     14     1  0 09:14 ?   00:12:02 myapp --config /etc/myapp/config.yaml</code></pre>
+
+One deliberate divergence from POSIX: with no selection options, `ps` lists
+**every** process, as if `-e` were given. POSIX's default selects processes
+matching the invoker's effective user ID and controlling terminal, but
+borescope is not a process inside the container, so there is nothing to match.
+
 {#pebble-native}
 ## Pebble-native commands
 
@@ -136,8 +166,8 @@ The escape hatch. `exec` runs a program that is **already present in the
 container**, in your current session directory, and reports its stdout, stderr,
 and exit code:
 
-<pre><code><span class="prompt">pebble:/#</span> exec ps aux
-<span class="prompt">pebble:/#</span> exec cat /proc/1/cmdline
+<pre><code><span class="prompt">pebble:/#</span> exec id
+<span class="prompt">pebble:/#</span> exec myapp-ctl reload
 <span class="prompt">pebble:/#</span> exec /usr/bin/myapp --version</code></pre>
 
 If the binary isn't in the rock, `exec` reports that it couldn't run it, which

@@ -29,6 +29,8 @@ EXPECTED = {
     'rm',
     'mkdir',
     'touch',
+    # process
+    'ps',
     # escape hatch
     'exec',
     # pebble-native

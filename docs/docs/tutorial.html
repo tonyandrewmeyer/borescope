@@ -77,6 +77,7 @@
       <li><a href="#look-around">Look around the filesystem</a></li>
       <li><a href="#services">Inspect services and logs</a></li>
       <li><a href="#plan">Read the plan and checks</a></li>
+      <li><a href="#processes">See what's running</a></li>
       <li><a href="#exec">Reach for exec</a></li>
       <li><a href="#leave">Leave the session</a></li>
       <li><a href="#next-steps">Next steps</a></li>
@@ -192,12 +193,20 @@ myapp    enabled   active</code></pre>
 <span class="prompt">pebble:/#</span> health</code></pre>
 <p>When you're chasing a failed deploy, <code>changes</code> and <code>tasks</code> show what Pebble has
 recently done and whether any step errored.</p>
+<h2 id="processes">See what's running</h2>
+<p><code>services</code> shows what Pebble <em>thinks</em> is running; <code>ps</code> shows the actual
+process table, read straight from <code>/proc</code> &mdash; no <code>ps</code> binary needed in the
+container:</p>
+<pre><code><span class="prompt">pebble:/#</span> ps -ef</code></pre>
+<p>It follows POSIX <code>ps</code> (<code>-e</code> for everything, <code>-f</code> for the full listing, <code>-o</code>
+for your own columns); see the
+<a href="reference-commands.html#process">command reference</a> for the details.</p>
 <h2 id="exec">Reach for exec</h2>
 <p>borescope ships a deliberately small command set. For anything else, <code>exec</code>
 runs a binary that's <em>already in the container</em>, with your current working
 directory:</p>
-<pre><code><span class="prompt">pebble:/#</span> exec ps aux
-<span class="prompt">pebble:/#</span> exec cat /proc/1/status</code></pre>
+<pre><code><span class="prompt">pebble:/#</span> exec id
+<span class="prompt">pebble:/#</span> exec /usr/bin/myapp --version</code></pre>
 <p>If the tool isn't in the rock, <code>exec</code> will tell you it can't find it. That's
 expected on a minimal image. (See
 <a href="explanation-scope.html">Scope and philosophy</a> for why borescope leans on

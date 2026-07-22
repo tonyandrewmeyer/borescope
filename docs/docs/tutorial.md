@@ -141,6 +141,19 @@ If the charm defines health checks, list them and their status:
 When you're chasing a failed deploy, `changes` and `tasks` show what Pebble has
 recently done and whether any step errored.
 
+{#processes}
+## See what's running
+
+`services` shows what Pebble *thinks* is running; `ps` shows the actual
+process table, read straight from `/proc` — no `ps` binary needed in the
+container:
+
+<pre><code><span class="prompt">pebble:/#</span> ps -ef</code></pre>
+
+It follows POSIX `ps` (`-e` for everything, `-f` for the full listing, `-o`
+for your own columns); see the
+[command reference](reference-commands.html#process) for the details.
+
 {#exec}
 ## Reach for exec
 
@@ -148,8 +161,8 @@ borescope ships a deliberately small command set. For anything else, `exec`
 runs a binary that's *already in the container*, with your current working
 directory:
 
-<pre><code><span class="prompt">pebble:/#</span> exec ps aux
-<span class="prompt">pebble:/#</span> exec cat /proc/1/status</code></pre>
+<pre><code><span class="prompt">pebble:/#</span> exec id
+<span class="prompt">pebble:/#</span> exec /usr/bin/myapp --version</code></pre>
 
 If the tool isn't in the rock, `exec` will tell you it can't find it. That's
 expected on a minimal image. (See

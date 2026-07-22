@@ -11,6 +11,7 @@ the container's [Pebble](https://documentation.ubuntu.com/pebble/) instead of a 
 $ borescope myapp/0
 pebble:/# ls /var/log/myapp
 pebble:/# tail -f /var/log/myapp/error.log
+pebble:/# ps -ef
 pebble:/# services
 pebble:/# logs --follow myapp
 pebble:/# plan

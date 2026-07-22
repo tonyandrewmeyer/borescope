@@ -1,0 +1,25 @@
+summary: |
+  POSIX XCU §ps — `-o format` writes the requested fields with their
+  default headers; `name=header` renames a header; all-null headers
+  suppress the header line entirely.
+systems:
+  - ubuntu-24.04
+
+execute: |
+  # https://pubs.opengroup.org/onlinepubs/9699919799/utilities/ps.html
+  # "-o format  Write information according to the format specification
+  #  given in format."; Variable Names table: pid -> PID, args -> COMMAND;
+  # "The default header can be overridden by appending an <equals-sign> and
+  #  the new text of the header."; "If all the header text is null ... no
+  #  header line shall be written."
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_up
+
+  borescope_run --command 'ps -o pid,args' | head -n 1 | MATCH '^ *PID COMMAND$'
+  borescope_run --command 'ps -o pid=MYPID' | head -n 1 | MATCH '^ *MYPID$'
+  # A null header for every field: the first line is already data.
+  borescope_run --command 'ps -o pid=' | head -n 1 | MATCH '^ *[0-9]+$'
+
+restore: |
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_down
