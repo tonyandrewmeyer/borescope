@@ -1,0 +1,38 @@
+summary: |
+  `notice <id>` renders the notice's data payload as indented YAML, not as a
+  Python dict repr.
+systems:
+  - ubuntu-24.04
+
+# `notice` is a borescope extension, not a POSIX utility — XCU defines no
+# `notice`, so there is no clause to cite and no divergence to record. This
+# pins the fix for issue #37: the Data row used to interpolate the dict
+# straight into an f-string, so `dict.__repr__` leaked Python quoting
+# (`Data:        {'k': 'v'}`) into user-facing output. YAML matches `plan`'s
+# rendering and is copy-pasteable; it is also what `pebble notice` emits.
+execute: |
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_up
+
+  # A value containing ": " is the interesting case: YAML has to quote it.
+  recorded="$(borescope_run --command 'notify example.com/thing key=value "awkward=has: colon"')"
+  echo "$recorded" | MATCH '^Recorded notice [0-9]+$'
+  id="$(echo "$recorded" | awk '{print $NF}')"
+
+  out="$(borescope_run --command "notice ${id}")"
+
+  # Label on its own line, payload indented beneath it.
+  echo "$out" | MATCH '^Data:$'
+  echo "$out" | MATCH "^  awkward: 'has: colon'$"
+  echo "$out" | MATCH '^  key: value$'
+
+  # No Python repr anywhere: no braces, no repr-style quoting of a bare word.
+  echo "$out" | NOMATCH '[{}]'
+  echo "$out" | NOMATCH "'key'"
+
+  # The scalar fields above it are untouched.
+  echo "$out" | MATCH '^Key:          *example.com/thing$'
+
+restore: |
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_down

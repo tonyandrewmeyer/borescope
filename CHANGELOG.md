@@ -5,6 +5,17 @@ All notable changes to borescope are documented here.
 The format is loosely based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and the project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- `notice <id>` renders the notice's data payload as indented YAML instead
+  of a Python dict repr. The Data row interpolated the dict straight into
+  an f-string, so `dict.__repr__` leaked into the output
+  (`Data:        {'k': 'v'}`). It now matches `plan`'s YAML rendering, and
+  `pebble notice`'s quoting. See
+  [#37](https://github.com/tonyandrewmeyer/borescope/issues/37).
+
 ## [1.0.2] — 2026-06-05
 
 Snap release. Replaces 1.0.1, which was withdrawn from the store review
