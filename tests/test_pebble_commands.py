@@ -5,6 +5,10 @@
 
 from __future__ import annotations
 
+import dataclasses
+import json
+import types
+
 import pytest
 from ops import pebble
 
@@ -51,8 +55,6 @@ def test_services_empty(registry, pebble_ctx, pebble_transport):
 
 
 def test_services_format_json(registry, pebble_ctx):
-    import json
-
     result = run(registry, pebble_ctx, 'services', '--format=json')
     items = json.loads(result.output)
     assert {'name': 'web', 'startup': 'enabled', 'current': 'active'} in items
@@ -65,8 +67,6 @@ def test_services_format_yaml(registry, pebble_ctx):
 
 
 def test_services_format_json_empty(registry, pebble_ctx, pebble_transport):
-    import json
-
     pebble_transport._services = []
     result = run(registry, pebble_ctx, 'services', '--format=json')
     assert json.loads(result.output) == []
@@ -168,11 +168,9 @@ def test_notice_detail(registry, pebble_ctx):
 
 
 def test_notice_data_renders_multiple_keys_as_yaml(registry, pebble_ctx, pebble_transport):
-    from types import SimpleNamespace
-
-    pebble_transport.get_notice = lambda nid: SimpleNamespace(
+    pebble_transport.get_notice = lambda nid: types.SimpleNamespace(
         id=nid,
-        type=SimpleNamespace(value='custom'),
+        type=types.SimpleNamespace(value='custom'),
         key='k',
         occurrences=1,
         first_occurred=None,
@@ -230,20 +228,18 @@ def test_tasks_no_changes(registry, pebble_ctx, pebble_transport):
 
 
 def test_tasks_change_without_tasks(registry, pebble_ctx, pebble_transport):
-    from types import SimpleNamespace
-
-    pebble_transport.get_change = lambda cid: SimpleNamespace(id=str(cid), summary='x', tasks=[])
+    pebble_transport.get_change = lambda cid: types.SimpleNamespace(
+        id=str(cid), summary='x', tasks=[]
+    )
     result = run(registry, pebble_ctx, 'tasks', '5')
     assert result.output == ''
     assert result.error == 'Change 5: no tasks.'
 
 
 def test_notice_without_data(registry, pebble_ctx, pebble_transport):
-    from types import SimpleNamespace
-
-    pebble_transport.get_notice = lambda nid: SimpleNamespace(
+    pebble_transport.get_notice = lambda nid: types.SimpleNamespace(
         id=nid,
-        type=SimpleNamespace(value='custom'),
+        type=types.SimpleNamespace(value='custom'),
         key='k',
         occurrences=1,
         first_occurred=None,
@@ -268,8 +264,6 @@ def test_push_usage_error(registry, pebble_ctx):
 # binary on the host, and no relay. See tests/test_logs.py for the wire format.
 @pytest.fixture
 def socket_ctx(pebble_ctx):
-    import dataclasses
-
     pebble_ctx.target = dataclasses.replace(pebble_ctx.target, socket_path='/run/pebble.socket')
     return pebble_ctx
 

@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+import dataclasses
 import json
 import subprocess
 
@@ -78,8 +79,6 @@ def test_snapshot_json_is_valid_json(pebble_transport, target):
 def test_build_snapshot_over_a_socket_needs_no_pebble_binary(
     pebble_transport, target, monkeypatch
 ):
-    import dataclasses
-
     def no_relay(*a, **k):
         raise AssertionError('socket targets must not shell out to a pebble binary')
 
