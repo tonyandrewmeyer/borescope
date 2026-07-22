@@ -23,6 +23,11 @@ and the project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Fixed
 
+- When the reader of borescope's piped output exits early
+  (`borescope … --command 'cat big' | head`), borescope now dies the way
+  a SIGPIPE'd tool does — exit status 141, nothing on stderr — instead of
+  spilling a `BrokenPipeError` traceback. See
+  [#87](https://github.com/tonyandrewmeyer/borescope/issues/87).
 - `notice <id>` renders the notice's data payload as indented YAML instead
   of a Python dict repr. The Data row interpolated the dict straight into
   an f-string, so `dict.__repr__` leaked into the output

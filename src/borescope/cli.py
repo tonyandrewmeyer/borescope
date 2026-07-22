@@ -13,9 +13,14 @@ stay minimal until a concrete need shows up.
 from __future__ import annotations
 
 import argparse
+import contextlib
+import os
 import sys
 
 from . import __version__
+
+# How a shell reports a process killed by SIGPIPE (128 + signal 13).
+_SIGPIPE_EXIT = 141
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -95,6 +100,19 @@ def _build_target(args: argparse.Namespace):
 
 def main(argv: list[str] | None = None) -> int:
     """Run borescope from the command line and return the exit code."""
+    try:
+        return _main(argv)
+    except BrokenPipeError:
+        # stdout's reader went away mid-write (`borescope … | head`). Die the
+        # way a tool killed by SIGPIPE does — quietly, with the conventional
+        # exit status — after pointing stdout at devnull so the interpreter's
+        # exit-time flush cannot raise a second, unhandled BrokenPipeError.
+        with contextlib.suppress(Exception):
+            os.dup2(os.open(os.devnull, os.O_WRONLY), sys.stdout.fileno())
+        return _SIGPIPE_EXIT
+
+
+def _main(argv: list[str] | None = None) -> int:
     # Accept Canonical-style `help` / `version` subcommands as aliases for the
     # Python-default `--help` / `--version`. Awkward to support both, but it
     # means the tool matches the standard *and* what `argparse` users expect.

@@ -62,6 +62,11 @@ class Shell:
             return cmd.run(self.ctx, args, stdin)
         except ExitShell:
             raise
+        except BrokenPipeError:
+            # stdout's reader is gone (`borescope … | head`); there is nowhere
+            # left to report to. Propagate so cli.main can die SIGPIPE-style
+            # instead of turning this into a spurious '<name>: Broken pipe'.
+            raise
         except BorescopeError as exc:
             return Result.fail(f'{name}: {exc}')
         except Exception as exc:

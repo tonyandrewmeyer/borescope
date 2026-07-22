@@ -1,0 +1,46 @@
+summary: |
+  POSIX XCU §2.8.2 — a command that dies because its output pipe's reader
+  went away is reported like a signal death (exit status > 128). borescope
+  emulates SIGPIPE's conventional status, 141, and writes no traceback.
+systems:
+  - ubuntu-24.04
+
+execute: |
+  # https://pubs.opengroup.org/onlinepubs/9699919799/utilities/V3_chap02.html#tag_18_08_02
+  # "the exit status of a command that terminated because it received a
+  #  signal shall be reported as greater than 128" — a real cat downstream
+  #  of an exited head dies of SIGPIPE and the shell reports 141 (128+13).
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_up
+
+  # More output than the 64 KiB pipe buffer, so the write must continue
+  # after head has taken its line and closed the read end.
+  workdir="$(mktemp -d)"
+  seq 1 20000 > "${workdir}/big"
+
+  errfile="${workdir}/stderr"
+  set +e
+  # Suspend spread's xtrace while stderr is captured: the '+ …' trace lines
+  # bash writes for the commands inside borescope_run land on stderr too,
+  # and would make the emptiness assertion below fail spuriously.
+  set +x
+  set -o pipefail
+  borescope_run --command "cat ${workdir}/big" 2>"${errfile}" | head -n 1 >/dev/null
+  rc=$?
+  set +o pipefail
+  set -x
+  set -e
+
+  test "$rc" -eq 141
+  # No BrokenPipeError traceback (or any other noise) on stderr.
+  if [ -s "${errfile}" ]; then
+      echo "unexpected stderr from borescope:" >&2
+      cat "${errfile}" >&2
+      exit 1
+  fi
+
+  rm -rf "${workdir}"
+
+restore: |
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_down
