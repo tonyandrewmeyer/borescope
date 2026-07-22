@@ -13,7 +13,7 @@ description: |
   rock has no shell at all. It uses your existing Juju authority (juju ssh),
   needs no kubectl/cluster-admin, and puts Pebble's vocabulary (services, logs,
   plan, ...) front and centre alongside familiar commands (ls, cat, grep, ...).
-version: '1.0.2'
+version: '1.1.0'
 grade: stable
 confinement: strict
 
