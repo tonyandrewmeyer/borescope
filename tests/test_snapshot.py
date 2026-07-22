@@ -5,13 +5,14 @@
 
 from __future__ import annotations
 
+import dataclasses
 import json
 import subprocess
 
 import pytest
 
 from borescope import snapshot
-from borescope.transport import relay
+from borescope.transport import logs, relay
 
 
 @pytest.fixture(autouse=True)
@@ -73,3 +74,21 @@ def test_snapshot_json_is_valid_json(pebble_transport, target):
     text = snapshot.snapshot_json(pebble_transport, target)
     parsed = json.loads(text)
     assert parsed['unit'] == 'app/0'
+
+
+def test_build_snapshot_over_a_socket_needs_no_pebble_binary(
+    pebble_transport, target, monkeypatch
+):
+    def no_relay(*a, **k):
+        raise AssertionError('socket targets must not shell out to a pebble binary')
+
+    monkeypatch.setattr(relay, 'run_pebble', no_relay)
+    monkeypatch.setattr(
+        logs,
+        'iter_logs',
+        lambda socket_path, **kwargs: iter([f'{socket_path} n={kwargs["n"]}']),
+    )
+
+    socket_target = dataclasses.replace(target, socket_path='/run/pebble.socket')
+    data = snapshot.build_snapshot(pebble_transport, socket_target, log_lines=7)
+    assert data['recent_logs'] == ['/run/pebble.socket n=7']

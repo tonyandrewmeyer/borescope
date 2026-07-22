@@ -16,6 +16,7 @@ from typing import TYPE_CHECKING, Any
 import yaml
 
 from . import __version__
+from .transport import logs, relay
 
 if TYPE_CHECKING:
     from .discovery import Target
@@ -87,10 +88,11 @@ def build_snapshot(transport: Transport, target: Target, *, log_lines: int = 20)
         data['notices_error'] = str(exc)
 
     try:
-        from .transport.relay import run_pebble
-
-        result = run_pebble(target, ['logs', '-n', str(log_lines)])
-        data['recent_logs'] = (result.stdout or '').splitlines()
+        if target.socket_path:
+            data['recent_logs'] = list(logs.iter_logs(target.socket_path, n=log_lines))
+        else:
+            result = relay.run_pebble(target, ['logs', '-n', str(log_lines)])
+            data['recent_logs'] = (result.stdout or '').splitlines()
     except Exception as exc:
         data['logs_error'] = str(exc)
 

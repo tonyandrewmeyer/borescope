@@ -5,15 +5,20 @@
 
 from __future__ import annotations
 
+import dataclasses
+import json
+import types
+
 import pytest
 from ops import pebble
 
-from borescope.shell.commands.base import build_registry
+from borescope.shell.commands import base
+from borescope.transport import logs, relay
 
 
 @pytest.fixture
 def registry():
-    return build_registry()
+    return base.build_registry()
 
 
 def run(registry, ctx, name, *args, stdin=None):
@@ -50,8 +55,6 @@ def test_services_empty(registry, pebble_ctx, pebble_transport):
 
 
 def test_services_format_json(registry, pebble_ctx):
-    import json
-
     result = run(registry, pebble_ctx, 'services', '--format=json')
     items = json.loads(result.output)
     assert {'name': 'web', 'startup': 'enabled', 'current': 'active'} in items
@@ -64,8 +67,6 @@ def test_services_format_yaml(registry, pebble_ctx):
 
 
 def test_services_format_json_empty(registry, pebble_ctx, pebble_transport):
-    import json
-
     pebble_transport._services = []
     result = run(registry, pebble_ctx, 'services', '--format=json')
     assert json.loads(result.output) == []
@@ -167,11 +168,9 @@ def test_notice_detail(registry, pebble_ctx):
 
 
 def test_notice_data_renders_multiple_keys_as_yaml(registry, pebble_ctx, pebble_transport):
-    from types import SimpleNamespace
-
-    pebble_transport.get_notice = lambda nid: SimpleNamespace(
+    pebble_transport.get_notice = lambda nid: types.SimpleNamespace(
         id=nid,
-        type=SimpleNamespace(value='custom'),
+        type=types.SimpleNamespace(value='custom'),
         key='k',
         occurrences=1,
         first_occurred=None,
@@ -229,20 +228,18 @@ def test_tasks_no_changes(registry, pebble_ctx, pebble_transport):
 
 
 def test_tasks_change_without_tasks(registry, pebble_ctx, pebble_transport):
-    from types import SimpleNamespace
-
-    pebble_transport.get_change = lambda cid: SimpleNamespace(id=str(cid), summary='x', tasks=[])
+    pebble_transport.get_change = lambda cid: types.SimpleNamespace(
+        id=str(cid), summary='x', tasks=[]
+    )
     result = run(registry, pebble_ctx, 'tasks', '5')
     assert result.output == ''
     assert result.error == 'Change 5: no tasks.'
 
 
 def test_notice_without_data(registry, pebble_ctx, pebble_transport):
-    from types import SimpleNamespace
-
-    pebble_transport.get_notice = lambda nid: SimpleNamespace(
+    pebble_transport.get_notice = lambda nid: types.SimpleNamespace(
         id=nid,
-        type=SimpleNamespace(value='custom'),
+        type=types.SimpleNamespace(value='custom'),
         key='k',
         occurrences=1,
         first_occurred=None,
@@ -260,3 +257,81 @@ def test_pull_usage_error(registry, pebble_ctx):
 
 def test_push_usage_error(registry, pebble_ctx):
     assert run(registry, pebble_ctx, 'push', 'only-one').code == 1
+
+
+# -- logs --------------------------------------------------------------------
+# On a directly-reachable socket, `logs` speaks /v1/logs itself: no `pebble`
+# binary on the host, and no relay. See tests/test_logs.py for the wire format.
+@pytest.fixture
+def socket_ctx(pebble_ctx):
+    pebble_ctx.target = dataclasses.replace(pebble_ctx.target, socket_path='/run/pebble.socket')
+    return pebble_ctx
+
+
+def _capture_iter_logs(monkeypatch, lines):
+    calls = {}
+
+    def fake_iter_logs(socket_path, *, services=(), n=30, follow=False, timeout=30.0):
+        calls.update(socket_path=socket_path, services=list(services), n=n, follow=follow)
+        yield from lines
+
+    # pebble.py calls logs.iter_logs, so patching the module attribute bites.
+    monkeypatch.setattr(logs, 'iter_logs', fake_iter_logs)
+    return calls
+
+
+def test_logs_over_socket_needs_no_pebble_binary(registry, socket_ctx, monkeypatch):
+    def no_relay(target):
+        raise AssertionError('socket targets must not go through the pebble relay')
+
+    monkeypatch.setattr(relay, 'pebble_relay', no_relay)
+    calls = _capture_iter_logs(monkeypatch, ['ts [web] one', 'ts [web] two'])
+
+    result = run(registry, socket_ctx, 'logs')
+    assert result.output == 'ts [web] one\nts [web] two'
+    assert result.code == 0
+    assert calls == {
+        'socket_path': '/run/pebble.socket',
+        'services': [],
+        'n': 30,  # Pebble's own default for `logs -n`
+        'follow': False,
+    }
+
+
+def test_logs_over_socket_passes_n_and_services(registry, socket_ctx, monkeypatch):
+    calls = _capture_iter_logs(monkeypatch, [])
+    run(registry, socket_ctx, 'logs', '-n', '5', 'web', 'worker')
+    assert calls['n'] == 5
+    assert calls['services'] == ['web', 'worker']
+
+
+def test_logs_over_socket_accepts_n_all(registry, socket_ctx, monkeypatch):
+    calls = _capture_iter_logs(monkeypatch, [])
+    run(registry, socket_ctx, 'logs', '-n', 'all')
+    assert calls['n'] == -1
+
+
+def test_logs_over_socket_rejects_bad_n(registry, socket_ctx, monkeypatch):
+    _capture_iter_logs(monkeypatch, [])
+    result = run(registry, socket_ctx, 'logs', '-n', 'bogus')
+    assert result.code == 1
+    assert 'non-negative integer' in result.error
+
+
+def test_logs_over_socket_follow_streams_to_stdout(registry, socket_ctx, monkeypatch, capsys):
+    calls = _capture_iter_logs(monkeypatch, ['ts [web] one', 'ts [web] two'])
+    result = run(registry, socket_ctx, 'logs', '-f')
+    assert calls['follow'] is True
+    assert capsys.readouterr().out == 'ts [web] one\nts [web] two\n'
+    assert result.output == ''
+
+
+def test_logs_over_socket_reports_connection_failure(registry, socket_ctx, monkeypatch):
+    def boom(socket_path, **kwargs):
+        raise logs.LogsError('could not connect to Pebble')
+        yield  # pragma: no cover - generator marker
+
+    monkeypatch.setattr(logs, 'iter_logs', boom)
+    result = run(registry, socket_ctx, 'logs')
+    assert result.code == 1
+    assert result.error == 'logs: could not connect to Pebble'

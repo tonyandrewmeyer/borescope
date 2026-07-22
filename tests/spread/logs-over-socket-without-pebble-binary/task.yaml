@@ -1,0 +1,66 @@
+summary: |
+  `logs` over `--socket` reads Pebble's /v1/logs endpoint directly, so it works
+  with no `pebble` binary anywhere on the host.
+systems:
+  - ubuntu-24.04
+
+# `logs` is a borescope extension, not a POSIX utility — XCU defines no `logs`,
+# so there is no clause to cite and no divergence to record. What this task pins
+# is the contract from issue #75: `--socket` mode must depend on nothing but the
+# socket. It used to shell out to `pebble logs` (ops.pebble.Client has no log
+# API), which made `--socket` silently require Pebble on $PATH or at
+# /charm/bin/pebble. The assertion that matters is the reduced PATH below.
+execute: |
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_up
+
+  # pebble_up starts Pebble with --hold, so add a chatty service and start it.
+  # (Outside layers/, so `pebble add` owns the label rather than double-loading.)
+  printf 'summary: log source\nservices:\n  ticker:\n    override: replace\n    command: /bin/sh -c "while true; do echo tick; sleep 0.2; done"\n    startup: disabled\n' \
+    > "${PEBBLE}/ticker-layer.yaml"
+  pebble add ticker "${PEBBLE}/ticker-layer.yaml"
+  pebble start ticker
+  sleep 1
+
+  # A PATH with no pebble on it. borescope is invoked by absolute path, so the
+  # only thing this strips is the client binary borescope used to need.
+  reduced=/usr/bin:/bin
+  test -z "$(PATH=${reduced} command -v pebble || true)"
+
+  out="$(env PATH=${reduced} "${BORESCOPE}" --socket "${PEBBLE_SOCK}" --command 'logs -n 3')"
+  # Pebble's own rendering: "<RFC3339 with milliseconds> [<service>] <message>".
+  echo "$out" | MATCH '^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9:.]+Z \[ticker\] tick$'
+  test "$(echo "$out" | wc -l)" -eq 3
+
+  # Same rendering as the real client, byte for byte.
+  test "$(echo "$out" | sed 's/[0-9]//g')" \
+     = "$(pebble logs -n 3 | sed 's/[0-9]//g')"
+
+  # Per-service filtering and `-n all` reach the endpoint too.
+  env PATH=${reduced} "${BORESCOPE}" --socket "${PEBBLE_SOCK}" \
+    --command 'logs -n 2 ticker' | MATCH '\[ticker\] tick'
+  test "$(env PATH=${reduced} "${BORESCOPE}" --socket "${PEBBLE_SOCK}" \
+    --command 'logs -n all' | wc -l)" -gt 3
+
+  # -f keeps the connection open and streams new entries as they arrive.
+  followed="$(env PATH=${reduced} timeout 2 "${BORESCOPE}" --socket "${PEBBLE_SOCK}" \
+    --command 'logs -f -n 1' || true)"
+  test "$(echo "$followed" | wc -l)" -gt 1
+
+  # A bad -n is rejected with Pebble's own wording, not a traceback.
+  err="$(env PATH=${reduced} "${BORESCOPE}" --socket "${PEBBLE_SOCK}" \
+    --command 'logs -n bogus' 2>&1 >/dev/null || true)"
+  echo "$err" | MATCH 'non-negative integer'
+  echo "$err" | NOMATCH 'Traceback'
+
+  # --snapshot pulls recent logs over the same path.
+  env PATH=${reduced} "${BORESCOPE}" --socket "${PEBBLE_SOCK}" --snapshot \
+    | MATCH '"recent_logs"'
+  env PATH=${reduced} "${BORESCOPE}" --socket "${PEBBLE_SOCK}" --snapshot \
+    | NOMATCH '"logs_error"'
+
+  pebble stop ticker
+
+restore: |
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_down

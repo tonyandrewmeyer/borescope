@@ -23,6 +23,7 @@ from typing import TYPE_CHECKING, Any
 import yaml
 from ops import pebble
 
+from ...transport import logs, relay
 from ..output import bold
 from ._args import parse_args
 from .base import Command, Result
@@ -168,7 +169,11 @@ class Plan(Command):
 
 
 # --------------------------------------------------------------------------- #
-# Logs (CLI-shaped: driven over the relay, not the ops API)
+# Logs (CLI-shaped: `ops.pebble.Client` has no log API)
+#
+# On a directly-reachable socket we speak `/v1/logs` ourselves (no `pebble`
+# binary needed); over the Juju relay we drive the container's `pebble logs`,
+# which is always present at /charm/bin/pebble.
 # --------------------------------------------------------------------------- #
 class Logs(Command):
     name = 'logs'
@@ -181,6 +186,9 @@ class Logs(Command):
     def run(self, ctx: ShellContext, args: list[str], stdin: str | None = None) -> Result:
         flags, values, services = parse_args(args, valued=('n',))
         follow = 'f' in flags or 'follow' in flags
+        if ctx.target.socket_path:
+            return self._run_native(ctx.target.socket_path, services, values.get('n'), follow)
+
         pebble_args = ['logs']
         if follow:
             pebble_args.append('--follow')
@@ -188,7 +196,7 @@ class Logs(Command):
             pebble_args += ['-n', values['n']]
         pebble_args += services
 
-        argv, env, runner = self._relay(ctx)
+        argv, env, runner = relay.pebble_relay(ctx.target)
         argv = [*argv, *pebble_args]
         if not follow:
             result = runner.run(argv, env=env, timeout=30.0, check=False)
@@ -200,13 +208,30 @@ class Logs(Command):
         return self._follow(runner, argv, env)
 
     @staticmethod
-    def _relay(ctx: ShellContext):
-        from ...transport.relay import pebble_relay
-
-        return pebble_relay(ctx.target)
+    def _run_native(socket_path: str, services: list[str], n: str | None, follow: bool) -> Result:
+        try:
+            lines = logs.iter_logs(
+                socket_path,
+                services=services,
+                n=logs.DEFAULT_LOG_LINES if n is None else logs.parse_n(n),
+                follow=follow,
+            )
+            if not follow:
+                return Result.ok('\n'.join(lines))
+            try:
+                for line in lines:
+                    sys.stdout.write(line + '\n')
+                    sys.stdout.flush()
+            except KeyboardInterrupt:
+                sys.stdout.write('\n')
+            finally:
+                lines.close()
+        except logs.LogsError as exc:
+            return Result.fail(f'logs: {exc}')
+        return Result()
 
     @staticmethod
-    def _follow(runner, argv: list[str], env: dict[str, str]) -> Result:
+    def _follow(runner, argv: list[str], env: dict[str, str] | None) -> Result:
         process = runner.popen(
             argv, stdin=None, stdout=sys.stdout, stderr=sys.stdout, text=True, env=env
         )

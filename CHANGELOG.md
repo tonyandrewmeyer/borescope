@@ -15,6 +15,14 @@ and the project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
   (`Data:        {'k': 'v'}`). It now matches `plan`'s YAML rendering, and
   `pebble notice`'s quoting. See
   [#37](https://github.com/tonyandrewmeyer/borescope/issues/37).
+- `logs` and `--snapshot` no longer require a `pebble` binary on the host
+  when running against a directly-reachable socket (`--socket`, `--here`).
+  `ops.pebble.Client` has no log API, so these used to shell out to a real
+  Pebble client, and `--socket` failed with
+  `logs: [Errno 2] No such file or directory: 'pebble'` if none was
+  installed. borescope now reads Pebble's `/v1/logs` endpoint over the
+  socket itself, rendering entries identically to the Pebble CLI. See
+  [#75](https://github.com/tonyandrewmeyer/borescope/issues/75).
 
 ## [1.0.2] — 2026-06-05
 
