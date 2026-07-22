@@ -273,6 +273,50 @@ def test_ps_unknown_option_errors(registry, proc_ctx):
     assert 'unknown option -z' in result.error
 
 
+# -- read laziness -----------------------------------------------------------
+# Over the juju ssh relay every pull is a full round-trip, so ps must only
+# read the files the chosen columns and selectors actually use.
+@pytest.fixture
+def pull_log(transport):
+    calls: list[str] = []
+    orig = transport.pull
+
+    def recording_pull(path, **kwargs):
+        calls.append(path)
+        return orig(path, **kwargs)
+
+    transport.pull = recording_pull
+    return calls
+
+
+def test_ps_default_reads_only_per_pid_stat(registry, proc_ctx, pull_log):
+    run(registry, proc_ctx, 'ps')
+    assert sorted(pull_log) == ['/proc/1/stat', '/proc/42/stat']
+
+
+def test_ps_full_reads_what_it_shows(registry, proc_ctx, pull_log):
+    run(registry, proc_ctx, 'ps', '-ef')
+    assert '/proc/42/cmdline' in pull_log  # CMD shows args
+    assert '/proc/42/status' in pull_log  # UID column
+    assert '/etc/passwd' in pull_log  # UID resolves names
+    assert '/proc/uptime' in pull_log  # C column
+    assert '/proc/stat' in pull_log  # STIME needs boot time
+
+
+def test_ps_o_args_skips_status_and_passwd(registry, proc_ctx, pull_log):
+    run(registry, proc_ctx, 'ps', '-o', 'pid,args')
+    assert '/proc/42/cmdline' in pull_log
+    assert not any(p.endswith('/status') for p in pull_log)
+    assert '/etc/passwd' not in pull_log
+
+
+def test_ps_u_reads_status_and_passwd_but_not_cmdline(registry, proc_ctx, pull_log):
+    run(registry, proc_ctx, 'ps', '-u', 'root')
+    assert '/proc/42/status' in pull_log
+    assert '/etc/passwd' in pull_log
+    assert not any(p.endswith('/cmdline') for p in pull_log)
+
+
 # -- pure helpers ------------------------------------------------------------
 def test_tty_name_decoding():
     assert _tty_name(0) == '?'

@@ -16,7 +16,10 @@ and the project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
   `-U`/`-g`/`-G` selectors. One deliberate divergence: with no selection
   options it lists every process (POSIX's default matches the invoker's
   euid and terminal, but borescope has no invoker inside the container);
-  see `tests/spread/ps-default-selection-divergence`.
+  see `tests/spread/ps-default-selection-divergence`. Reads are lazy —
+  each column/selector declares the `/proc` files it needs — so over the
+  `juju ssh` relay (one round-trip per files-API call) the default listing
+  costs one read per process, not three.
 
 ### Fixed
 

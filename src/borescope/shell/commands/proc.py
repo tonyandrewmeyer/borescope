@@ -18,6 +18,12 @@ given (pinned by ``tests/spread/ps-default-selection-divergence``).
 
 Combining format options is first-match: ``-o`` beats ``-l`` beats ``-f``
 (POSIX leaves the combinations unspecified).
+
+Every file read is a Pebble files-API call — over the ``juju ssh`` relay that
+is a full round-trip each — so reads are lazy: each column and selector
+declares what it needs (``_NEEDS`` tags), and ``_snapshot`` only fetches those
+files. The default listing needs nothing beyond ``/proc/<pid>/stat``, so a
+bare ``ps`` costs one call per process plus the ``/proc`` listing.
 """
 
 from __future__ import annotations
@@ -236,32 +242,41 @@ def _lflags(p: _Process) -> int:
 # Columns
 # --------------------------------------------------------------------------- #
 _Getter = Callable[[_Process, _System], str]
-_Column = tuple[str, bool, _Getter]  # (header, right-align, getter)
+# Needs tags name the reads a column/selector depends on: 'args' -> cmdline
+# per pid, 'ids' -> status per pid, 'unames'/'gnames' -> /etc/passwd//etc/group,
+# 'uptime' -> /proc/uptime, 'btime' -> /proc/stat.
+_Needs = frozenset[str]
+_Column = tuple[str, bool, _Getter, _Needs]  # (header, right-align, getter, needs)
+
+_NONE: _Needs = frozenset()
+_USERS: _Needs = frozenset({'ids', 'unames'})
+_GROUPS: _Needs = frozenset({'ids', 'gnames'})
+_UPTIME: _Needs = frozenset({'uptime'})
 
 # The -o vocabulary, exactly the names POSIX requires, with POSIX's default
 # headers ("Variable Names" table in the ps STDOUT section).
 _FIELDS: dict[str, _Column] = {
-    'ruser': ('RUSER', False, lambda p, s: _name(p.ruid, s.users)),
-    'user': ('USER', False, lambda p, s: _name(p.euid, s.users)),
-    'rgroup': ('RGROUP', False, lambda p, s: _name(p.rgid, s.groups)),
-    'group': ('GROUP', False, lambda p, s: _name(p.egid, s.groups)),
-    'pid': ('PID', True, lambda p, s: str(p.pid)),
-    'ppid': ('PPID', True, lambda p, s: str(p.ppid)),
-    'pgid': ('PGID', True, lambda p, s: str(p.pgid)),
-    'pcpu': ('%CPU', True, lambda p, s: f'{_pcpu(p, s):.1f}'),
-    'vsz': ('VSZ', True, lambda p, s: str(p.vsize // 1024)),
-    'nice': ('NI', True, lambda p, s: str(p.nice)),
-    'etime': ('ELAPSED', True, lambda p, s: _fmt_etime(_etime_s(p, s))),
-    'time': ('TIME', True, lambda p, s: _fmt_time(p.cpu_ticks // _CLK_TCK)),
-    'tty': ('TT', False, lambda p, s: _tty_name(p.tty_nr)),
-    'comm': ('COMMAND', False, lambda p, s: safe_name(p.comm)),
-    'args': ('COMMAND', False, lambda p, s: safe_name(_args_or_comm(p))),
+    'ruser': ('RUSER', False, lambda p, s: _name(p.ruid, s.users), _USERS),
+    'user': ('USER', False, lambda p, s: _name(p.euid, s.users), _USERS),
+    'rgroup': ('RGROUP', False, lambda p, s: _name(p.rgid, s.groups), _GROUPS),
+    'group': ('GROUP', False, lambda p, s: _name(p.egid, s.groups), _GROUPS),
+    'pid': ('PID', True, lambda p, s: str(p.pid), _NONE),
+    'ppid': ('PPID', True, lambda p, s: str(p.ppid), _NONE),
+    'pgid': ('PGID', True, lambda p, s: str(p.pgid), _NONE),
+    'pcpu': ('%CPU', True, lambda p, s: f'{_pcpu(p, s):.1f}', _UPTIME),
+    'vsz': ('VSZ', True, lambda p, s: str(p.vsize // 1024), _NONE),
+    'nice': ('NI', True, lambda p, s: str(p.nice), _NONE),
+    'etime': ('ELAPSED', True, lambda p, s: _fmt_etime(_etime_s(p, s)), _UPTIME),
+    'time': ('TIME', True, lambda p, s: _fmt_time(p.cpu_ticks // _CLK_TCK), _NONE),
+    'tty': ('TT', False, lambda p, s: _tty_name(p.tty_nr), _NONE),
+    'comm': ('COMMAND', False, lambda p, s: safe_name(p.comm), _NONE),
+    'args': ('COMMAND', False, lambda p, s: safe_name(_args_or_comm(p)), frozenset({'args'})),
 }
 
 
 def _col(name: str, header: str | None = None) -> _Column:
-    default, right, getter = _FIELDS[name]
-    return (default if header is None else header, right, getter)
+    default, right, getter, needs = _FIELDS[name]
+    return (default if header is None else header, right, getter, needs)
 
 
 _DEFAULT_COLUMNS: list[_Column] = [
@@ -272,30 +287,30 @@ _DEFAULT_COLUMNS: list[_Column] = [
 ]
 
 _FULL_COLUMNS: list[_Column] = [
-    ('UID', False, lambda p, s: _name(p.euid, s.users)),
+    ('UID', False, lambda p, s: _name(p.euid, s.users), _USERS),
     _col('pid'),
     _col('ppid'),
-    ('C', True, lambda p, s: str(int(_pcpu(p, s)))),
-    ('STIME', True, _stime),
+    ('C', True, lambda p, s: str(int(_pcpu(p, s))), _UPTIME),
+    ('STIME', True, _stime, frozenset({'btime'})),
     _col('tty', 'TTY'),
     _col('time'),
     _col('args', 'CMD'),
 ]
 
 _LONG_COLUMNS: list[_Column] = [
-    ('F', True, lambda p, s: str(_lflags(p))),
-    ('S', False, lambda p, s: p.state),
-    ('UID', True, lambda p, s: str(p.euid) if p.euid >= 0 else '?'),
+    ('F', True, lambda p, s: str(_lflags(p)), frozenset({'ids'})),
+    ('S', False, lambda p, s: p.state, _NONE),
+    ('UID', True, lambda p, s: str(p.euid) if p.euid >= 0 else '?', frozenset({'ids'})),
     _col('pid'),
     _col('ppid'),
-    ('C', True, lambda p, s: str(int(_pcpu(p, s)))),
-    ('PRI', True, lambda p, s: str(p.priority)),
+    ('C', True, lambda p, s: str(int(_pcpu(p, s))), _UPTIME),
+    ('PRI', True, lambda p, s: str(p.priority), _NONE),
     _col('nice'),
     # ADDR is impl-defined and meaningless outside a kernel debugger; WCHAN
     # would cost one more round-trip per process (/proc/<pid>/wchan).
-    ('ADDR', False, lambda p, s: '-'),
-    ('SZ', True, lambda p, s: str(p.vsize // _PAGE_SIZE)),
-    ('WCHAN', False, lambda p, s: '-'),
+    ('ADDR', False, lambda p, s: '-', _NONE),
+    ('SZ', True, lambda p, s: str(p.vsize // _PAGE_SIZE), _NONE),
+    ('WCHAN', False, lambda p, s: '-', _NONE),
     _col('tty', 'TTY'),
     _col('time'),
     _col('comm', 'CMD'),
@@ -325,8 +340,8 @@ def _parse_format(specs: list[str]) -> list[_Column]:
 
 
 def _render(columns: list[_Column], procs: list[_Process], system: _System) -> str:
-    headers = [header for header, _, _ in columns]
-    rows = [[getter(p, system) for _, _, getter in columns] for p in procs]
+    headers = [header for header, _, _, _ in columns]
+    rows = [[getter(p, system) for _, _, getter, _ in columns] for p in procs]
     # POSIX: if all -o headers are null, no header line is written.
     lines = ([headers] if any(headers) else []) + rows
     if not lines:
@@ -336,10 +351,22 @@ def _render(columns: list[_Column], procs: list[_Process], system: _System) -> s
     for line in lines:
         cells = [
             cell.rjust(widths[i]) if right else cell.ljust(widths[i])
-            for i, (cell, (_, right, _)) in enumerate(zip(line, columns, strict=True))
+            for i, (cell, (_, right, _, _)) in enumerate(zip(line, columns, strict=True))
         ]
         out.append(' '.join(cells).rstrip())
     return '\n'.join(out)
+
+
+def _needed(columns: list[_Column], values: dict[str, list[str]]) -> _Needs:
+    """The union of reads the chosen columns and selectors require."""
+    needs: set[str] = set()
+    for _, _, _, column_needs in columns:
+        needs |= column_needs
+    if 'u' in values or 'U' in values:
+        needs |= _USERS  # status for the uids, passwd to resolve names
+    if 'G' in values:
+        needs |= _GROUPS
+    return frozenset(needs)
 
 
 # --------------------------------------------------------------------------- #
@@ -471,7 +498,8 @@ def _try_read(transport: Transport, path: str) -> str | None:
     return raw.decode('utf-8', errors='replace')
 
 
-def _snapshot(transport: Transport) -> tuple[list[_Process], _System]:
+def _snapshot(transport: Transport, needs: _Needs) -> tuple[list[_Process], _System]:
+    """Read what *needs* asks for and nothing more — each read is a round-trip."""
     infos = transport.list_files('/proc')
     pids = sorted(int(info.name) for info in infos if info.name.isdigit())
 
@@ -483,34 +511,40 @@ def _snapshot(transport: Transport) -> tuple[list[_Process], _System]:
         p = _parse_stat(stat_text)
         if p is None:
             continue
-        cmdline = _try_read(transport, f'/proc/{pid}/cmdline')
-        p.args = _parse_cmdline(cmdline) if cmdline else ''
-        status = _try_read(transport, f'/proc/{pid}/status')
-        if status:
-            p.ruid, p.euid, p.rgid, p.egid = _parse_status_ids(status)
+        if 'args' in needs:
+            cmdline = _try_read(transport, f'/proc/{pid}/cmdline')
+            p.args = _parse_cmdline(cmdline) if cmdline else ''
+        if 'ids' in needs:
+            status = _try_read(transport, f'/proc/{pid}/status')
+            if status:
+                p.ruid, p.euid, p.rgid, p.egid = _parse_status_ids(status)
         procs.append(p)
 
     system = _System(now=time.time())
-    uptime = _try_read(transport, '/proc/uptime')
-    if uptime:
-        with contextlib.suppress(ValueError, IndexError):
-            system.uptime = float(uptime.split()[0])
-    stat = _try_read(transport, '/proc/stat')
-    if stat:
-        for line in stat.splitlines():
-            if line.startswith('btime '):
-                with contextlib.suppress(ValueError, IndexError):
-                    system.btime = int(line.split()[1])
-                break
+    if 'uptime' in needs:
+        uptime = _try_read(transport, '/proc/uptime')
+        if uptime:
+            with contextlib.suppress(ValueError, IndexError):
+                system.uptime = float(uptime.split()[0])
+    if 'btime' in needs:
+        stat = _try_read(transport, '/proc/stat')
+        if stat:
+            for line in stat.splitlines():
+                if line.startswith('btime '):
+                    with contextlib.suppress(ValueError, IndexError):
+                        system.btime = int(line.split()[1])
+                    break
     # Distroless images may have no passwd/group at all; ids stay numeric.
-    passwd = _try_read(transport, '/etc/passwd')
-    if passwd:
-        system.users = _parse_id_table(passwd)
-        system.uids = {name: uid for uid, name in system.users.items()}
-    group = _try_read(transport, '/etc/group')
-    if group:
-        system.groups = _parse_id_table(group)
-        system.gids = {name: gid for gid, name in system.groups.items()}
+    if 'unames' in needs:
+        passwd = _try_read(transport, '/etc/passwd')
+        if passwd:
+            system.users = _parse_id_table(passwd)
+            system.uids = {name: uid for uid, name in system.users.items()}
+    if 'gnames' in needs:
+        group = _try_read(transport, '/etc/group')
+        if group:
+            system.groups = _parse_id_table(group)
+            system.gids = {name: gid for gid, name in system.groups.items()}
     return procs, system
 
 
@@ -534,7 +568,7 @@ class Ps(Command):
             return Result.fail(str(exc))
 
         try:
-            procs, system = _snapshot(ctx.transport)
+            procs, system = _snapshot(ctx.transport, _needed(columns, values))
         except Exception as exc:
             return Result.fail(f'ps: cannot read /proc: {exc}')
 
