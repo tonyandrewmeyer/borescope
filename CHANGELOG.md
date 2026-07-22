@@ -9,6 +9,12 @@ and the project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Fixed
 
+- `notice <id>` renders the notice's data payload as indented YAML instead
+  of a Python dict repr. The Data row interpolated the dict straight into
+  an f-string, so `dict.__repr__` leaked into the output
+  (`Data:        {'k': 'v'}`). It now matches `plan`'s YAML rendering, and
+  `pebble notice`'s quoting. See
+  [#37](https://github.com/tonyandrewmeyer/borescope/issues/37).
 - `logs` and `--snapshot` no longer require a `pebble` binary on the host
   when running against a directly-reachable socket (`--socket`, `--here`).
   `ops.pebble.Client` has no log API, so these used to shell out to a real
