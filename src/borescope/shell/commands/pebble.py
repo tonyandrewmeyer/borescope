@@ -23,6 +23,7 @@ from typing import TYPE_CHECKING, Any
 import yaml
 from ops import pebble
 
+from ...transport import logs, relay
 from ..output import bold
 from ._args import parse_args
 from .base import Command, Result
@@ -195,7 +196,7 @@ class Logs(Command):
             pebble_args += ['-n', values['n']]
         pebble_args += services
 
-        argv, env, runner = self._relay(ctx)
+        argv, env, runner = relay.pebble_relay(ctx.target)
         argv = [*argv, *pebble_args]
         if not follow:
             result = runner.run(argv, env=env, timeout=30.0, check=False)
@@ -208,13 +209,11 @@ class Logs(Command):
 
     @staticmethod
     def _run_native(socket_path: str, services: list[str], n: str | None, follow: bool) -> Result:
-        from ...transport.logs import DEFAULT_LOG_LINES, LogsError, iter_logs, parse_n
-
         try:
-            lines = iter_logs(
+            lines = logs.iter_logs(
                 socket_path,
                 services=services,
-                n=DEFAULT_LOG_LINES if n is None else parse_n(n),
+                n=logs.DEFAULT_LOG_LINES if n is None else logs.parse_n(n),
                 follow=follow,
             )
             if not follow:
@@ -227,18 +226,12 @@ class Logs(Command):
                 sys.stdout.write('\n')
             finally:
                 lines.close()
-        except LogsError as exc:
+        except logs.LogsError as exc:
             return Result.fail(f'logs: {exc}')
         return Result()
 
     @staticmethod
-    def _relay(ctx: ShellContext):
-        from ...transport.relay import pebble_relay
-
-        return pebble_relay(ctx.target)
-
-    @staticmethod
-    def _follow(runner, argv: list[str], env: dict[str, str]) -> Result:
+    def _follow(runner, argv: list[str], env: dict[str, str] | None) -> Result:
         process = runner.popen(
             argv, stdin=None, stdout=sys.stdout, stderr=sys.stdout, text=True, env=env
         )

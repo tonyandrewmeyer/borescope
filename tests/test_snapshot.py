@@ -11,7 +11,7 @@ import subprocess
 import pytest
 
 from borescope import snapshot
-from borescope.transport import relay
+from borescope.transport import logs, relay
 
 
 @pytest.fixture(autouse=True)
@@ -85,7 +85,8 @@ def test_build_snapshot_over_a_socket_needs_no_pebble_binary(
 
     monkeypatch.setattr(relay, 'run_pebble', no_relay)
     monkeypatch.setattr(
-        'borescope.transport.logs.iter_logs',
+        logs,
+        'iter_logs',
         lambda socket_path, **kwargs: iter([f'{socket_path} n={kwargs["n"]}']),
     )
 

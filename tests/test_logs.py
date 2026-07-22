@@ -15,7 +15,7 @@ import threading
 
 import pytest
 
-from borescope.transport.logs import LogsError, _format_time, iter_logs, parse_n
+from borescope.transport import logs
 
 
 class FakeLogServer:
@@ -84,7 +84,7 @@ def test_renders_entries_like_the_pebble_cli(serve):
         _entry('2026-07-22T08:37:54.39Z', 'ticker', 'tick 49')
         + _entry('2026-07-22T08:37:55.4Z', 'ticker', 'tick 50')
     )
-    assert list(iter_logs(server.path)) == [
+    assert list(logs.iter_logs(server.path)) == [
         # Go trims trailing zeros on the wire; the CLI pads back to milliseconds.
         '2026-07-22T08:37:54.390Z [ticker] tick 49',
         '2026-07-22T08:37:55.400Z [ticker] tick 50',
@@ -93,79 +93,79 @@ def test_renders_entries_like_the_pebble_cli(serve):
 
 def test_blank_lines_are_skipped(serve):
     server = serve(b'\n' + _entry('2026-07-22T08:37:54.390Z', 'web', 'hi') + b'\n')
-    assert list(iter_logs(server.path)) == ['2026-07-22T08:37:54.390Z [web] hi']
+    assert list(logs.iter_logs(server.path)) == ['2026-07-22T08:37:54.390Z [web] hi']
 
 
 def test_unparseable_line_is_passed_through(serve):
     server = serve(b'not json at all\n')
-    assert list(iter_logs(server.path)) == ['not json at all']
+    assert list(logs.iter_logs(server.path)) == ['not json at all']
 
 
 def test_empty_log_buffer(serve):
-    assert list(iter_logs(serve(b'').path)) == []
+    assert list(logs.iter_logs(serve(b'').path)) == []
 
 
 def test_format_time_keeps_non_utc_offset():
-    assert _format_time('2026-07-22T08:37:54.39+05:30') == '2026-07-22T08:37:54.390+05:30'
+    assert logs._format_time('2026-07-22T08:37:54.39+05:30') == '2026-07-22T08:37:54.390+05:30'
 
 
 def test_format_time_passes_through_junk():
-    assert _format_time('whenever') == 'whenever'
+    assert logs._format_time('whenever') == 'whenever'
 
 
 def test_format_time_naive_timestamp_gets_no_suffix():
-    assert _format_time('2026-07-22T08:37:54.39') == '2026-07-22T08:37:54.390'
+    assert logs._format_time('2026-07-22T08:37:54.39') == '2026-07-22T08:37:54.390'
 
 
 # -- query building ----------------------------------------------------------
 def test_query_defaults_to_thirty_lines(serve):
     server = serve(b'')
-    list(iter_logs(server.path))
+    list(logs.iter_logs(server.path))
     assert server.request_path == '/v1/logs?n=30'
 
 
 def test_query_carries_services_and_follow(serve):
     server = serve(b'')
-    list(iter_logs(server.path, services=['web', 'worker'], n=5, follow=True))
+    list(logs.iter_logs(server.path, services=['web', 'worker'], n=5, follow=True))
     assert server.request_path == '/v1/logs?n=5&follow=true&services=web&services=worker'
 
 
 # -- errors ------------------------------------------------------------------
 def test_missing_socket_is_a_clear_error(tmp_path):
-    with pytest.raises(LogsError, match='could not connect to Pebble'):
-        list(iter_logs(str(tmp_path / 'nope.socket')))
+    with pytest.raises(logs.LogsError, match='could not connect to Pebble'):
+        list(logs.iter_logs(str(tmp_path / 'nope.socket')))
 
 
 def test_server_hangup_mid_request_is_a_clear_error(serve):
     # Pebble accepted the connection and then went away without answering.
     server = serve(b'', hangup=True)
-    with pytest.raises(LogsError, match='cannot fetch logs'):
-        list(iter_logs(server.path))
+    with pytest.raises(logs.LogsError, match='cannot fetch logs'):
+        list(logs.iter_logs(server.path))
 
 
 def test_api_error_message_is_surfaced(serve):
     body = json.dumps({'result': {'message': 'no such service'}}).encode()
     server = serve(body, status='400 Bad Request')
-    with pytest.raises(LogsError, match='cannot fetch logs: no such service'):
-        list(iter_logs(server.path))
+    with pytest.raises(logs.LogsError, match='cannot fetch logs: no such service'):
+        list(logs.iter_logs(server.path))
 
 
 def test_non_json_error_body_falls_back_to_the_text(serve):
     server = serve(b'nope', status='500 Internal Server Error')
-    with pytest.raises(LogsError, match='cannot fetch logs: nope'):
-        list(iter_logs(server.path))
+    with pytest.raises(logs.LogsError, match='cannot fetch logs: nope'):
+        list(logs.iter_logs(server.path))
 
 
 # -- -n parsing (matches the Pebble CLI's wording) ---------------------------
 def test_parse_n_all():
-    assert parse_n('all') == -1
+    assert logs.parse_n('all') == -1
 
 
 def test_parse_n_integer():
-    assert parse_n('5') == 5
+    assert logs.parse_n('5') == 5
 
 
 @pytest.mark.parametrize('value', ['bogus', '-3', '', '1.5'])
 def test_parse_n_rejects_junk(value):
-    with pytest.raises(LogsError, match='non-negative integer'):
-        parse_n(value)
+    with pytest.raises(logs.LogsError, match='non-negative integer'):
+        logs.parse_n(value)

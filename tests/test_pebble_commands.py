@@ -8,12 +8,13 @@ from __future__ import annotations
 import pytest
 from ops import pebble
 
-from borescope.shell.commands.base import build_registry
+from borescope.shell.commands import base
+from borescope.transport import logs, relay
 
 
 @pytest.fixture
 def registry():
-    return build_registry()
+    return base.build_registry()
 
 
 def run(registry, ctx, name, *args, stdin=None):
@@ -261,7 +262,8 @@ def _capture_iter_logs(monkeypatch, lines):
         calls.update(socket_path=socket_path, services=list(services), n=n, follow=follow)
         yield from lines
 
-    monkeypatch.setattr('borescope.transport.logs.iter_logs', fake_iter_logs)
+    # pebble.py calls logs.iter_logs, so patching the module attribute bites.
+    monkeypatch.setattr(logs, 'iter_logs', fake_iter_logs)
     return calls
 
 
@@ -269,7 +271,7 @@ def test_logs_over_socket_needs_no_pebble_binary(registry, socket_ctx, monkeypat
     def no_relay(target):
         raise AssertionError('socket targets must not go through the pebble relay')
 
-    monkeypatch.setattr('borescope.transport.relay.pebble_relay', no_relay)
+    monkeypatch.setattr(relay, 'pebble_relay', no_relay)
     calls = _capture_iter_logs(monkeypatch, ['ts [web] one', 'ts [web] two'])
 
     result = run(registry, socket_ctx, 'logs')
@@ -312,13 +314,11 @@ def test_logs_over_socket_follow_streams_to_stdout(registry, socket_ctx, monkeyp
 
 
 def test_logs_over_socket_reports_connection_failure(registry, socket_ctx, monkeypatch):
-    from borescope.transport.logs import LogsError
-
     def boom(socket_path, **kwargs):
-        raise LogsError('could not connect to Pebble')
+        raise logs.LogsError('could not connect to Pebble')
         yield  # pragma: no cover - generator marker
 
-    monkeypatch.setattr('borescope.transport.logs.iter_logs', boom)
+    monkeypatch.setattr(logs, 'iter_logs', boom)
     result = run(registry, socket_ctx, 'logs')
     assert result.code == 1
     assert result.error == 'logs: could not connect to Pebble'

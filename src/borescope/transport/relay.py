@@ -18,6 +18,8 @@ from __future__ import annotations
 import subprocess
 from typing import TYPE_CHECKING, Any
 
+from . import cli_transport
+
 if TYPE_CHECKING:
     from ..discovery import Target
 
@@ -28,19 +30,18 @@ def pebble_relay(target: Target) -> tuple[list[str], dict[str, str] | None, Any]
     ``runner`` is a shimmer ``Runner`` (``run``/``popen``); ``binary_prefix`` is the
     argv that names the remote ``pebble`` binary.
     """
-    from .cli_transport import _RUNNERS, REMOTE_PEBBLE_BINARY
-
     # The runner injects the workload socket env itself (via the charm container),
     # so no env is needed here. Pick the runner that matches the target's
     # --via setting so `logs` / `--snapshot` use the same relay as everything else.
-    runner_cls = _RUNNERS.get(target.via, _RUNNERS['ssh'])
+    runners = cli_transport._RUNNERS
+    runner_cls = runners.get(target.via, runners['ssh'])
     runner = runner_cls(
         target.unit,
         target.container,
         model=target.model,
         juju_binary=target.juju_binary,
     )
-    return [REMOTE_PEBBLE_BINARY], None, runner
+    return [cli_transport.REMOTE_PEBBLE_BINARY], None, runner
 
 
 def run_pebble(
