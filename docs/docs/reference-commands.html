@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Command reference: borescope</title>
-<meta name="description" content="Every built-in borescope command: shell built-ins, file commands, Pebble-native commands, and the exec escape hatch.">
+<meta name="description" content="Every built-in borescope command: shell built-ins, file commands, process commands, Pebble-native commands, and the exec escape hatch.">
 <link rel="icon" href="../favicon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.bunny.net">
 <link rel="stylesheet" href="https://fonts.bunny.net/css?family=inter:400,500,600,700,800|jetbrains-mono:400&display=swap">
@@ -79,6 +79,7 @@
       <li><a href="#grammar">Line grammar</a></li>
       <li><a href="#builtins">Shell built-ins</a></li>
       <li><a href="#files">File commands</a></li>
+      <li><a href="#process">Process commands</a></li>
       <li><a href="#pebble-native">Pebble-native commands</a></li>
       <li><a href="#exec">exec</a></li>
       <li><a href="#help">Getting help in-session</a></li>
@@ -254,6 +255,41 @@ so they work against a rock with no shell and no coreutils.</p>
 </table>
 <p><code>pull</code> and <code>push</code> cross the host/container boundary; the rest operate inside the
 container. See <a href="howto-files.html">Copy files in and out</a>.</p>
+<h2 id="process">Process commands</h2>
+<p>A rock usually has no <code>ps</code> binary, so <code>exec ps</code> fails on exactly the images
+borescope is for. Everything <code>ps</code> reports lives in <code>/proc</code>, though, and
+Pebble's files API can read it &mdash; so <code>ps</code> is built in, like the file commands.</p>
+<table>
+<thead>
+<tr>
+<th>Command</th>
+<th>Usage</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ps</code></td>
+<td><code>ps [-aAdefl] [-o format]&hellip; [-p pidlist] [-t termlist] [-u|-U userlist] [-g|-G grouplist]</code></td>
+<td>Report process status, read from <code>/proc</code>.</td>
+</tr>
+</tbody>
+</table>
+<p>The option surface follows
+<a href="https://pubs.opengroup.org/onlinepubs/9699919799/utilities/ps.html" target="_blank" rel="noopener">POSIX <code>ps</code></a>:
+<code>-e</code> selects every process, <code>-f</code> and <code>-l</code> are the full and long listings, and
+<code>-o</code> takes the POSIX field names (<code>pid</code>, <code>ppid</code>, <code>pgid</code>, <code>user</code>, <code>ruser</code>,
+<code>group</code>, <code>rgroup</code>, <code>pcpu</code>, <code>vsz</code>, <code>nice</code>, <code>etime</code>, <code>time</code>, <code>tty</code>, <code>comm</code>,
+<code>args</code>) with optional <code>field=HEADER</code> renaming. BSD-style <code>ps aux</code> is not
+supported; use <code>ps -ef</code>.</p>
+<pre><code><span class="prompt">pebble:/#</span> ps -ef
+UID    PID  PPID  C STIME TTY     TIME CMD
+root     1     0  0 09:14 ?   00:00:04 /usr/bin/pebble run --create-dirs
+app     14     1  0 09:14 ?   00:12:02 myapp --config /etc/myapp/config.yaml</code></pre>
+<p>One deliberate divergence from POSIX: with no selection options, <code>ps</code> lists
+<strong>every</strong> process, as if <code>-e</code> were given. POSIX's default selects processes
+matching the invoker's effective user ID and controlling terminal, but
+borescope is not a process inside the container, so there is nothing to match.</p>
 <h2 id="pebble-native">Pebble-native commands</h2>
 <p>Pebble's operational vocabulary, exposed directly, no <code>pebble</code> prefix.</p>
 <table>
@@ -359,8 +395,8 @@ with exit code <code>0</code> and no stderr noise.</li>
 <p>The escape hatch. <code>exec</code> runs a program that is <strong>already present in the
 container</strong>, in your current session directory, and reports its stdout, stderr,
 and exit code:</p>
-<pre><code><span class="prompt">pebble:/#</span> exec ps aux
-<span class="prompt">pebble:/#</span> exec cat /proc/1/cmdline
+<pre><code><span class="prompt">pebble:/#</span> exec id
+<span class="prompt">pebble:/#</span> exec myapp-ctl reload
 <span class="prompt">pebble:/#</span> exec /usr/bin/myapp --version</code></pre>
 <p>If the binary isn't in the rock, <code>exec</code> reports that it couldn't run it, which
 is expected on a minimal image. borescope doesn't bundle tools into the

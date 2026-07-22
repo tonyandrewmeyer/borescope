@@ -155,8 +155,8 @@ in version control.</p>
 <h2 id="exec">Running container tools</h2>
 <p><code>exec</code> works the same non-interactively, so you can reach any tool in the
 container from a script:</p>
-<pre><code><span class="prompt">$</span> borescope myapp/0 --command "exec cat /proc/1/cmdline"
-<span class="prompt">$</span> borescope myapp/0 --command "exec ps aux"</code></pre>
+<pre><code><span class="prompt">$</span> borescope myapp/0 --command "exec myapp-ctl reload"
+<span class="prompt">$</span> borescope myapp/0 --command "exec /usr/bin/myapp --version"</code></pre>
 <h2 id="tips">Scripting tips</h2>
 <ul>
 <li><strong>Quote the whole command.</strong> <code>--command &quot;logs -n 100 myapp&quot;</code> is one argument;
