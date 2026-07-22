@@ -7,6 +7,17 @@ and the project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Added
+
+- `ps` built-in: a POSIX (XCU) `ps` implemented entirely over `/proc` via
+  the Pebble files API, so it works in distroless rocks that ship neither a
+  shell nor a `ps` binary. Supports `-e`/`-A`, `-a`, `-d`, `-f`, `-l`,
+  `-o format` (POSIX field names, custom headers), and the `-p`/`-t`/`-u`/
+  `-U`/`-g`/`-G` selectors. One deliberate divergence: with no selection
+  options it lists every process (POSIX's default matches the invoker's
+  euid and terminal, but borescope has no invoker inside the container);
+  see `tests/spread/ps-default-selection-divergence`.
+
 ### Fixed
 
 - `notice <id>` renders the notice's data payload as indented YAML instead

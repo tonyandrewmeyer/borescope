@@ -1,0 +1,19 @@
+summary: |
+  POSIX XCU §ps — `-e` writes information for all processes: both PID 1
+  and the per-task pebble daemon must appear.
+systems:
+  - ubuntu-24.04
+
+execute: |
+  # https://pubs.opengroup.org/onlinepubs/9699919799/utilities/ps.html
+  # "-e  Write information for all processes."
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_up
+
+  out="$(borescope_run --command 'ps -e')"
+  echo "$out" | MATCH '^ *1 '
+  echo "$out" | MATCH ' pebble$'
+
+restore: |
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_down

@@ -1,0 +1,26 @@
+summary: |
+  KNOWN DIVERGENCE from POSIX XCU §ps — default selection. POSIX selects
+  processes with the same effective user ID and controlling terminal as
+  the invoker; borescope is not a process inside the container, so there
+  is no invoker euid or terminal to match and a bare `ps` selects every
+  process, as if -e were given.
+systems:
+  - ubuntu-24.04
+
+# The divergence is structural, not an implementation shortcut: the invoker
+# lives outside the container. If borescope ever gains an in-container
+# identity to match against, this task flips by reversal (a bare `ps` would
+# then select a subset, and the PID-1 match below would fail).
+execute: |
+  # https://pubs.opengroup.org/onlinepubs/9699919799/utilities/ps.html
+  # "By default, ps shall write information about processes ... associated
+  #  with the current terminal" / "-e  Write information for all processes."
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_up
+
+  # Current behaviour: bare `ps` behaves as `ps -e` — PID 1 is listed.
+  borescope_run --command 'ps' | MATCH '^ *1 '
+
+restore: |
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_down
