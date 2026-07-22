@@ -100,3 +100,17 @@ def test_borescope_error_returns_1(monkeypatch, capsys):
     code = cli.main(['--socket', '/x', 'app/0'])
     assert code == 1
     assert 'cannot reach unit' in capsys.readouterr().err
+
+
+def test_broken_pipe_exits_sigpipe_quietly(monkeypatch, capsys, transport):
+    """stdout's reader closing early (`borescope … | head`) must exit 141 with
+    no traceback, like any tool killed by SIGPIPE. See issue #87."""
+    _mock_transport(monkeypatch, transport)
+
+    def boom(self, line):
+        raise BrokenPipeError
+
+    monkeypatch.setattr('borescope.shell.repl.Shell.execute_and_emit', boom)
+    code = cli.main(['--socket', '/x', 'app/0', '--command', 'pwd'])
+    assert code == 141
+    assert capsys.readouterr().err == ''

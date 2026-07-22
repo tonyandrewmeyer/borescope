@@ -5,9 +5,11 @@
 
 from __future__ import annotations
 
+from typing import cast
+
 import pytest
 
-from borescope.shell.commands.base import ExitShell
+from borescope.shell.commands.base import Command, ExitShell
 from borescope.shell.repl import Shell
 
 
@@ -65,3 +67,25 @@ def test_logs_without_follow_not_rejected_in_pipe(ctx):
     """logs without --follow is pipeable; any failure here is not a pipe-rejection."""
     result = Shell(ctx).run_line('logs myapp | grep ERROR')
     assert 'cannot be used in a pipe' not in result.error
+
+
+def test_broken_pipe_propagates_instead_of_reporting(ctx):
+    """A BrokenPipeError from a command must escape to cli.main, which turns it
+    into a quiet SIGPIPE-style exit — not become a '<name>: Broken pipe' Result."""
+    shell = Shell(ctx)
+
+    class Boom:
+        name = 'boom'
+        summary = 'raise BrokenPipeError'
+
+        def would_stream(self, args):
+            return False
+
+        def run(self, ctx, args, stdin=None):
+            raise BrokenPipeError
+
+    # A plain class + cast rather than a Command subclass: subclassing would
+    # leak 'boom' into the auto-discovery registry for every later test.
+    shell.registry['boom'] = cast('Command', Boom())
+    with pytest.raises(BrokenPipeError):
+        shell.run_line('boom')
