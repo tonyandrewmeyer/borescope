@@ -10,7 +10,7 @@ from .base import Command, ExitShell, Result, build_registry
 
 def import_all() -> None:
     """Import every command module so its ``Command`` subclasses register."""
-    from . import basic, execcmd, filesystem, pebble  # noqa: F401
+    from . import basic, execcmd, filesystem, pebble, proc  # noqa: F401
 
 
 __all__ = ['Command', 'ExitShell', 'Result', 'build_registry', 'import_all']

@@ -1,0 +1,22 @@
+summary: |
+  POSIX XCU §ps — `-f` generates a full listing with the UID, PID, PPID,
+  C, STIME, TTY, TIME, CMD columns, and CMD shows the command with its
+  arguments.
+systems:
+  - ubuntu-24.04
+
+execute: |
+  # https://pubs.opengroup.org/onlinepubs/9699919799/utilities/ps.html
+  # "-f  Generate a full listing." and STDOUT: "The -f option shall cause
+  #  ps to write ... UID PID PPID C STIME TTY TIME CMD"; "under the -f
+  #  option, ps shall write the command with its arguments" (args field).
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_up
+
+  out="$(borescope_run --command 'ps -ef')"
+  echo "$out" | head -n 1 | MATCH '^UID +PID +PPID +C +STIME +TTY +TIME +CMD$'
+  echo "$out" | MATCH 'pebble run --hold'
+
+restore: |
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_down

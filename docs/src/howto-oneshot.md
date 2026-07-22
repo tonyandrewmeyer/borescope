@@ -77,8 +77,8 @@ in version control.
 `exec` works the same non-interactively, so you can reach any tool in the
 container from a script:
 
-<pre><code><span class="prompt">$</span> borescope myapp/0 --command "exec cat /proc/1/cmdline"
-<span class="prompt">$</span> borescope myapp/0 --command "exec ps aux"</code></pre>
+<pre><code><span class="prompt">$</span> borescope myapp/0 --command "exec myapp-ctl reload"
+<span class="prompt">$</span> borescope myapp/0 --command "exec /usr/bin/myapp --version"</code></pre>
 
 {#tips}
 ## Scripting tips

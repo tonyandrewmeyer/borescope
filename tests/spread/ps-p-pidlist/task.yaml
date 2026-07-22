@@ -1,0 +1,26 @@
+summary: |
+  POSIX XCU §ps — `-p proclist` selects exactly the listed process IDs;
+  an empty selection is an error (non-zero exit).
+systems:
+  - ubuntu-24.04
+
+execute: |
+  # https://pubs.opengroup.org/onlinepubs/9699919799/utilities/ps.html
+  # "-p proclist  Write information for processes whose process ID numbers
+  #  are given in proclist."; EXIT STATUS: ">0  An error occurred."
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_up
+
+  out="$(borescope_run --command 'ps -p 1')"
+  test "$(echo "$out" | wc -l)" -eq 2  # header + exactly one row
+  echo "$out" | MATCH '^ *1 '
+
+  set +e
+  borescope_run --command 'ps -p 999999999' >/dev/null 2>&1
+  rc=$?
+  set -e
+  test "$rc" -ne 0
+
+restore: |
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_down
