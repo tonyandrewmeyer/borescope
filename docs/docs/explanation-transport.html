@@ -143,6 +143,10 @@ the Unix socket. This is the faster path, and borescope uses it when you run:</p
 <li><code>--socket PATH</code>, against any Pebble socket you name (a workload socket, or a
 local Pebble you're running yourself).</li>
 </ul>
+<p>This path needs nothing on your machine but the socket itself &mdash; no <code>pebble</code>
+binary, no Juju. That includes <a href="reference-commands.html#logs"><code>logs</code></a>, which
+<code>ops.pebble.Client</code> doesn't cover: borescope speaks Pebble's <code>/v1/logs</code>
+endpoint over the socket directly rather than shelling out to a client.</p>
 <p>See <a href="howto-here.html">Run inside the charm container</a> for how to pick this path.</p>
 <h2 id="relay">ssh vs exec relay</h2>
 <p>When going through Juju (the default mode), borescope can use one of two relays,

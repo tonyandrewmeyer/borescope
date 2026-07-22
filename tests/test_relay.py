@@ -1,31 +1,31 @@
 # Copyright 2026 Tony Meyer
 # SPDX-License-Identifier: Apache-2.0
 
-"""Pebble-binary discovery for the local-socket relay."""
+"""The Juju relay used for Pebble subcommands the ops client doesn't expose."""
 
 from __future__ import annotations
 
+import dataclasses
+
 from borescope.transport import relay
+from borescope.transport.runner import JujuExecRunner, JujuSshRunner
 
 
-def test_local_pebble_binary_prefers_path(monkeypatch, tmp_path):
-    fake = tmp_path / 'pebble'
-    fake.write_text('#!/bin/sh\nexit 0\n')
-    fake.chmod(0o755)
-    monkeypatch.setenv('PATH', str(tmp_path))
-    assert relay._local_pebble_binary() == str(fake)
+def test_relay_uses_the_charm_injected_binary(target):
+    prefix, env, runner = relay.pebble_relay(target)
+    # Juju injects pebble here in every k8s charm container, but does not put it
+    # on $PATH — so the absolute path, not a bare name.
+    assert prefix == ['/charm/bin/pebble']
+    # The runner supplies PEBBLE_SOCKET itself via the charm container.
+    assert env is None
+    assert isinstance(runner, JujuSshRunner)
 
 
-def test_local_pebble_binary_falls_back_to_charm_bin(monkeypatch, tmp_path):
-    # Empty PATH so `which` finds nothing.
-    monkeypatch.setenv('PATH', str(tmp_path / 'nope'))
-    juju_pebble = tmp_path / 'juju_pebble'
-    juju_pebble.write_text('')
-    monkeypatch.setattr(relay, '_JUJU_PEBBLE', str(juju_pebble))
-    assert relay._local_pebble_binary() == str(juju_pebble)
+def test_relay_honours_via_exec(target):
+    _, _, runner = relay.pebble_relay(dataclasses.replace(target, via='exec'))
+    assert isinstance(runner, JujuExecRunner)
 
 
-def test_local_pebble_binary_falls_back_to_bare_name(monkeypatch, tmp_path):
-    monkeypatch.setenv('PATH', str(tmp_path / 'nope'))
-    monkeypatch.setattr(relay, '_JUJU_PEBBLE', str(tmp_path / 'also-nope'))
-    assert relay._local_pebble_binary() == 'pebble'
+def test_relay_falls_back_to_ssh_for_an_unknown_via(target):
+    _, _, runner = relay.pebble_relay(dataclasses.replace(target, via='telepathy'))
+    assert isinstance(runner, JujuSshRunner)

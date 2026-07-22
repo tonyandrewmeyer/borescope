@@ -75,6 +75,11 @@ the Unix socket. This is the faster path, and borescope uses it when you run:
 - `--socket PATH`, against any Pebble socket you name (a workload socket, or a
   local Pebble you're running yourself).
 
+This path needs nothing on your machine but the socket itself — no `pebble`
+binary, no Juju. That includes [`logs`](reference-commands.html#logs), which
+`ops.pebble.Client` doesn't cover: borescope speaks Pebble's `/v1/logs`
+endpoint over the socket directly rather than shelling out to a client.
+
 See [Run inside the charm container](howto-here.html) for how to pick this path.
 
 {#relay}
