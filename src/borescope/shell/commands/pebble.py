@@ -328,7 +328,12 @@ class Notice(Command):
             f'Last:        {notice.last_occurred.isoformat() if notice.last_occurred else ""}',
         ]
         if notice.last_data:
-            lines.append(f'Data:        {notice.last_data}')
+            # Structured payload, so render it as YAML the way `plan` does —
+            # interpolating the dict directly leaks Python's repr (single
+            # quotes, braces) into the output, and isn't copy-pasteable.
+            body = yaml.safe_dump(dict(notice.last_data), default_flow_style=False)
+            lines.append('Data:')
+            lines += [f'  {line}' for line in body.rstrip('\n').splitlines()]
         return Result.ok('\n'.join(lines))
 
 

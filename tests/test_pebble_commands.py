@@ -161,7 +161,26 @@ def test_notice_detail(registry, pebble_ctx):
     result = run(registry, pebble_ctx, 'notice', '1')
     assert 'ID:' in result.output
     assert 'example.com/thing' in result.output
-    assert "{'k': 'v'}" in result.output
+    # Data is YAML under an indent, not a Python dict repr.
+    assert result.output.endswith('Data:\n  k: v')
+    assert '{' not in result.output
+
+
+def test_notice_data_renders_multiple_keys_as_yaml(registry, pebble_ctx, pebble_transport):
+    from types import SimpleNamespace
+
+    pebble_transport.get_notice = lambda nid: SimpleNamespace(
+        id=nid,
+        type=SimpleNamespace(value='custom'),
+        key='k',
+        occurrences=1,
+        first_occurred=None,
+        last_occurred=None,
+        # Keys deliberately out of order, and a value YAML has to quote.
+        last_data={'kind': 'perform-check', 'check-name': 'up: ready'},
+    )
+    result = run(registry, pebble_ctx, 'notice', '1')
+    assert result.output.endswith("Data:\n  check-name: 'up: ready'\n  kind: perform-check")
 
 
 def test_notice_requires_id(registry, pebble_ctx):
