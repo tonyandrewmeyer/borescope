@@ -28,13 +28,13 @@ jobs:
       attestations: write   # Sigstore build-provenance + SBOM attestations.
       contents: read
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7.0.0
         with:
           persist-credentials: false
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@v6.3.0
         with:
           python-version: "3.13"
-      - uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b  # v8.1.0
+      - uses: astral-sh/setup-uv@11f9893b081a58869d3b5fccaea48c9e9e46f990  # v8.3.2
         with:
           enable-cache: false  # No build cache in the release job (cache-poisoning hardening).
       - name: Build
@@ -46,11 +46,11 @@ jobs:
             --output-format JSON \
             --output-file sbom.cdx.json
       - name: Attest build provenance
-        uses: actions/attest-build-provenance@v4
+        uses: actions/attest-build-provenance@v4.1.1
         with:
           subject-path: "dist/*"
       - name: Attest SBOM
-        uses: actions/attest@v4
+        uses: actions/attest@v4.1.1
         with:
           subject-path: "dist/*"
           sbom-path: "sbom.cdx.json"
@@ -76,7 +76,7 @@ jobs:
       attestations: write   # Write the attestation via GitHub's API.
       contents: read
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7.0.0
         with:
           persist-credentials: false
       - name: Build snap
@@ -86,7 +86,7 @@ jobs:
         # SLSA v1.0 Build L2 provenance signed by Sigstore, verifiable with
         # `gh attestation verify <snap-file> --owner tonyandrewmeyer`.
         # Run before publish so what's attested == what's uploaded.
-        uses: actions/attest-build-provenance@v4
+        uses: actions/attest-build-provenance@v4.1.1
         with:
           subject-path: ${{ steps.build.outputs.snap }}
       - name: Upload snap artifact

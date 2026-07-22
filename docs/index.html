@@ -240,15 +240,17 @@
     <div class="section-head">
       <h2>Get started in seconds</h2>
       <p class="section-subtitle">
-        Install from a checkout while v1 is under active development. Stable
-        snap and PyPI releases are coming.
+        Install borescope then connect to a workload container.
       </p>
     </div>
 
     <div class="code-block">
       <div class="code-header"><i></i> Terminal</div>
-      <pre><code><span class="comment"># Install from a checkout</span>
-<span class="prompt">$</span> uv tool install .          <span class="comment"># or: pipx install .</span>
+      <pre><code><span class="comment"># Install from the snap store</span>
+<span class="prompt">$</span> sudo snap install borescope
+
+<span class="comment"># Or install from PyPI</span>
+<span class="prompt">$</span> uv tool install borescope  <span class="comment"># or: pipx install borescope</span>
 
 <span class="comment"># Open a prompt on a unit's workload container</span>
 <span class="prompt">$</span> borescope myapp/0

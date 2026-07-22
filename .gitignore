@@ -25,6 +25,7 @@ htmlcov
 
 # Agents
 .claude/*local*
+.claude/*.lock
 
 # Local docs-preview tooling writes this when viewing the page
 /docs/localStorage.json
