@@ -50,7 +50,7 @@ jobs:
         with:
           subject-path: "dist/*"
       - name: Attest SBOM
-        uses: actions/attest@v4.1.1
+        uses: actions/attest@v4.2.0
         with:
           subject-path: "dist/*"
           sbom-path: "sbom.cdx.json"
