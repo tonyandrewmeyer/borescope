@@ -40,6 +40,7 @@ dev = [
     "ruff==0.15.21",
     "ty==0.0.60",
     "pre-commit>=3.0.0",
+    "zizmor>=1.28.0",
 ]
 docs = [
     "jinja2>=3.1",
