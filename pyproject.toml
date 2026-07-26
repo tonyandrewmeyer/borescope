@@ -37,7 +37,7 @@ dev = [
     "pytest>=7.0.0",
     "pytest-cov>=4.0.0",
     "pytest-mock>=3.10.0",
-    "ruff==0.15.21",
+    "ruff==0.16.0",
     "ty==0.0.60",
     "pre-commit>=3.0.0",
     "zizmor>=1.28.0",
@@ -163,11 +163,15 @@ notice-rgx = "(?i)Copyright \\d{4} Tony Meyer"
     # Hard-coded "secrets" are fine in tests.
     "S105",
     "S106",
+    # Fixed /tmp paths are fine in tests: they are never created, only passed
+    # to the transport under test as opaque remote paths.
+    "S108",
 ]
 "tests/**/*" = [
     "D",
     "S105",
     "S106",
+    "S108",
 ]
 # The docs build script intentionally keeps two things ruff would flag:
 "docs/src/_build.py" = [

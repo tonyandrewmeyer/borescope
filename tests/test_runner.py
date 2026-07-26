@@ -149,7 +149,7 @@ def test_upload_temp_pipes_base64_via_charm_channel():
     with patch.object(subprocess, 'run', side_effect=fake_run):
         path = runner.upload_temp(b'hello world')
 
-    assert path.startswith('/tmp/cascade-upload-')  # noqa: S108 (remote path, not local)
+    assert path.startswith('/tmp/cascade-upload-')
     # juju ssh prefix is preserved; argv ends in `sh -c '<base64 pipeline>'`.
     assert captured['argv'][:4] == ['juju', 'ssh', '-m', 'm']
     assert captured['argv'][-2] == 'sh' or captured['argv'][-3] == 'sh'
@@ -178,7 +178,7 @@ def test_download_temp_reverses_base64():
     payload = b'\x00\x01binary stuff\xff'
     encoded = base64.b64encode(payload)
     with patch.object(subprocess, 'run', return_value=_fake_completed(stdout=encoded)):
-        out = runner.download_temp('/tmp/cascade-upload-xyz')  # noqa: S108 (remote path)
+        out = runner.download_temp('/tmp/cascade-upload-xyz')
     assert out == payload
 
 
@@ -191,12 +191,12 @@ def test_download_temp_uses_base64_command_via_charm_channel():
         return _fake_completed(stdout=base64.b64encode(b''))
 
     with patch.object(subprocess, 'run', side_effect=fake_run):
-        runner.download_temp('/tmp/foo')  # noqa: S108 (remote path)
+        runner.download_temp('/tmp/foo')
 
     # juju exec prefix + `base64 /tmp/foo` (no env shim — this isn't a pebble call).
     assert captured['argv'][:4] == ['juju', 'exec', '-m', 'm']
     assert '--' in captured['argv']
-    assert captured['argv'][-2:] == ['base64', '/tmp/foo']  # noqa: S108 (remote path)
+    assert captured['argv'][-2:] == ['base64', '/tmp/foo']
 
 
 def test_download_temp_raises_on_juju_failure():
@@ -207,7 +207,7 @@ def test_download_temp_raises_on_juju_failure():
         ),
         pytest.raises(RuntimeError, match=r'download_temp.*no such file'),
     ):
-        runner.download_temp('/tmp/missing')  # noqa: S108 (remote path)
+        runner.download_temp('/tmp/missing')
 
 
 def test_cleanup_temp_runs_rm_f_and_swallows_errors():
@@ -221,7 +221,7 @@ def test_cleanup_temp_runs_rm_f_and_swallows_errors():
 
     with patch.object(subprocess, 'run', side_effect=fake_run):
         # Must NOT raise even though rm returned non-zero.
-        runner.cleanup_temp('/tmp/foo')  # noqa: S108 (remote path)
+        runner.cleanup_temp('/tmp/foo')
 
-    assert captured['argv'][-3:] == ['rm', '-f', '/tmp/foo']  # noqa: S108 (remote path)
+    assert captured['argv'][-3:] == ['rm', '-f', '/tmp/foo']
     assert captured['check'] is False
