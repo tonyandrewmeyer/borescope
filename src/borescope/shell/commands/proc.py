@@ -358,7 +358,7 @@ def _render(columns: list[_Column], procs: list[_Process], system: _System) -> s
 
 
 def _needed(columns: list[_Column], values: dict[str, list[str]]) -> _Needs:
-    """The union of reads the chosen columns and selectors require."""
+    """Return the union of reads the chosen columns and selectors require."""
     needs: set[str] = set()
     for _, _, _, column_needs in columns:
         needs |= column_needs

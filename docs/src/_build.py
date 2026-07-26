@@ -114,12 +114,14 @@ def _build_all_pages_index(site: dict) -> list[dict]:
     entries: list[dict] = [{'slug': 'index', 'label': 'Documentation home', 'section': ''}]
     for section_key, cfg in site['sections'].items():
         label = site['section_breadcrumb_label'].get(section_key, '')
-        for page in cfg.get('pages', []):
-            entries.append({
+        entries.extend(
+            {
                 'slug': page['slug'],
                 'label': page['label'],
                 'section': label,
-            })
+            }
+            for page in cfg.get('pages', [])
+        )
     return entries
 
 
@@ -205,7 +207,7 @@ def _build_llms_txt(site: dict, sources_by_slug: dict[str, dict]) -> str:
         ),
         '',
     ]
-    for section_key, cfg in site['sections'].items():
+    for cfg in site['sections'].values():
         lines.append(f'## {cfg["heading"]}')
         lines.append('')
         for page in cfg.get('pages', []):

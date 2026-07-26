@@ -30,7 +30,7 @@ class Result:
 
     @classmethod
     def empty(cls, message: str) -> Result:
-        """An empty-listing outcome: human-readable note on stderr, exit code 0.
+        """Return an empty-listing outcome: human-readable note on stderr, exit code 0.
 
         Keeps stdout empty so ``borescope … -c services | wc -l`` reports 0 when
         nothing is listed, matching the Canonical CLI spec for tabular output.
