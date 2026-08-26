@@ -133,11 +133,25 @@ Pebble's operational vocabulary, exposed directly, no `pebble` prefix.
 | `notice` | `notice <id>` | Show a single notice by ID. |
 | `notify` | `notify <key> [data-key=value…]` | Record a custom notice. |
 | `changes` | `changes [--format=json\|yaml] [--no-headers]` | List recent changes. |
+| `version` | `version` | Show the Pebble and borescope versions. |
 | `tasks` | `tasks [--format=json\|yaml] [--no-headers] [change-id]` | Show tasks for a change (defaults to the most recent). |
 
 `start`, `stop`, `restart`, and `replan` change the running container. `logs
 --follow` and `tail -f` stream until you press <kbd>Ctrl-C</kbd> and can't be
 used inside a pipe.
+
+`version` prints two labelled rows — the Pebble daemon being inspected first,
+then borescope itself:
+
+```
+pebble     1.32.0
+borescope  0.1.0
+```
+
+Inside the shell, a bare `version` most often means "which Pebble am I talking
+to?", so that row comes first; outside the shell, `borescope --version` (or
+`borescope version`) still reports only borescope's version, without needing a
+container to connect to.
 
 ### Tabular output
 

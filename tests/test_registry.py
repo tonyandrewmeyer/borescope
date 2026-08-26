@@ -40,6 +40,7 @@ EXPECTED = {
     'restart',
     'replan',
     'plan',
+    'version',
     'logs',
     'notices',
     'notice',

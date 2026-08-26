@@ -12,6 +12,7 @@ import types
 import pytest
 from ops import pebble
 
+import borescope
 from borescope.shell.commands import base
 from borescope.transport import logs, relay
 
@@ -23,6 +24,18 @@ def registry():
 
 def run(registry, ctx, name, *args, stdin=None):
     return registry[name].run(ctx, list(args), stdin)
+
+
+# -- version -----------------------------------------------------------------
+def test_version_reports_pebble_and_borescope(registry, pebble_ctx):
+    result = run(registry, pebble_ctx, 'version')
+    assert result.code == 0
+    pebble_line, borescope_line = result.output.splitlines()
+    # Labelled and column-aligned, Pebble first: inside the shell, "version"
+    # most often means the daemon being inspected (issue #120).
+    assert pebble_line == 'pebble     1.99'
+    assert borescope_line.startswith('borescope  ')
+    assert borescope_line.split()[1] == borescope.__version__
 
 
 # -- services ----------------------------------------------------------------

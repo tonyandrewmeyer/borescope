@@ -9,6 +9,13 @@ and the project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Added
 
+- `version` built-in: reports the version of the Pebble daemon the session
+  is connected to, and borescope's own version, on two labelled rows. Inside
+  the shell a bare `version` reads as "which Pebble am I talking to?", so the
+  Pebble row comes first; `borescope --version` outside the shell is
+  unchanged. See
+  [#120](https://github.com/tonyandrewmeyer/borescope/issues/120).
+
 - `ps` built-in: a POSIX (XCU) `ps` implemented entirely over `/proc` via
   the Pebble files API, so it works in distroless rocks that ship neither a
   shell nor a `ps` binary. Supports `-e`/`-A`, `-a`, `-d`, `-f`, `-l`,

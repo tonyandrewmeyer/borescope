@@ -367,6 +367,11 @@ borescope is not a process inside the container, so there is nothing to match.</
 <td>List recent changes.</td>
 </tr>
 <tr>
+<td><code>version</code></td>
+<td><code>version</code></td>
+<td>Show the Pebble and borescope versions.</td>
+</tr>
+<tr>
 <td><code>tasks</code></td>
 <td><code>tasks [--format=json|yaml] [--no-headers] [change-id]</code></td>
 <td>Show tasks for a change (defaults to the most recent).</td>
@@ -375,6 +380,15 @@ borescope is not a process inside the container, so there is nothing to match.</
 </table>
 <p><code>start</code>, <code>stop</code>, <code>restart</code>, and <code>replan</code> change the running container. <code>logs --follow</code> and <code>tail -f</code> stream until you press <kbd>Ctrl-C</kbd> and can't be
 used inside a pipe.</p>
+<p><code>version</code> prints two labelled rows &mdash; the Pebble daemon being inspected first,
+then borescope itself:</p>
+<pre><code>pebble     1.32.0
+borescope  0.1.0
+</code></pre>
+<p>Inside the shell, a bare <code>version</code> most often means &quot;which Pebble am I talking
+to?&quot;, so that row comes first; outside the shell, <code>borescope --version</code> (or
+<code>borescope version</code>) still reports only borescope's version, without needing a
+container to connect to.</p>
 <h3>Tabular output</h3>
 <p>The list commands above (<code>services</code>, <code>checks</code>, <code>notices</code>, <code>changes</code>, <code>tasks</code>)
 follow the same convention:</p>

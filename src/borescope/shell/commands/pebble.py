@@ -23,6 +23,7 @@ from typing import TYPE_CHECKING, Any
 import yaml
 from ops import pebble
 
+from ... import __version__
 from ...transport import logs, relay
 from ..output import bold
 from ._args import parse_args
@@ -80,6 +81,23 @@ def _listing(
 ) -> tuple[set[str], dict[str, str], list[str]]:
     """``parse_args`` configured for a list-style command (``--format``, ``--no-headers``)."""
     return parse_args(args, valued=(*VALUED_LIST_FLAGS, *extra_valued))
+
+
+# --------------------------------------------------------------------------- #
+# Version
+# --------------------------------------------------------------------------- #
+class Version(Command):
+    name = 'version'
+    summary = 'Show the Pebble and borescope versions'
+
+    def run(self, ctx: ShellContext, args: list[str], stdin: str | None = None) -> Result:
+        # Two rows, because "version" inside the shell is ambiguous: the Pebble
+        # being inspected and the tool inspecting it can differ, and either may
+        # be what you came for. `pebble version` labels its rows the same way
+        # (client/server), so the shape is familiar.
+        rows = [('pebble', ctx.transport.get_system_info().version), ('borescope', __version__)]
+        width = max(len(label) for label, _ in rows)
+        return Result.ok('\n'.join(f'{label.ljust(width)}  {value}' for label, value in rows))
 
 
 # --------------------------------------------------------------------------- #
