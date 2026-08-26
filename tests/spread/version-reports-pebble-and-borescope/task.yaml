@@ -16,10 +16,14 @@ execute: |
 
   out="$(borescope_run --command 'version')"
 
-  # Exactly two lines, pebble first.
+  # Exactly two lines, pebble first. Over a directly-reachable socket there is
+  # no `pebble` binary in the picture at all, so there is no client row: that
+  # third row only appears on the juju relay (unit-tested; a real relay needs a
+  # Juju model, which this suite deliberately doesn't require).
   [ "$(echo "$out" | wc -l)" = "2" ]
   echo "$out" | head -1 | MATCH '^pebble '
   echo "$out" | tail -1 | MATCH '^borescope '
+  echo "$out" | NOMATCH '^pebble client'
 
   # The pebble row is the daemon's version, which for this task's Pebble is the
   # same binary spread installed.

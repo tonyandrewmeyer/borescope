@@ -91,13 +91,43 @@ class Version(Command):
     summary = 'Show the Pebble and borescope versions'
 
     def run(self, ctx: ShellContext, args: list[str], stdin: str | None = None) -> Result:
-        # Two rows, because "version" inside the shell is ambiguous: the Pebble
-        # being inspected and the tool inspecting it can differ, and either may
-        # be what you came for. `pebble version` labels its rows the same way
-        # (client/server), so the shape is familiar.
-        rows = [('pebble', ctx.transport.get_system_info().version), ('borescope', __version__)]
+        # Several rows, because "version" inside the shell is ambiguous: the
+        # Pebble being inspected and the tool inspecting it can differ, and
+        # either may be what you came for. `pebble version` labels its rows the
+        # same way (client/server), so the shape is familiar.
+        rows = [('pebble', ctx.transport.get_system_info().version)]
+        client = self._client_version(ctx)
+        if client:
+            rows.append(('pebble client', client))
+        rows.append(('borescope', __version__))
         width = max(len(label) for label, _ in rows)
         return Result.ok('\n'.join(f'{label.ljust(width)}  {value}' for label, value in rows))
+
+    @staticmethod
+    def _client_version(ctx: ShellContext) -> str | None:
+        """The version of the ``pebble`` binary the relay drives, if there is one.
+
+        Only the CLI relay has a client: ``--socket`` / ``--here`` speak HTTP to
+        the daemon with no ``pebble`` binary anywhere in the picture, so there is
+        no third row to show. Over the relay the client is whatever the charm
+        container ships, which can be *older* than the workload's daemon — and
+        that gap is exactly what shimmer's feature floor trips over (see
+        ``discovery.sanity_check``), so it is worth surfacing.
+
+        Best-effort: a relay that can't answer costs us a row, not the command.
+        """
+        if ctx.target.socket_path:
+            return None
+        try:
+            result = relay.run_pebble(ctx.target, ['version', '--client'])
+        except Exception:  # informational row; any failure just omits it
+            return None
+        if result.returncode != 0:
+            return None
+        # `pebble version --client` prints the bare version; take the last field
+        # so a future label prefix ("client  1.2.3") doesn't leak into the row.
+        fields = (result.stdout or '').split()
+        return fields[-1] if fields else None
 
 
 # --------------------------------------------------------------------------- #

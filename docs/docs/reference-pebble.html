@@ -129,7 +129,9 @@ version.</p>
 <p>Inside a charm container, <code>pebble version --client</code> reports the bundled
 Pebble. From a borescope session, the <a href="reference-commands.html#pebble-native"><code>version</code></a>
 built-in prints the server version of whatever Pebble you're currently
-connected to, alongside borescope's own version.</p>
+connected to, alongside borescope's own version &mdash; and, over the Juju relay,
+the version of the <code>pebble</code> binary borescope is driving, which is the one the
+compatibility floor above applies to.</p>
   </main>
 </div>
 

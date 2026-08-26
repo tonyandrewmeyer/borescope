@@ -10,10 +10,13 @@ and the project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 ### Added
 
 - `version` built-in: reports the version of the Pebble daemon the session
-  is connected to, and borescope's own version, on two labelled rows. Inside
+  is connected to, and borescope's own version, on labelled rows. Inside
   the shell a bare `version` reads as "which Pebble am I talking to?", so the
   Pebble row comes first; `borescope --version` outside the shell is
-  unchanged. See
+  unchanged. Over the Juju relay a third row reports the `pebble` binary
+  being driven (the charm container's client, which can be older than the
+  workload's daemon and is what shimmer's compatibility floor applies to);
+  `--socket` / `--here` have no client to report. See
   [#120](https://github.com/tonyandrewmeyer/borescope/issues/120).
 
 - `ps` built-in: a POSIX (XCU) `ps` implemented entirely over `/proc` via

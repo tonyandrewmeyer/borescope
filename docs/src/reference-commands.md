@@ -140,8 +140,8 @@ Pebble's operational vocabulary, exposed directly, no `pebble` prefix.
 --follow` and `tail -f` stream until you press <kbd>Ctrl-C</kbd> and can't be
 used inside a pipe.
 
-`version` prints two labelled rows — the Pebble daemon being inspected first,
-then borescope itself:
+`version` prints labelled rows — the Pebble daemon being inspected first, then
+borescope itself:
 
 ```
 pebble     1.32.0
@@ -152,6 +152,21 @@ Inside the shell, a bare `version` most often means "which Pebble am I talking
 to?", so that row comes first; outside the shell, `borescope --version` (or
 `borescope version`) still reports only borescope's version, without needing a
 container to connect to.
+
+Over the [Juju relay](explanation-transport.html), a third row appears: the
+`pebble` binary the relay drives (`/charm/bin/pebble`, shipped by the charm
+container) is a *client* of the workload's daemon, and can be older than it.
+
+```
+pebble         1.32.0
+pebble client  1.31.0
+borescope      0.1.0
+```
+
+That's the pair that matters when a command fails on an older Pebble — see
+[Pebble compatibility](reference-pebble.html). `--socket` and `--here` speak
+HTTP to the daemon directly, with no `pebble` binary in the picture, so there
+is no client row to show.
 
 ### Tabular output
 

@@ -27,15 +27,60 @@ def run(registry, ctx, name, *args, stdin=None):
 
 
 # -- version -----------------------------------------------------------------
-def test_version_reports_pebble_and_borescope(registry, pebble_ctx):
-    result = run(registry, pebble_ctx, 'version')
+def _socket_ctx(ctx):
+    """Point *ctx* at a directly-reachable socket (no `pebble` binary in play)."""
+    ctx.target = dataclasses.replace(ctx.target, socket_path='/tmp/pebble.socket')
+    return ctx
+
+
+def _fake_client_version(monkeypatch, stdout, returncode=0):
+    calls = []
+
+    def fake_run_pebble(target, args, **kwargs):
+        calls.append(args)
+        return types.SimpleNamespace(returncode=returncode, stdout=stdout, stderr='')
+
+    monkeypatch.setattr(relay, 'run_pebble', fake_run_pebble)
+    return calls
+
+
+def test_version_over_socket_reports_pebble_and_borescope(registry, pebble_ctx):
+    result = run(registry, _socket_ctx(pebble_ctx), 'version')
     assert result.code == 0
     pebble_line, borescope_line = result.output.splitlines()
     # Labelled and column-aligned, Pebble first: inside the shell, "version"
-    # most often means the daemon being inspected (issue #120).
+    # most often means the daemon being inspected (issue #120). No client row:
+    # the socket path speaks HTTP, with no `pebble` binary anywhere.
     assert pebble_line == 'pebble     1.99'
-    assert borescope_line.startswith('borescope  ')
-    assert borescope_line.split()[1] == borescope.__version__
+    assert borescope_line == f'borescope  {borescope.__version__}'
+
+
+def test_version_over_relay_includes_the_client(registry, pebble_ctx, monkeypatch):
+    calls = _fake_client_version(monkeypatch, 'v1.31.0\n')
+    result = run(registry, pebble_ctx, 'version')
+    assert calls == [['version', '--client']]
+    assert result.output.splitlines() == [
+        'pebble         1.99',
+        'pebble client  v1.31.0',
+        f'borescope      {borescope.__version__}',
+    ]
+
+
+def test_version_relay_client_row_is_best_effort(registry, pebble_ctx, monkeypatch):
+    def boom(target, args, **kwargs):
+        raise OSError('juju not found')
+
+    monkeypatch.setattr(relay, 'run_pebble', boom)
+    # A relay that can't answer costs the row, not the command.
+    assert run(registry, pebble_ctx, 'version').output.splitlines() == [
+        'pebble     1.99',
+        f'borescope  {borescope.__version__}',
+    ]
+
+
+def test_version_relay_client_row_skipped_on_error_exit(registry, pebble_ctx, monkeypatch):
+    _fake_client_version(monkeypatch, '', returncode=1)
+    assert 'pebble client' not in run(registry, pebble_ctx, 'version').output
 
 
 # -- services ----------------------------------------------------------------
