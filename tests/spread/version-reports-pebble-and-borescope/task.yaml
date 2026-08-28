@@ -1,0 +1,40 @@
+summary: |
+  `version` reports the version of the Pebble daemon being inspected, and
+  borescope's own version, each on a labelled line.
+systems:
+  - ubuntu-24.04
+
+# `version` is a borescope extension, not a POSIX utility — XCU defines no
+# `version`, so there is no clause to cite and no divergence to record. This
+# pins the resolution of issue #120: inside the shell, `version` was expected
+# to show the *Pebble* version (the daemon borescope is talking to), not
+# borescope's. Both are reported, labelled, with pebble first, so neither
+# reading of the bare word is a surprise.
+execute: |
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_up
+
+  out="$(borescope_run --command 'version')"
+
+  # Exactly two lines, pebble first. Over a directly-reachable socket there is
+  # no `pebble` binary in the picture at all, so there is no client row: that
+  # third row only appears on the juju relay (unit-tested; a real relay needs a
+  # Juju model, which this suite deliberately doesn't require).
+  [ "$(echo "$out" | wc -l)" = "2" ]
+  echo "$out" | head -1 | MATCH '^pebble '
+  echo "$out" | tail -1 | MATCH '^borescope '
+  echo "$out" | NOMATCH '^pebble client'
+
+  # The pebble row is the daemon's version, which for this task's Pebble is the
+  # same binary spread installed.
+  expected_pebble="$(pebble version --client | awk '{print $NF}')"
+  echo "$out" | MATCH "^pebble  *${expected_pebble}\$"
+
+  # The borescope row matches what `borescope --version` reports outside the
+  # shell, so the two never drift apart.
+  expected_borescope="$("${BORESCOPE}" --version | awk '{print $NF}')"
+  echo "$out" | MATCH "^borescope  *${expected_borescope}\$"
+
+restore: |
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_down

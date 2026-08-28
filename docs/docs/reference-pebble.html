@@ -127,9 +127,11 @@ you hit a regression on an older Pebble, please file it with the exact
 version.</p>
 <h2 id="checking">Checking what you have</h2>
 <p>Inside a charm container, <code>pebble version --client</code> reports the bundled
-Pebble. From a borescope session, <code>pebble version</code> (Pebble's own command,
-exposed as a built-in) prints the server version of whatever Pebble you're
-currently connected to.</p>
+Pebble. From a borescope session, the <a href="reference-commands.html#pebble-native"><code>version</code></a>
+built-in prints the server version of whatever Pebble you're currently
+connected to, alongside borescope's own version &mdash; and, over the Juju relay,
+the version of the <code>pebble</code> binary borescope is driving, which is the one the
+compatibility floor above applies to.</p>
   </main>
 </div>
 
