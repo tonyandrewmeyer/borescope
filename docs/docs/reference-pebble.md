@@ -5,9 +5,9 @@ _What Pebble versions borescope supports, by transport._
 {#supported}
 ## Supported versions
 
-borescope 1.0 is tested against **Pebble 1.31.0** end-to-end (see the
+borescope 1.0 is tested against **Pebble 1.32.1** end-to-end (see the
 [`spread.yaml`](https://github.com/tonyandrewmeyer/borescope/blob/main/spread.yaml)
-conformance suite, which pins `PEBBLE_VERSION=v1.31.0`). 1.31 is what currently
+conformance suite, which pins `PEBBLE_VERSION=v1.32.1`). 1.32 is what currently
 ships in the `pebble` snap's `latest/stable` channel.
 
 Compatibility across Pebble versions depends on which
@@ -19,8 +19,10 @@ Compatibility across Pebble versions depends on which
 The default Juju-relayed transports (`--via ssh`, `--via exec`) drive the
 remote `pebble` CLI through
 [shimmer](https://github.com/tonyandrewmeyer/shimmer). They require
-**Pebble ≥ 1.31** in the charm container, because shimmer relies on CLI
-surface and JSON output shapes that stabilised in that release.
+**Pebble ≥ 1.32** in the charm container, because shimmer relies on CLI
+surface and JSON output shapes that stabilised in that release — in
+particular `pebble version --format json`, which borescope's start-up
+sanity check calls and which older Pebbles (1.31 included) don't accept.
 
 If a Juju version you're using ships an older Pebble in its charm-container
 sidecar, the ssh/exec path will not work reliably — fall back to the direct
@@ -35,7 +37,7 @@ CLI at all, so it isn't bound to the shimmer compatibility floor.
 
 In principle older Pebbles work here too, going back as far as the
 `ops.pebble.Client` surface borescope relies on. **In practice we currently
-only test against Pebble 1.31.0**; older versions are unverified for 1.0.
+only test against Pebble 1.32.1**; older versions are unverified for 1.0.
 Automated multi-version coverage is tracked in
 [issue #28](https://github.com/tonyandrewmeyer/borescope/issues/28) — if
 you hit a regression on an older Pebble, please file it with the exact

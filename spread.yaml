@@ -4,7 +4,7 @@ workers: 1
 
 environment:
   CI: "$(HOST: echo $CI)"
-  PEBBLE_VERSION: "${PEBBLE_VERSION:-v1.31.0}"
+  PEBBLE_VERSION: "${PEBBLE_VERSION:-v1.32.1}"
 
 backends:
   lxd:

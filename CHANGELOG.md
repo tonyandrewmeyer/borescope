@@ -31,8 +31,33 @@ and the project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
   `juju ssh` relay (one round-trip per files-API call) the default listing
   costs one read per process, not three.
 
+### Changed
+
+- The documented Pebble floor for the `--via ssh` / `--via exec` transports
+  moves from 1.31 to 1.32: `pebble version` only grew a `--format` flag in
+  1.32, and borescope's start-up sanity check needs it. The spread suite's
+  `PEBBLE_VERSION` pin moves to `v1.32.1` to match (that is also what the
+  `pebble` snap's `latest/stable` now ships). `--socket` / `--here` talk to
+  Pebble's HTTP API and are unaffected.
+
 ### Fixed
 
+- `push`, `pull`, `cp`, and `mv` over the default `juju ssh` relay
+  (`JujuSshRunner`) no longer silently corrupt file contents. The runner
+  stages transferred bytes with a `sh -c 'echo <b64> | base64 -d > path'`
+  command, but built its argv without the same shell-quoting `wrap()`
+  applies to every other command — and juju's k8s ssh re-joins the whole
+  argv tail with spaces and re-parses it as one shell command, so the
+  pipeline's own spaces/`|`/`>` were split apart by that outer re-parse
+  before ever reaching the inner `sh -c`. In practice every `push` landed
+  an empty file (`echo`'s `-c` argument was consumed as the command name,
+  not its text), and `cp`/`mv` between remote paths (pull-then-push) were
+  affected the same way. The quoting `wrap()` already applied for ordinary
+  commands is now shared with the file-transfer helpers via a
+  `_quote_tail()` hook. Pinned end-to-end by
+  `tests/spread/file-transfer-over-juju-relay`, which drives real
+  `push`/`pull`/`cp` over both relays against a `juju` stub that reproduces
+  the k8s ssh join-and-reparse.
 - When the reader of borescope's piped output exits early
   (`borescope … --command 'cat big' | head`), borescope now dies the way
   a SIGPIPE'd tool does — exit status 141, nothing on stderr — instead of

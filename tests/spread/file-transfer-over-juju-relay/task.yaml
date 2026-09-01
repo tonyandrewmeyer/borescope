@@ -1,0 +1,83 @@
+summary: |
+  `push`, `pull` and `cp` transfer bytes intact over both Juju relays, even when
+  the content contains shell metacharacters.
+systems:
+  - ubuntu-24.04
+
+# Not a POSIX clause: XCU defines `cp` (covered by the cp-* tasks) but says
+# nothing about how borescope reaches the container. What this task pins is the
+# transport contract — the bytes borescope stages on the charm container are the
+# bytes the user asked to transfer, under `--via ssh` (the default) as well as
+# `--via exec`.
+#
+# The regression it guards against: juju's k8s ssh re-joins everything after the
+# unit with spaces and re-parses it as a single `sh -c` command, so the runner's
+# own staging pipeline (`sh -c 'echo <base64> | base64 -d > <path>'`) has to be
+# shell-quoted to survive that outer re-parse. It wasn't, so its `|` and `>` were
+# split apart before reaching the inner `sh -c` and every push over the default
+# relay silently landed an empty file. Because this lives in the relay rather
+# than in a command, no --socket task can see it; the fake-juju stub next to this
+# file reproduces juju's join-then-reparse exactly.
+execute: |
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_up
+
+  fixture="${SPREAD_PATH}/tests/spread/file-transfer-over-juju-relay"
+  workdir="$(mktemp -d)"
+  chmod +x "${fixture}/fake-juju"
+
+  # Stand this machine in for a Juju k8s charm container: the charm's injected
+  # pebble binary, the workload's mounted socket, and the charm metadata
+  # discovery reads to find the container name.
+  mkdir -p /charm/bin /charm/containers/w /var/lib/juju/agents/unit-myapp-0/charm
+  ln -sf "$(command -v pebble)" /charm/bin/pebble
+  ln -sf "${PEBBLE_SOCK}" /charm/containers/w/pebble.socket
+  printf 'name: myapp\ncontainers:\n  w:\n    resource: w-image\n' \
+    > /var/lib/juju/agents/unit-myapp-0/charm/metadata.yaml
+
+  FAKE_JUJU_STATUS="${workdir}/status.json"
+  export FAKE_JUJU_STATUS
+  printf '%s\n' \
+    '{"model": {"type": "caas", "name": "testmodel"}, "applications": {"myapp": {"units": {"myapp/0": {}}}}}' \
+    > "${FAKE_JUJU_STATUS}"
+
+  # Content that is itself shell syntax: if any layer re-parses the staged bytes
+  # instead of passing them through, this is what shows up in the diff.
+  printf 'alpha beta | gamma > delta; echo pwned\n' > "${workdir}/src"
+  head -c 4096 /dev/urandom > "${workdir}/binary"
+
+  for via in ssh exec; do
+    borescope_juju() {
+      "${BORESCOPE}" myapp/0 --juju "${fixture}/fake-juju" --via "${via}" "$@"
+    }
+
+    # push: local file -> container. The staging command is the one that used to
+    # be split apart by juju ssh's re-parse, landing an empty file.
+    borescope_juju --command "push ${workdir}/src ${workdir}/pushed-${via}" \
+      | MATCH "^Pushed ${workdir}/src -> ${workdir}/pushed-${via}$"
+    cmp "${workdir}/src" "${workdir}/pushed-${via}"
+
+    # Binary content survives the base64 round trip too.
+    borescope_juju --command "push ${workdir}/binary ${workdir}/pushed-binary-${via}"
+    cmp "${workdir}/binary" "${workdir}/pushed-binary-${via}"
+
+    # pull: container -> local host.
+    borescope_juju --command "pull ${workdir}/pushed-${via} ${workdir}/pulled-${via}"
+    cmp "${workdir}/src" "${workdir}/pulled-${via}"
+
+    # cp between two container paths pulls and then pushes, so it rides on the
+    # same staging command.
+    borescope_juju --command "cp ${workdir}/pushed-${via} ${workdir}/copied-${via}"
+    cmp "${workdir}/src" "${workdir}/copied-${via}"
+
+    # ... and cat reads it back through the same relay, unchanged.
+    borescope_juju --command "cat ${workdir}/copied-${via}" \
+      | MATCH '^alpha beta \| gamma > delta; echo pwned$'
+  done
+
+  rm -rf "${workdir}"
+
+restore: |
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_down
+  rm -rf /charm /var/lib/juju/agents/unit-myapp-0
