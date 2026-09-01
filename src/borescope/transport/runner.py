@@ -69,6 +69,16 @@ class _JujuRunnerBase:
     def _prefix(self) -> list[str]:
         raise NotImplementedError
 
+    def _quote_tail(self, tail: list[str]) -> list[str]:
+        """Hook for subclasses whose relay re-joins argv into a shell string.
+
+        The default is identity (``juju exec --`` preserves argv boundaries
+        exactly). Overridden by :class:`JujuSshRunner`, whose relay re-parses
+        the joined tail as a shell command, so anything with metacharacters
+        must survive that as one token.
+        """
+        return tail
+
     def _remote_env_shim(self) -> list[str]:
         socket = self.pebble_socket
         if not socket:
@@ -81,7 +91,7 @@ class _JujuRunnerBase:
 
     def wrap(self, argv: list[str]) -> list[str]:
         """Build the full local argv (juju prefix + env shim + pebble argv)."""
-        return [*self._prefix(), *self._remote_env_shim(), *argv]
+        return [*self._prefix(), *self._quote_tail([*self._remote_env_shim(), *argv])]
 
     def run(
         self,
@@ -141,7 +151,7 @@ class _JujuRunnerBase:
 
     def _juju_argv_no_pebble(self, *args: str) -> list[str]:
         """Build a juju argv for a non-pebble command in the charm container."""
-        return [*self._prefix(), *args]
+        return [*self._prefix(), *self._quote_tail(list(args))]
 
     def upload_temp(self, content: bytes) -> str:
         # /tmp here is the REMOTE charm container's /tmp, not the workstation's
@@ -149,10 +159,10 @@ class _JujuRunnerBase:
         # concerns don't apply; uuid4 suffix is just belt-and-braces.
         remote_path = f'/tmp/cascade-upload-{uuid.uuid4().hex}'  # noqa: S108
         encoded = base64.b64encode(content).decode('ascii')
-        # `sh -c 'echo … | base64 -d > <path>'`: the runner's _prefix() handles
-        # the juju framing; the inner `sh -c` makes the redirect work under
-        # both runners (juju exec doesn't wrap argv in a shell the way k8s
-        # juju ssh does).
+        # `sh -c 'echo … | base64 -d > <path>'`: the inner `sh -c` makes the
+        # pipe-and-redirect work under both runners. _juju_argv_no_pebble
+        # (via _quote_tail) is what keeps this one shell string intact once
+        # JujuSshRunner's relay re-joins and re-parses the whole tail.
         inner = f'echo {encoded} | base64 -d > {remote_path}'
         result = subprocess.run(
             self._juju_argv_no_pebble('sh', '-c', inner),
@@ -207,18 +217,19 @@ class JujuSshRunner(_JujuRunnerBase):
         cmd.append(self.unit)
         return cmd
 
-    def wrap(self, argv: list[str]) -> list[str]:
-        """Build the juju ssh argv with each tail token shell-quoted.
+    def _quote_tail(self, tail: list[str]) -> list[str]:
+        """shlex-quote each tail token so it survives juju's k8s ssh re-join.
 
         juju's k8s ssh joins everything after the unit with spaces and runs
         the result through ``sh -c``, so shell metacharacters in argv get
         reinterpreted by the *outer* shell (e.g. ``pebble exec -- sh -c 'echo
         a; echo b'`` would have its ``;`` split before reaching the inner
-        ``sh``). shlex-quote each piece so it survives the join; tokens with
-        no metacharacters are returned unchanged.
+        ``sh``; the same applies to :meth:`_JujuRunnerBase.upload_temp`'s own
+        ``sh -c '... | base64 -d > path'`` staging command). shlex-quote each
+        piece so it survives the join; tokens with no metacharacters are
+        returned unchanged.
         """
-        full = [*self._remote_env_shim(), *argv]
-        return [*self._prefix(), *(shlex.quote(a) for a in full)]
+        return [shlex.quote(a) for a in tail]
 
 
 class JujuExecRunner(_JujuRunnerBase):

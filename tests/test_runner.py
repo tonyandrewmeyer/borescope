@@ -162,6 +162,62 @@ def test_upload_temp_pipes_base64_via_charm_channel():
     assert expected in inner
 
 
+def test_upload_temp_shell_quotes_the_inner_script_for_ssh():
+    # Regression for a real data-corruption bug: juju's k8s ssh re-joins the
+    # whole tail with spaces and re-parses it as one `sh -c` command (see the
+    # module docstring and JujuSshRunner._quote_tail). Without quoting, the
+    # inner `echo <b64> | base64 -d > path` pipeline's own spaces/`|`/`>`
+    # would be split apart by that outer re-parse before ever reaching the
+    # inner `sh -c`, so the "same" bug `wrap()` guards against for `exec`
+    # must also be guarded here.
+    runner = JujuSshRunner('a/0', 'c')
+    captured: dict[str, Any] = {}
+
+    def fake_run(argv, **kwargs):
+        captured['argv'] = argv
+        return _fake_completed()
+
+    with patch.object(subprocess, 'run', side_effect=fake_run):
+        runner.upload_temp(b'hello world')
+
+    tail = captured['argv'][captured['argv'].index('a/0') + 1 :]
+    assert tail[:2] == ['sh', '-c']
+    # The pipeline is one shlex-quoted token, not raw text split on spaces.
+    assert len(tail) == 3
+    assert tail[2].startswith("'") and tail[2].endswith("'")
+
+
+def test_upload_temp_survives_jujus_actual_space_join_and_reparse():
+    # End-to-end proof, using a real `sh` (no juju needed): reproduce exactly
+    # what juju's k8s ssh does with the argv upload_temp builds — join
+    # everything after the unit with spaces, then run that string through
+    # `sh -c` — and confirm the staged file ends up with the right bytes
+    # rather than silently empty.
+    runner = JujuSshRunner('a/0', 'c')
+    payload = b'hello world, this is a test\x00\x01'
+    captured: dict[str, Any] = {}
+
+    def fake_run(argv, **kwargs):
+        captured['argv'] = argv
+        return _fake_completed()
+
+    with patch.object(subprocess, 'run', side_effect=fake_run):
+        remote_path = runner.upload_temp(payload)
+
+    tail = captured['argv'][captured['argv'].index('a/0') + 1 :]
+    remote_command = ' '.join(tail)  # what juju's k8s ssh actually reconstructs
+    try:
+        subprocess.run(['/bin/sh', '-c', remote_command], check=True)
+        with open(remote_path, 'rb') as f:
+            assert f.read() == payload
+    finally:
+        import contextlib
+        import os
+
+        with contextlib.suppress(FileNotFoundError):
+            os.remove(remote_path)
+
+
 def test_upload_temp_raises_on_juju_failure():
     runner = JujuSshRunner('a/0', 'c')
     with (
