@@ -99,9 +99,9 @@
     </p>
 
 <h2 id="supported">Supported versions</h2>
-<p>borescope 1.0 is tested against <strong>Pebble 1.31.0</strong> end-to-end (see the
+<p>borescope 1.0 is tested against <strong>Pebble 1.32.1</strong> end-to-end (see the
 <a href="https://github.com/tonyandrewmeyer/borescope/blob/main/spread.yaml" target="_blank" rel="noopener"><code>spread.yaml</code></a>
-conformance suite, which pins <code>PEBBLE_VERSION=v1.31.0</code>). 1.31 is what currently
+conformance suite, which pins <code>PEBBLE_VERSION=v1.32.1</code>). 1.32 is what currently
 ships in the <code>pebble</code> snap's <code>latest/stable</code> channel.</p>
 <p>Compatibility across Pebble versions depends on which
 <a href="explanation-transport.html">transport</a> you're using.</p>
@@ -109,8 +109,10 @@ ships in the <code>pebble</code> snap's <code>latest/stable</code> channel.</p>
 <p>The default Juju-relayed transports (<code>--via ssh</code>, <code>--via exec</code>) drive the
 remote <code>pebble</code> CLI through
 <a href="https://github.com/tonyandrewmeyer/shimmer" target="_blank" rel="noopener">shimmer</a>. They require
-<strong>Pebble &ge; 1.31</strong> in the charm container, because shimmer relies on CLI
-surface and JSON output shapes that stabilised in that release.</p>
+<strong>Pebble &ge; 1.32</strong> in the charm container, because shimmer relies on CLI
+surface and JSON output shapes that stabilised in that release &mdash; in
+particular <code>pebble version --format json</code>, which borescope's start-up
+sanity check calls and which older Pebbles (1.31 included) don't accept.</p>
 <p>If a Juju version you're using ships an older Pebble in its charm-container
 sidecar, the ssh/exec path will not work reliably &mdash; fall back to the direct
 socket path below, or upgrade the charm to a base that ships a current Pebble.</p>
@@ -120,7 +122,7 @@ API using the real <code>ops.pebble.Client</code>. This path doesn't go through 
 CLI at all, so it isn't bound to the shimmer compatibility floor.</p>
 <p>In principle older Pebbles work here too, going back as far as the
 <code>ops.pebble.Client</code> surface borescope relies on. <strong>In practice we currently
-only test against Pebble 1.31.0</strong>; older versions are unverified for 1.0.
+only test against Pebble 1.32.1</strong>; older versions are unverified for 1.0.
 Automated multi-version coverage is tracked in
 <a href="https://github.com/tonyandrewmeyer/borescope/issues/28" target="_blank" rel="noopener">issue #28</a> &mdash; if
 you hit a regression on an older Pebble, please file it with the exact

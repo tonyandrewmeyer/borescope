@@ -1,0 +1,46 @@
+#!/bin/sh
+# A stand-in for the `juju` client, faithful to the two behaviours borescope's
+# relays depend on:
+#
+#   juju ssh <unit> <tail...>   joins the whole tail with single spaces and
+#                               re-parses the result as one `sh -c` command in
+#                               the charm container (no `--` separator: k8s ssh
+#                               leaks it into the remote shell).
+#   juju exec -u <unit> -- ...  preserves argv boundaries exactly.
+#
+# The machine running the task stands in for the charm container, so "remote"
+# commands just run here. `juju switch` / `juju status` answer from fixtures so
+# discovery resolves myapp/0 without a controller.
+set -eu
+
+sub="$1"
+shift
+
+# borescope inserts `-m <model>` immediately after the subcommand.
+if [ "${1:-}" = '-m' ]; then
+    shift 2
+fi
+
+case "${sub}" in
+    switch)
+        echo 'testctrl:testmodel'
+        ;;
+    status)
+        cat "${FAKE_JUJU_STATUS}"
+        ;;
+    ssh)
+        shift  # the unit
+        exec /bin/sh -c "$*"
+        ;;
+    exec)
+        shift 2  # -u <unit>
+        if [ "${1:-}" = '--' ]; then
+            shift
+        fi
+        exec "$@"
+        ;;
+    *)
+        echo "fake-juju: unsupported subcommand '${sub}'" >&2
+        exit 1
+        ;;
+esac
