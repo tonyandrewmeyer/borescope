@@ -1,0 +1,23 @@
+summary: |
+  POSIX XCU §tail — `-n 0` writes no lines.
+systems:
+  - ubuntu-24.04
+
+execute: |
+  # https://pubs.opengroup.org/onlinepubs/9699919799/utilities/tail.html
+  # "-n number  ... The last number lines of the file shall be copied to
+  #             standard output." With number 0, nothing is copied.
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_up
+
+  workdir="$(mktemp -d)"
+  seq 1 5 > "${workdir}/five"
+
+  out="$(borescope_run --command "tail -n 0 ${workdir}/five")"
+  test -z "$out"
+
+  rm -rf "${workdir}"
+
+restore: |
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_down
