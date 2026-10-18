@@ -249,3 +249,21 @@ def test_clear_emits_nothing_when_not_a_tty(registry, ctx):
 def test_clear_emits_nothing_when_no_color_set(registry, ctx, monkeypatch):
     monkeypatch.setenv('NO_COLOR', '1')
     assert run(registry, ctx, 'clear').output == ''
+
+
+def test_tail_zero_prints_nothing(registry, ctx, transport):
+    transport.add_file('/five.txt', '1\n2\n3\n4\n5\n')
+    assert run(registry, ctx, 'tail', '-n', '0', '/five.txt').output == ''
+    assert run(registry, ctx, 'tail', '-n', '0', stdin='1\n2\n').output == ''
+
+
+def test_head_tail_split_on_newline_only(registry, ctx, transport):
+    # \f, \v and lone \r are not line terminators in POSIX.
+    transport.add_file('/odd.txt', 'a\fb\x0bc\rd\ne\nf\n')
+    assert run(registry, ctx, 'head', '-n', '1', '/odd.txt').output == 'a\fb\x0bc\rd\n'
+    assert run(registry, ctx, 'tail', '-n', '2', '/odd.txt').output == 'e\nf\n'
+
+
+def test_grep_line_numbers_count_newlines_only(registry, ctx):
+    out = run(registry, ctx, 'grep', '-n', 'target', stdin='a\fb\ntarget\n').output
+    assert out == '2:target'

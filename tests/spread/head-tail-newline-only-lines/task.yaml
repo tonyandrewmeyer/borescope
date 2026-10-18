@@ -1,0 +1,29 @@
+summary: |
+  POSIX XCU §head/§tail — a line is terminated by <newline> only (form feed is not a line break).
+systems:
+  - ubuntu-24.04
+
+execute: |
+  # https://pubs.opengroup.org/onlinepubs/9699919799/utilities/head.html
+  # https://pubs.opengroup.org/onlinepubs/9699919799/utilities/tail.html
+  # Text files are composed of lines terminated by <newline> (XBD 3.206 "Line").
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_up
+
+  workdir="$(mktemp -d)"
+  printf 'a\fb\nsecond\nthird\n' > "${workdir}/ff"
+
+  # The form feed must not split the first line.
+  out="$(borescope_run --command "head -n 1 ${workdir}/ff")"
+  echo "$out" | MATCH '^second$' && exit 1
+  echo "$out" | MATCH 'a.*b'
+  out="$(borescope_run --command "tail -n 2 ${workdir}/ff")"
+  echo "$out" | MATCH '^second$'
+  echo "$out" | MATCH '^third$'
+  echo "$out" | NOMATCH 'a'
+
+  rm -rf "${workdir}"
+
+restore: |
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_down
