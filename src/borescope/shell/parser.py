@@ -86,6 +86,10 @@ def _lex(line: str) -> list[_Word | str]:
         if ch.isspace():
             flush()
             i += 1
+        elif ch == '#' and not has_word:
+            # POSIX XCU 2.3: an unquoted '#' at the start of a word begins a
+            # comment that runs to the end of the line.
+            break
         elif ch in _PUNCT:
             flush()
             j = i

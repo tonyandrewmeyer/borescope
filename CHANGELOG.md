@@ -42,6 +42,10 @@ and the project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Fixed
 
+- Shell comments: an unquoted `#` at the start of a word now begins a comment
+  to the end of the line (POSIX XCU 2.3), instead of being run as the command
+  `#` (`command not found: #`). `#` inside a word or quotes stays literal.
+
 - `push`, `pull`, `cp`, and `mv` over the default `juju ssh` relay
   (`JujuSshRunner`) no longer silently corrupt file contents. The runner
   stages transferred bytes with a `sh -c 'echo <b64> | base64 -d > path'`

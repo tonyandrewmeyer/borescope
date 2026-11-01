@@ -102,3 +102,18 @@ def test_parse_and_expand_pipe():
 def test_unbalanced_quote_raises():
     with pytest.raises(ParseError):
         parse_pipeline("echo 'unterminated")
+
+
+def test_comment_at_word_start_is_dropped():
+    assert parse_pipeline('echo hi # a comment') == [['echo', 'hi']]
+    assert parse_pipeline('# only a comment') == []
+    assert parse_pipeline('   # indented comment') == []
+
+
+def test_comment_hides_unsupported_operators():
+    assert parse_pipeline('echo hi # ; && > x') == [['echo', 'hi']]
+
+
+def test_hash_inside_word_or_quotes_is_literal():
+    assert parse_pipeline('echo a#b') == [['echo', 'a#b']]
+    assert parse_pipeline('echo \'#x\' "#y" \\#z') == [['echo', '#x', '#y', '#z']]
