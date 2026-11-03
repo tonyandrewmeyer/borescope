@@ -31,6 +31,13 @@ and the project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
   `juju ssh` relay (one round-trip per files-API call) the default listing
   costs one read per process, not three.
 
+### Fixed
+
+- `tail -n 0` printed the whole input instead of nothing.
+- `head`, `tail` and `grep` split lines on `\r`, form feed, vertical tab and
+  Unicode separators as well as newline, miscounting lines (and `grep -n`
+  numbers); a line is now terminated by `\n` only, as in POSIX.
+
 ### Changed
 
 - The documented Pebble floor for the `--via ssh` / `--via exec` transports

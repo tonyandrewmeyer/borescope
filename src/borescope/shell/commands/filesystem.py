@@ -51,6 +51,21 @@ def _int(value: str | None, default: int) -> int:
     return default if value is None else int(value)  # ValueError propagates to caller
 
 
+def _lines(text: str) -> list[str]:
+    r"""Split *text* into lines, keeping each ``\n`` terminator.
+
+    POSIX defines a line as ending in ``<newline>`` only; ``str.splitlines`` also
+    breaks on ``\r``, ``\f``, ``\v`` and Unicode separators, which would
+    miscount lines in logs and binary-ish files.
+    """
+    return [part for part in re.split(r'(?<=\n)', text) if part]
+
+
+def _tail_lines(text: str, count: int) -> str:
+    """The last *count* lines of *text* (nothing for ``count <= 0``)."""
+    return ''.join(_lines(text)[-count:]) if count > 0 else ''
+
+
 def _mode_str(perm: int | None) -> str:
     if perm is None:
         return '---------'
@@ -167,7 +182,7 @@ class Head(Command):
         except Exception as exc:
             return Result.fail(f'head: {paths[0]}: {exc}')
         # keepends so original line terminators (and a trailing newline) survive.
-        return Result.ok(''.join(text.splitlines(keepends=True)[:count]))
+        return Result.ok(''.join(_lines(text)[:count]))
 
 
 class Tail(Command):
@@ -186,7 +201,7 @@ class Tail(Command):
         if not paths:
             if follow:
                 return Result.fail('tail: -f requires a file')
-            return Result.ok(''.join((stdin or '').splitlines(keepends=True)[-count:]))
+            return Result.ok(_tail_lines(stdin or '', count))
 
         path = _resolve(ctx, paths[0])
         if follow:
@@ -196,7 +211,7 @@ class Tail(Command):
         except Exception as exc:
             return Result.fail(f'tail: {paths[0]}: {exc}')
         # keepends so original line terminators (and a trailing newline) survive.
-        return Result.ok(''.join(text.splitlines(keepends=True)[-count:]))
+        return Result.ok(_tail_lines(text, count))
 
     @staticmethod
     def _delta(seen: int, data: bytes) -> tuple[str, int]:
@@ -219,7 +234,7 @@ class Tail(Command):
             data = _read_bytes(ctx.transport, path)
         except Exception as exc:
             return Result.fail(f'tail: {display}: {exc}')
-        initial = '\n'.join(data.decode('utf-8', errors='replace').splitlines()[-count:])
+        initial = _tail_lines(data.decode('utf-8', errors='replace'), count).rstrip('\n')
         if initial:
             sys.stdout.write(initial + '\n')
             sys.stdout.flush()
@@ -381,7 +396,7 @@ class Grep(Command):
         matched = False
         for label, text in sources:
             count = 0
-            for num, line in enumerate(text.splitlines(), 1):
+            for num, line in enumerate((line.removesuffix('\n') for line in _lines(text)), 1):
                 hit = bool(regex.search(line)) != invert
                 if not hit:
                     continue
