@@ -1,0 +1,26 @@
+summary: |
+  POSIX XCU §2.3 — an unquoted '#' at the start of a word begins a comment
+  that runs to the end of the line; a '#' inside a word or quotes is literal.
+systems:
+  - ubuntu-24.04
+
+execute: |
+  # https://pubs.opengroup.org/onlinepubs/9699919799/utilities/V3_chap02.html#tag_18_03
+  # "If the current character is a '#', it and all subsequent characters up
+  #  to, but excluding, the next <newline> shall be discarded as a comment."
+  # (Only when '#' starts a token, i.e. not inside a word or quotes.)
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_up
+
+  out="$(borescope_run --command 'echo hi # ignored ; && >')"
+  echo "$out" | MATCH '^hi$'
+
+  out="$(borescope_run --command 'echo a#b')"
+  echo "$out" | MATCH '^a#b$'
+
+  out="$(borescope_run --command "echo '#q'")"
+  echo "$out" | MATCH '^#q$'
+
+restore: |
+  source "${SPREAD_PATH}/tests/spread/lib.sh"
+  pebble_down
